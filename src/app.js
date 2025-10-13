@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const cors = require('cors');
 require('dotenv').config();
 const { sequelize } = require('./config/database');
+const routes = require("./routes/index.route");
 
 const app = express();
 
@@ -11,11 +12,8 @@ const app = express();
 app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
+app.use("/api", routes);
 
-// Test route
-app.get('/', (req, res) => {
-  res.send('KTX Management API is running');
-});
 
 // Sync database (chỉ dùng trong dev, production dùng migration)
 sequelize.sync({ alter: true })

@@ -2,22 +2,16 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Rooms', {
+    await queryInterface.createTable('Faces', {
       id: {
-        type: Sequelize.UUID,
+        allowNull: false,
         primaryKey: true,
-        defaultValue: Sequelize.UUIDV4,
-        allowNull: false
-      },
-      roomNumber: { type: Sequelize.STRING, allowNull: false },
-      type: Sequelize.STRING,
-      amenities: Sequelize.JSON,
-      monthlyFee: Sequelize.DECIMAL,
-      floorId: {
         type: Sequelize.UUID,
-        references: { model: 'Floors', key: 'id' },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        defaultValue: Sequelize.UUIDV4
+      },
+      faceImage: {
+        type: Sequelize.JSON,
+        allowNull: true,
       },
       createdAt: {
         allowNull: false,
@@ -33,6 +27,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Rooms');
+    await queryInterface.dropTable('Faces');
   }
 };

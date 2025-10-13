@@ -1,25 +1,21 @@
 'use strict';
 
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('MeterReadings', {
+    await queryInterface.createTable('Buildings', {
       id: {
         type: Sequelize.UUID,
-        primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
+        primaryKey: true
+      },
+      name: {
+        type: Sequelize.STRING,
         allowNull: false
       },
-      type: Sequelize.STRING,
-      oldValue: Sequelize.FLOAT,
-      newValue: Sequelize.FLOAT,
-      unitPrice: Sequelize.DECIMAL,
-      totalAmount: Sequelize.DECIMAL,
-      readingDate: Sequelize.DATE,
-      roomId: {
-        type: Sequelize.UUID,
-        references: { model: 'Rooms', key: 'id' },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+      genderRestriction: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,
@@ -35,6 +31,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('MeterReadings');
+    await queryInterface.dropTable('Buildings');
   }
 };

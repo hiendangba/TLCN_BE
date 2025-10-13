@@ -1,22 +1,25 @@
 'use strict';
 
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Payments', {
+    await queryInterface.createTable('Floors', {
       id: {
         type: Sequelize.UUID,
-        primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
+        primaryKey: true
+      },
+      number: {
+        type: Sequelize.INTEGER,
         allowNull: false
       },
-      amount: Sequelize.DECIMAL,
-      currency: { type: Sequelize.STRING, defaultValue: 'VND' },
-      qrContent: Sequelize.STRING,
-      transactionRef: Sequelize.STRING,
-      paidAt: Sequelize.DATE,
-      userId: {
+      buildingId: {
         type: Sequelize.UUID,
-        references: { model: 'Users', key: 'id' },
+        allowNull: false,
+        references: {
+          model: 'Buildings',
+          key: 'id'
+        },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
@@ -34,6 +37,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Payments');
+    await queryInterface.dropTable('Floors');
   }
 };

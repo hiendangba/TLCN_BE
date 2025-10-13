@@ -4,37 +4,48 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Payment extends Model {
     static associate(models) {
-      // Một Payment thuộc về một User
-      Payment.belongsTo(models.User, { foreignKey: 'userId' });
+      Payment.belongsTo(models.Student, { foreignKey: 'studentId' });
     }
   }
 
   Payment.init({
     id: {
       type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: DataTypes.UUIDV4
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    content: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     amount: {
-      type: DataTypes.DECIMAL,
-      allowNull: false
+      type: DataTypes.DECIMAL(15, 0),
+      allowNull: false,
     },
     currency: {
       type: DataTypes.STRING,
-      defaultValue: 'VND'
+      defaultValue: 'VND',
     },
     qrContent: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     transactionRef: {
       type: DataTypes.STRING,
-      unique: true,
-      allowNull: false
+      allowNull: true,
     },
     paidAt: {
       type: DataTypes.DATE,
-      allowNull: true
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'success', 'failed'),
+      defaultValue: 'pending',
+      allowNull: false,
     }
   }, {
     sequelize,
