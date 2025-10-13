@@ -4,7 +4,6 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class MeterReading extends Model {
     static associate(models) {
-      // Mỗi chỉ số điện/nước thuộc về 1 phòng
       MeterReading.belongsTo(models.Room, { foreignKey: 'roomId' });
     }
   }

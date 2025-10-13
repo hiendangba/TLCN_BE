@@ -1,23 +1,25 @@
 'use strict';
 
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Floors', {
+    await queryInterface.createTable('RoomTypes', {
       id: {
         type: Sequelize.UUID,
-        primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
+        primaryKey: true
+      },
+      type: {
+        type: Sequelize.STRING,
         allowNull: false
       },
-      number: {
-        type: Sequelize.INTEGER,
-        allowNull: false
+      amenities: {
+        type: Sequelize.JSON,
+        allowNull: true
       },
-      buildingId: {
-        type: Sequelize.UUID,
-        references: { model: 'Buildings', key: 'id' },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+      monthlyFee: {
+        type: Sequelize.DECIMAL,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,
@@ -33,6 +35,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Floors');
+    await queryInterface.dropTable('RoomTypes');
   }
 };
