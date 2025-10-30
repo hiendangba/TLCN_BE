@@ -16,8 +16,8 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: DataTypes.UUIDV4,
             primaryKey: true
         },
-        registrationDate: DataTypes.DATE,
-        updateDate: DataTypes.DATE,
+        registerDate: DataTypes.DATE,
+        approvedDate: DataTypes.DATE,
         endDate: DataTypes.DATE,
     }, {
         sequelize,

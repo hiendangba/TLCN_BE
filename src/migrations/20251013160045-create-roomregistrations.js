@@ -9,11 +9,11 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true
       },
-      registrationDate: {
+      registerDate: {
         type: Sequelize.DATE,
         allowNull: true
       },
-      updateDate: {
+      approvedDate: {
         type: Sequelize.DATE,
         allowNull: true
       },

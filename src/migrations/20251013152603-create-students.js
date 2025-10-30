@@ -14,8 +14,13 @@ module.exports = {
       email: { type: Sequelize.STRING, unique: true, validate: { isEmail: true } },
       nation: Sequelize.STRING,
       apostate: Sequelize.STRING,
-      mssv: { type: Sequelize.STRING, allowNull: false, unique: true },
-      school: { type: Sequelize.STRING, allowNull: true },
+      address: Sequelize.STRING,
+      status: Sequelize.STRING,
+      avatar: Sequelize.STRING,
+      role: Sequelize.STRING,
+      frontIdentificationImage: Sequelize.STRING,
+      mssv: { type: Sequelize.STRING, allowNull: false },
+      school: { type: Sequelize.STRING, allowNull: false },
       // Foreign key từ belongsTo Face 
       faceId: { type: Sequelize.UUID, references: { model: 'Faces', key: 'id' }, onUpdate: 'CASCADE', onDelete: 'CASCADE', allowNull: true },
       createdAt: {

@@ -1,5 +1,5 @@
 'use strict';
-const { UserBase, defineUserBaseFields } = require('./UserBase');
+const { UserBase, defineUserBaseFields } = require('./base/UserBase');
 
 module.exports = (sequelize, DataTypes) => {
     class Student extends UserBase {

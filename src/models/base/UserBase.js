@@ -33,7 +33,12 @@ const defineUserBaseFields = (DataTypes) => ({
     validate: { isEmail: true }
   },
   nation: DataTypes.STRING,
-  apostate: DataTypes.STRING
+  apostate: DataTypes.STRING,
+  avatar: DataTypes.STRING,
+  address: DataTypes.STRING,
+  status: DataTypes.STRING,
+  role: DataTypes.STRING,
+  frontIdentificationImage: DataTypes.STRING,
 });
 
 module.exports = { UserBase, defineUserBaseFields };

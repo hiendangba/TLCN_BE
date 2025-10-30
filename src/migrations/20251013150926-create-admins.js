@@ -34,6 +34,11 @@ module.exports = {
       },
       nation: Sequelize.STRING,
       apostate: Sequelize.STRING,
+      address: Sequelize.STRING,
+      status: Sequelize.STRING,
+      role: Sequelize.STRING,
+      frontIdentificationImage: Sequelize.STRING,
+      avatar: Sequelize.STRING,
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
