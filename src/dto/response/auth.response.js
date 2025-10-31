@@ -14,7 +14,6 @@ class RegisterAccountResponse {
     constructor(data) {
         this.name = data.name;
         this.identification = data.identification;
-        this.password = "";
         this.dob = data.dob;
         this.gender = data.gender;
         this.phone = data.phone;
@@ -22,10 +21,7 @@ class RegisterAccountResponse {
         this.nation = data.nation;
         this.apostate = data.apostate;
         this.address = data.address;
-        this.role = data.role;
         this.status = data.status;
-        this.mssv = data.mssv;
-        this.school = data.school;
         this.avatar = data.avatar;
         this.frontIdentificationImage = data.frontIdentificationImage;
     }

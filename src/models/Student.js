@@ -1,10 +1,11 @@
 'use strict';
-const { UserBase, defineUserBaseFields } = require('./base/UserBase');
+const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    class Student extends UserBase {
+    class Student extends Model {
         static associate(models) {
-            Student.belongsTo(models.Face, { foreignKey: 'faceId', as: 'face' });
+            Student.belongsTo(models.User, { foreignKey: 'userId' });
+            Student.belongsTo(models.Face, { foreignKey: 'faceId' });
             Student.hasMany(models.RegisterHealthCheck, { foreignKey: 'studentId' });
             Student.hasMany(models.RoomRegistration, { foreignKey: 'studentId' });
             Student.hasMany(models.Payment, { foreignKey: 'studentId' });
@@ -13,7 +14,16 @@ module.exports = (sequelize, DataTypes) => {
     }
     Student.init(
         {
-            ...defineUserBaseFields(DataTypes),
+            id: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true,
+            },
+            userId: {
+                type: DataTypes.UUID,
+                allowNull: false,
+                unique: true,
+            },
             mssv: {
                 type: DataTypes.STRING,
                 allowNull: false,

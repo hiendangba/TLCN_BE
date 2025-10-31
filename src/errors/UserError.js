@@ -23,6 +23,10 @@ class UserError extends AppError {
         return new UserError("MSSV đã tồn tại", 409, "MSSV_EXISTS");
     }
 
+    static IdentificationExists() {
+        return new UserError("Số Căn cước công dân đã tồn tại", 409, "IDENTIFICATION_EXISTS");
+    }
+
     static PhoneExists() {
         return new UserError("Số điện thoại đã tồn tại", 409, "PHONE_EXISTS");
     }

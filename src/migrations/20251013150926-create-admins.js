@@ -9,36 +9,16 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      identification: {
-        type: Sequelize.STRING,
+      userId: {
+        type: Sequelize.UUID,
         allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      password: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      dob: Sequelize.DATE,
-      gender: Sequelize.STRING,
-      phone: {
-        type: Sequelize.STRING,
-        unique: true
-      },
-      email: {
-        type: Sequelize.STRING,
-        unique: true,
-        validate: { isEmail: true }
-      },
-      nation: Sequelize.STRING,
-      apostate: Sequelize.STRING,
-      address: Sequelize.STRING,
-      status: Sequelize.STRING,
-      role: Sequelize.STRING,
-      frontIdentificationImage: Sequelize.STRING,
-      avatar: Sequelize.STRING,
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
