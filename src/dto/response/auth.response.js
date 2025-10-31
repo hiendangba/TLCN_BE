@@ -26,4 +26,11 @@ class RegisterAccountResponse {
         this.frontIdentificationImage = data.frontIdentificationImage;
     }
 }
-module.exports = { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse };
+
+class LoginResponse {
+    constructor(data) {
+        this.userId = data.id;
+        this.access_token = data.access_token;
+    }
+}
+module.exports = { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginResponse };

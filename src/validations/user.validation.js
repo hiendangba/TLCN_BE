@@ -68,6 +68,18 @@ const userRegisterSchema = Joi.object({
     avatar: Joi.string().required(),
 });
 
+const userLoginSchema = Joi.object({
+    identification: Joi.string()
+        .length(12)
+        .required()
+        .messages({
+            "string.empty": "CCCD không được để trống",
+            "string.length": "CCCD phải đủ 12 số",
+        }),
+    password: Joi.string().min(6).required()
+});
+
 module.exports = {
     userRegisterSchema,
+    userLoginSchema
 };

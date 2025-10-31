@@ -25,5 +25,12 @@ class RegisterAccountRequest {
     this.frontIdentificationImage = data.frontIdentificationImage;
   }
 }
+class LoginRequest {
+  constructor(data) {
+    this.identification = data.identification;
+    this.password = data.password;
+  }
+}
 
-module.exports = { RegisterAccountRequest, StudentStatus };
+
+module.exports = { RegisterAccountRequest, StudentStatus, LoginRequest };
