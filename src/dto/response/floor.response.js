@@ -1,0 +1,15 @@
+class CreateFloorResponse {
+    constructor(data) {
+        this.number = data.number;
+        this.buildingId = data.buildingId;
+    }
+}
+class GetFloorResponse {
+    constructor(data) {
+        this.id = data.id;
+        this.number = data.number;
+        this.buildingId = data.buildingId;
+    }
+}
+
+module.exports = { CreateFloorResponse, GetFloorResponse };

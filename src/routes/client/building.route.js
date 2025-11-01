@@ -6,4 +6,5 @@ const { createBuildingSchema } = require("../../validations/building.validation"
 
 const buildingController = require("../../controllers/building.controller");
 buildingRouter.post("/", authMiddleware, validateRequest(createBuildingSchema), buildingController.createBuilding);
+buildingRouter.get("/",buildingController.getBuilding);
 module.exports = buildingRouter;

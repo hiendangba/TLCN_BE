@@ -31,11 +31,11 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      roomId: {
+      roomSlotId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Rooms',
+          model: 'RoomSlots',
           key: 'id'
         },
         onUpdate: 'CASCADE',

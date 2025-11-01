@@ -1,4 +1,3 @@
-const { createBuilding } = require("../controllers/building.controller");
 const BuildingError = require("../errors/BuildingError");
 const { Building } = require("../models");
 
@@ -8,11 +7,25 @@ const buildingServices = {
             const existsName = await Building.findOne({
                 where: { name: createBuildingRequest.name }
             });
-            if(existsName){
+
+            if (existsName) {
                 throw BuildingError.NameExists();
             }
+
             const building = await Building.create(createBuildingRequest);
+
             return building;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getBuilding: async () => {
+        try {
+            const buildings = await Building.findAll({
+                order: [['name', 'ASC']]
+            });
+            return buildings;
         } catch (err) {
             throw err;
         }

@@ -6,8 +6,6 @@ const UserError = require("../errors/UserError");
 const AuthError = require("../errors/AuthError");
 
 
-
-
 const authServices = {
     register: async (registerAccountRequest) => {
         try {

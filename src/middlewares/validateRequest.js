@@ -2,7 +2,7 @@ const AppError = require("../errors/AppError");
 
 const validateRequest = (schema) => {
     return (req, res, next) => {
-        const { error } = schema.validate(req.body, { abortEarly: false });
+        const { error } = schema.validate(req.body, { abortEarly: false, presence: "required" });
         if (error) {
             const messages = error.details.map(d => d.message.replace(/"/g, '').trim());
             return next(new AppError(messages, 400, "VALIDATION_ERROR"));

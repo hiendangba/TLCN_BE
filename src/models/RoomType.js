@@ -25,6 +25,14 @@ module.exports = (sequelize, DataTypes) => {
         monthlyFee: {
             type: DataTypes.DECIMAL,
             allowNull: false,
+        },
+        capacity:{
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        description:{
+            type: DataTypes.TEXT,
+            allowNull: true,
         }
     }, {
         sequelize,
