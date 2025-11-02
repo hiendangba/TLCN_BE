@@ -8,10 +8,14 @@ class CreateRoomTypeResponse {
     }
 }
 
-class GetFloorRequest {
-    constructor(data) {
-        this.buildingId = data.buildingId;
+class GetRoomResponse {
+    constructor(data){
+        this.floor = data.floor;  // phien ban response
+        this.building = data.building;  // phien ban response
+        this.availableSlots = data.availableSlots;
+        this.roomNumber = data.roomNumber;
+        this.roomType = data.roomType; // phien ban response
     }
 }
 
-module.exports = { CreateRoomTypeResponse };
+module.exports = { CreateRoomTypeResponse, GetRoomResponse};

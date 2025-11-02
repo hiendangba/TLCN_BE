@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Room.belongsTo(models.Floor, { foreignKey: 'floorId' });
       Room.belongsTo(models.RoomType, { foreignKey: 'roomTypeId' });
-      Room.hasMany(models.RoomRegistration, { foreignKey: 'roomId' });
+      Room.hasMany(models.RoomSlot, { foreignKey: 'roomId' });
       Room.hasMany(models.MeterReading, { foreignKey: 'roomId' });
     }
   }
