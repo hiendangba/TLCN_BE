@@ -7,9 +7,7 @@ const ApiResponse = require("../dto/response/api.response");
 const floorController = {
     createFloor: asyncHandler(async (req, res) => {
         const createFloorRequest = new CreateFloorRequest(req.body);
-        console.log(createFloorRequest)
         const response = await floorServices.createFloor(createFloorRequest)
-        console.log(response);
         const createFloorResponse = new CreateFloorResponse(response);
         return res.status(201).json(
             new ApiResponse(createFloorResponse)

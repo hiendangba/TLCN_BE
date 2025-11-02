@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const buildingServices = require("../services/building.service")
-const { CreateBuildingRequest } = require("../dto/request/building.request")
+const { CreateBuildingRequest, GetBuildingRequest } = require("../dto/request/building.request")
 const { CreateBuildingResponse, GetBuildingResponse } = require("../dto/response/building.response")
 const ApiResponse = require("../dto/response/api.response");
 const buildingController = {
@@ -12,8 +12,10 @@ const buildingController = {
             new ApiResponse(createBuildingResponse)
         );
     }),
+
     getBuilding: asyncHandler(async (req, res) => {
-        const response = await buildingServices.getBuilding()
+        const getBuildingRequest = new GetBuildingRequest(req.query);
+        const response = await buildingServices.getBuilding(getBuildingRequest)
         const getBuildingResponses = response.map(item => new GetBuildingResponse(item));
         return res.status(200).json(
             new ApiResponse(getBuildingResponses)

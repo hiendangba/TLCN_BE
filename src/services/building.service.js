@@ -17,7 +17,7 @@ const buildingServices = {
             const roomTypes = await RoomType.findAll({
                 where: { id: createBuildingRequest.roomTypeIds }
             });
-            
+
             await building.addRoomTypes(roomTypes);
 
             return building;
@@ -26,9 +26,18 @@ const buildingServices = {
         }
     },
 
-    getBuilding: async () => {
+    getBuilding: async (getBuildingRequest) => {
         try {
             const buildings = await Building.findAll({
+                include: [
+                    {
+                        model: RoomType,
+                        where: { id: getBuildingRequest.roomTypeId },
+                    }
+                ],
+                where: {
+                    genderRestriction: getBuildingRequest.genderRestriction
+                },
                 order: [['name', 'ASC']]
             });
             return buildings;

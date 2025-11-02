@@ -5,5 +5,10 @@ class CreateBuildingRequest {
     this.roomTypeIds = data.roomTypeIds;
   }
 }
-
-module.exports = {CreateBuildingRequest};
+class GetBuildingRequest {
+  constructor(data) {
+    this.genderRestriction = data.genderRestriction;
+    this.roomTypeId = data.roomTypeId;
+  }
+}
+module.exports = { CreateBuildingRequest, GetBuildingRequest };
