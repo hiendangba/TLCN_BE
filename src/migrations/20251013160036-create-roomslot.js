@@ -3,17 +3,25 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Admins', {
+    await queryInterface.createTable('RoomSlots', {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true
       },
-      userId: {
+      slotNumber: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+      isOccupied: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
+      roomId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Users',
+          model: 'Rooms',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -33,6 +41,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Admins');
+    await queryInterface.dropTable('RoomSlots');
   }
 };

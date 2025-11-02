@@ -9,11 +9,11 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true
       },
-      registrationDate: {
+      registerDate: {
         type: Sequelize.DATE,
         allowNull: true
       },
-      updateDate: {
+      approvedDate: {
         type: Sequelize.DATE,
         allowNull: true
       },
@@ -31,11 +31,11 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      roomId: {
+      roomSlotId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Rooms',
+          model: 'RoomSlots',
           key: 'id'
         },
         onUpdate: 'CASCADE',

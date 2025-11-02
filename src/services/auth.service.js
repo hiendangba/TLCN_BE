@@ -1,68 +1,95 @@
-const User = require("../models/UserBase");
-// const bcrypt = require("bcryptjs");
-// const jwt = require("jsonwebtoken");
-// const sendMail  = require('../utils/mailer');
-// const generateOTP = require("../utils/generateOTP");
-// const redisClient = require("../utils/redisClient");
-// const { nanoid } = require('nanoid');
-// const AppError = require("../errors/AppError");
-// const UserError = require("../errors/user.error.enum");
-
+const { User, Student, Admin } = require("../models");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const redisClient = require("../utils/redisClient");
+const UserError = require("../errors/UserError");
+const AuthError = require("../errors/AuthError");
 
 
 const authServices = {
-    // register: async (registerRequest) => {
-    //     try{
-    //         const exists = await User.findOne({ email:registerRequest.email });
+    register: async (registerAccountRequest) => {
+        try {
+            const existsEmail = await User.findOne({
+                where: { email: registerAccountRequest.email }
+            });
 
-    //         const existsMssv = await User.findOne({ mssv:registerRequest.mssv });
-            
-    //         if (exists) {
-    //             throw new AppError(UserError.EMAIL_EXISTS);
-    //         }
+            const existsIdentification = await User.findOne({
+                where: { identification: registerAccountRequest.identification }
+            });
 
-    //         if (existsMssv) {
-    //             throw new AppError(UserError.MSSV_EXISTS);
-    //         }
-    //         //kiểm tra dữ liệu hợp lệ
-    //         authValidation(registerRequest);  
-           
-    //         // chuẩn hóa email
-    //         registerRequest.email = registerRequest.email.toLowerCase().trim();
+            const existsPhone = await User.findOne({
+                where: { phone: registerAccountRequest.phone }
+            });
 
-    //         const otp = generateOTP();
-    //         const flowId = nanoid(24); 
-    //         const otpHashed = await bcrypt.hash(otp, 10);
-    //         const key = `register:flow:${flowId}`;
+            const existsMssv = await Student.findOne({
+                where: { mssv: registerAccountRequest.mssv }
+            });
 
-    //         // Lưu thông tin đăng ký và OTP đã hash vào Redis
-    //         await redisClient.set(
-    //             key,
-    //             JSON.stringify({
-    //             user: registerRequest,
-    //             otpHashed,
-    //             attempts: 0,
-    //             maxAttempts: 3,
-    //             resendCount: 0,
-    //             maxResends: 3
-    //             }),
-    //             { EX: 600 } // 10 phút
-    //         );
+            if (existsEmail) {
+                throw UserError.EmailExists();
+            }
 
-    //         await sendMail({
-    //             to: registerRequest.email,
-    //             subject: "Xác minh đăng ký tài khoản",
-    //             html: `
-    //             <h3>Xin chào ${registerRequest.name}</h3>
-    //             <p>Cảm ơn bạn đã đăng ký tài khoản.</p>
-    //             <p>Mã OTP của bạn là: <b>${otp}</b></p>
-    //             <p>Mã OTP này sẽ hết hạn trong 10 phút.</p>
-    //             `,
-    //         });
-    //         return { message: "OTP đã được gửi, vui lòng kiểm tra email", flowId,   expiresIn: 600 };
-    //     }catch (err){
-    //         throw err instanceof AppError ? err : AppError.fromError(err);
-    //     }
-    // },
+            if (existsIdentification) {
+                throw UserError.IdentificationExists();
+            }
+
+            if (existsMssv) {
+                throw UserError.MSSVExists();
+            }
+
+            if (existsPhone) {
+                throw UserError.PhoneExists();
+            }
+
+            registerAccountRequest.email = registerAccountRequest.email.toLowerCase().trim();
+            registerAccountRequest.password = await bcrypt.hash("123456", 10);
+            const user = await User.create(registerAccountRequest);
+            await Student.create({
+                userId: user.id,
+                mssv: registerAccountRequest.mssv,
+                school: registerAccountRequest.school
+            });
+            return user;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    login: async (loginRequest) => {
+        try {
+            const user = await User.findOne({
+                where: { identification: loginRequest.identification },
+            });
+            if (!user) {
+                throw AuthError.AuthenticationFailed();
+            }
+            const passwordMatch = await bcrypt.compare(loginRequest.password, user.password);
+            if (!passwordMatch) {
+                throw AuthError.AuthenticationFailed();
+            }
+
+            const access_token = jwt.sign(
+                { id: user.id },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES }
+            );
+
+            const refresh_token = jwt.sign(
+                { id: user.id, },
+                process.env.JWT_REFRESH_SECRET,
+                { expiresIn: process.env.JWT_REFRESH_EXPIRES }
+            );
+
+            await redisClient.set(
+                `refresh:${user.id}`,
+                refresh_token,
+                "EX",
+                7 * 24 * 60 * 60 // 7 ngày
+            );
+            return { id: user.id, access_token, refresh_token };
+        } catch (err) {
+            throw err;
+        }
+    },
 };
 module.exports = authServices;

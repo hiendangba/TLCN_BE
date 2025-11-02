@@ -1,0 +1,34 @@
+const BuildingError = require("../errors/BuildingError");
+const { Building } = require("../models");
+
+const buildingServices = {
+    createBuilding: async (createBuildingRequest) => {
+        try {
+            const existsName = await Building.findOne({
+                where: { name: createBuildingRequest.name }
+            });
+
+            if (existsName) {
+                throw BuildingError.NameExists();
+            }
+
+            const building = await Building.create(createBuildingRequest);
+
+            return building;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getBuilding: async () => {
+        try {
+            const buildings = await Building.findAll({
+                order: [['name', 'ASC']]
+            });
+            return buildings;
+        } catch (err) {
+            throw err;
+        }
+    },
+};
+module.exports = buildingServices;

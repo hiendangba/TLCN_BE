@@ -3,12 +3,12 @@ const { createClient } = require("redis");
 const redisClient = createClient({
   url: process.env.URL_REDIS,
   socket: {
-    tls: true,              // bắt buộc với Redis Aiven
-    connectTimeout: 10000,  // tăng timeout lên 10s
-    keepAlive: 30000,       // gửi gói keep-alive mỗi 30s
+    tls: true,
+    connectTimeout: 10000,
+    keepAlive: 30000,
     reconnectStrategy: retries => {
-      if (retries > 10) return new Error("Retry limit reached"); // giới hạn số lần retry
-      return Math.min(retries * 500, 5000); // delay tăng dần
+      if (retries > 10) return new Error("Retry limit reached");
+      return Math.min(retries * 500, 5000);
     }
   }
 });

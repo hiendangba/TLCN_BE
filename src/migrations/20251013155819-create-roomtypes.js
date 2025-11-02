@@ -21,6 +21,14 @@ module.exports = {
         type: Sequelize.DECIMAL,
         allowNull: false
       },
+      capacity: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
+      description: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
