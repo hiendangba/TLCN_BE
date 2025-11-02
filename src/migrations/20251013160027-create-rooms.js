@@ -14,6 +14,14 @@ module.exports = {
         allowNull: false,
         unique: true
       },
+      capicity: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+      monthlyFee: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
+      },
       floorId: {
         type: Sequelize.UUID,
         allowNull: false,

@@ -1,5 +1,5 @@
 const BuildingError = require("../errors/BuildingError");
-const { Building } = require("../models");
+const { Building, RoomType } = require("../models");
 
 const buildingServices = {
     createBuilding: async (createBuildingRequest) => {
@@ -13,6 +13,12 @@ const buildingServices = {
             }
 
             const building = await Building.create(createBuildingRequest);
+
+            const roomTypes = await RoomType.findAll({
+                where: { id: createBuildingRequest.roomTypeIds }
+            });
+            
+            await building.addRoomTypes(roomTypes);
 
             return building;
         } catch (err) {

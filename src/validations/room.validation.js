@@ -20,24 +20,6 @@ const createRoomTypeSchema = Joi.object({
             "string.max": "Tên tiện nghi không được quá 50 ký tự",
         }),
 
-    monthlyFee: Joi.number()
-        .positive()
-        .required()
-        .messages({
-            "number.base": "Giá thuê phải là một số",
-            "number.positive": "Giá thuê phải là số dương",
-        }),
-    capacity: Joi.number()
-        .integer()
-        .min(1)
-        .required()
-        .messages({
-            "number.base": "Sức chứa phải là một số",
-            "number.integer": "Sức chứa phải là số nguyên"
-        }),
-    description: Joi.string()
-        .max(500)
-        .allow('', null)
 });
 
 module.exports = { createRoomTypeSchema };

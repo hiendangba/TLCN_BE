@@ -8,5 +8,5 @@ const roomController = require("../../controllers/room.controller");
 // roomRouter.post("/", authMiddleware, validateRequest(createFloorSchema), floorController.createFloor);
 // roomRouter.get("/", floorController.getFloor);
 roomRouter.post("/room-type", authMiddleware, validateRequest(createRoomTypeSchema), roomController.createRoomType);
-// roomRouter.get("/roomType", floorController.createFloor);
+// roomRouter.get("/room-type", roomController.getRoomType);
 module.exports = roomRouter;
