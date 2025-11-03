@@ -13,6 +13,12 @@ class AuthError extends AppError {
     static TokenExpired() {
         return new AuthError("Access_token đã hết hạn", 401, "TOKEN_EXPIRED");
     }
+    static NotApproved() {
+        return new AuthError("Tài khoản bạn chưa được admin chấp nhận", 403, "NOT_APPROVED")
+    }
+    static IsAdmin() {
+        return new AuthError("Bạn phải là admin", 403, "NOT_ADMIN")
+    }
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }

@@ -16,8 +16,8 @@ module.exports = {
       apostate: Sequelize.STRING,
       address: Sequelize.STRING,
       status: Sequelize.STRING,
-      avatar: Sequelize.STRING,
-      frontIdentificationImage: Sequelize.STRING,
+      avatar: { type: Sequelize.STRING, allowNull: true },
+      frontIdentificationImage: { type: Sequelize.STRING, allowNull: true },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

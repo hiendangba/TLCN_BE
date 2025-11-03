@@ -29,5 +29,4 @@ const createBuildingSchema = Joi.object({
 
         }),
 });
-
 module.exports = { createBuildingSchema };

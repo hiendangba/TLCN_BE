@@ -1,5 +1,6 @@
 const BuildingError = require("../errors/BuildingError");
 const { Building, RoomType } = require("../models");
+const FloorError = require("../errors/FloorError");
 
 const buildingServices = {
     createBuilding: async (createBuildingRequest) => {
@@ -21,6 +22,19 @@ const buildingServices = {
             await building.addRoomTypes(roomTypes);
 
             return building;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    deleteBuilding: async (deleteBuildingRequest) => {
+        try {
+            const building = await Building.findByPk(deleteBuildingRequest.id);
+            if (!building) {
+                throw FloorError.BuildingNotFound()
+            }
+            const result = await Building.destroy({ where: { id: deleteBuildingRequest.id } });
+            return result
         } catch (err) {
             throw err;
         }

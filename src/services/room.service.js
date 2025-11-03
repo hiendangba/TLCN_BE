@@ -61,15 +61,15 @@ const roomServices = {
                     {
                         model: RoomType,
                         where: { id: getRoomRequest.roomTypeId },
-                        attributes: ['type', 'amenities'] // chọn cột cần lấy
+                        attributes: ['type', 'amenities']
                     },
                     {
                         model: Floor,
-                        attributes: ['number',] // thông tin tầng
+                        attributes: ['number',]
                     },
                     {
                         model: RoomSlot,
-                        attributes: ['slotNumber', 'isOccupied'] // thông tin slot phòng
+                        attributes: ["id",'slotNumber', 'isOccupied']
                     }
                 ],
                 where: {

@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const buildingServices = require("../services/building.service")
-const { CreateBuildingRequest, GetBuildingRequest } = require("../dto/request/building.request")
+const { CreateBuildingRequest, GetBuildingRequest, DeleteBuildingRequest } = require("../dto/request/building.request")
 const { CreateBuildingResponse, GetBuildingResponse } = require("../dto/response/building.response")
 const ApiResponse = require("../dto/response/api.response");
 const buildingController = {
@@ -13,6 +13,14 @@ const buildingController = {
         );
     }),
 
+    deleteBuilding: asyncHandler(async (req, res) => {
+        const deleteBuildingRequest = new DeleteBuildingRequest(req.params)
+        const response = await buildingServices.deleteBuilding(deleteBuildingRequest)
+        return res.status(200).json(
+            new ApiResponse(response)
+        );
+    }),
+    
     getBuilding: asyncHandler(async (req, res) => {
         const getBuildingRequest = new GetBuildingRequest(req.query);
         const response = await buildingServices.getBuilding(getBuildingRequest)

@@ -23,6 +23,8 @@ class RegisterAccountRequest {
     this.school = data.school;
     this.avatar = data.avatar;
     this.frontIdentificationImage = data.frontIdentificationImage;
+    this.roomSlotId = data.roomSlotId
+    this.endDate = data.endDate
   }
 }
 class LoginRequest {
@@ -33,4 +35,22 @@ class LoginRequest {
 }
 
 
-module.exports = { RegisterAccountRequest, StudentStatus, LoginRequest };
+class RegisterAccountAdminRequest {
+  constructor(data) {
+    this.name = data.name;
+    this.identification = data.identification;
+    this.password = "";
+    this.dob = data.dob;
+    this.gender = data.gender;
+    this.phone = data.phone;
+    this.email = data.email;
+    this.nation = data.nation;
+    this.apostate = data.apostate;
+    this.address = data.address;
+    this.status = StudentStatus.APPROVED_NOT_CHANGED;
+    this.avatar = data.avatar;
+    this.frontIdentificationImage = data.frontIdentificationImage;
+  }
+}
+
+module.exports = { RegisterAccountRequest, StudentStatus, LoginRequest, RegisterAccountAdminRequest };

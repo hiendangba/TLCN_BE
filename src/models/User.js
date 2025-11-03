@@ -53,6 +53,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             avatar: {
                 type: DataTypes.STRING,
+                allowNull: true,
             },
             address: {
                 type: DataTypes.STRING,
@@ -62,6 +63,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             frontIdentificationImage: {
                 type: DataTypes.STRING,
+                allowNull: true,
             },
         },
         {

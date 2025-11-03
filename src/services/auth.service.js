@@ -4,11 +4,17 @@ const jwt = require("jsonwebtoken");
 const redisClient = require("../utils/redisClient");
 const UserError = require("../errors/UserError");
 const AuthError = require("../errors/AuthError");
+const roomRegistrationServices = require("./roomRegistration.service")
+const { StudentStatus } = require("../dto/request/auth.request")
+const { CreateRoomRegistrationRequest } = require("../dto/request/roomRegistration.request")
 
-
+const { sequelize } = require('../config/database');
+let transaction;
 const authServices = {
+
     register: async (registerAccountRequest) => {
         try {
+            transaction = await sequelize.transaction();
             const existsEmail = await User.findOne({
                 where: { email: registerAccountRequest.email }
             });
@@ -43,16 +49,58 @@ const authServices = {
 
             registerAccountRequest.email = registerAccountRequest.email.toLowerCase().trim();
             registerAccountRequest.password = await bcrypt.hash("123456", 10);
-            const user = await User.create(registerAccountRequest);
-            await Student.create({
+
+            const user = await User.create(registerAccountRequest, { transaction });
+            const student = await Student.create({
                 userId: user.id,
                 mssv: registerAccountRequest.mssv,
                 school: registerAccountRequest.school
-            });
+            }, { transaction });
+
+            const createRoomRegistrationRequest = new CreateRoomRegistrationRequest(registerAccountRequest, student.id);
+            await roomRegistrationServices.createRoomRegistration(createRoomRegistrationRequest, transaction);
+
+            await transaction.commit();
+
             return user;
         } catch (err) {
+            await transaction.rollback();
             throw err;
         }
+    },
+
+    registerAdmin: async (registerAccountAdminRequest) => {
+        const existsEmail = await User.findOne({
+            where: { email: registerAccountAdminRequest.email }
+        });
+
+        const existsIdentification = await User.findOne({
+            where: { identification: registerAccountAdminRequest.identification }
+        });
+
+        const existsPhone = await User.findOne({
+            where: { phone: registerAccountAdminRequest.phone }
+        });
+
+        if (existsEmail) {
+            throw UserError.EmailExists();
+        }
+
+        if (existsIdentification) {
+            throw UserError.IdentificationExists();
+        }
+
+        if (existsPhone) {
+            throw UserError.PhoneExists();
+        }
+
+        registerAccountAdminRequest.email = registerAccountAdminRequest.email.toLowerCase().trim();
+        registerAccountAdminRequest.password = await bcrypt.hash("123456", 10);
+        const user = await User.create(registerAccountAdminRequest);
+        await Admin.create({
+            userId: user.id
+        })
+        return user;
     },
 
     login: async (loginRequest) => {
@@ -68,14 +116,46 @@ const authServices = {
                 throw AuthError.AuthenticationFailed();
             }
 
+            if (user.status === StudentStatus.REGISTERED) {
+                throw AuthError.NotApproved();
+            }
+
+            const isStudent = await Student.findOne({
+                where: { userId: user.id },
+            });
+
+            const isAdmin = await Admin.findOne({
+                where: { userId: user.id },
+            });
+
+
+            let role, roleId;
+            if (isStudent) {
+                role = "student";
+                roleId = isStudent.id;
+            }
+
+            if (isAdmin) {
+                role = "admin";
+                roleId = isAdmin.id;
+            }
+
             const access_token = jwt.sign(
-                { id: user.id },
+                {
+                    id: user.id,
+                    role: role,
+                    roleId: roleId
+                },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES }
             );
 
             const refresh_token = jwt.sign(
-                { id: user.id, },
+                {
+                    id: user.id,
+                    role: role,
+                    roleId: roleId
+                },
                 process.env.JWT_REFRESH_SECRET,
                 { expiresIn: process.env.JWT_REFRESH_EXPIRES }
             );
