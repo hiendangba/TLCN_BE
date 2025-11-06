@@ -5,10 +5,23 @@ const validateRequest = (schema) => {
         const { error } = schema.validate(req.body, { abortEarly: false, presence: "required" });
         if (error) {
             const messages = error.details.map(d => d.message.replace(/"/g, '').trim());
+            console.log(messages);
             return next(new AppError(messages, 400, "VALIDATION_ERROR"));
         }
         next();
     };
 };
 
-module.exports = validateRequest;
+const validateRequestget = (schema) => {
+    return (req, res, next) => {
+        const { error } = schema.validate(req.query, { abortEarly: false });
+        if (error) {
+            const messages = error.details.map(d => d.message.replace(/"/g, '').trim());
+            console.log(messages);
+            return next(new AppError(messages, 400, "VALIDATION_ERROR"));
+        }
+        next();
+    };
+};
+
+module.exports = { validateRequest, validateRequestget };

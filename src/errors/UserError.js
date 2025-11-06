@@ -9,6 +9,10 @@ class UserError extends AppError {
         return new UserError("Email đã tồn tại", 409, "EMAIL_EXISTS");
     }
 
+    static InvalidUser() {
+        return new UserError("User không tồn tại", 409, "INVALID_USER");
+    }
+
     static MSSVExists() {
         return new UserError("MSSV đã tồn tại", 409, "MSSV_EXISTS");
     }

@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
-    capacity: {
+    capicity: {
       type: DataTypes.INTEGER,
       allowNull: false
     },

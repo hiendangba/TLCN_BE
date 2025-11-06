@@ -1,7 +1,7 @@
 const express = require("express");
 const roomRouter = express.Router();
 const authMiddleware = require("../../middlewares/auth.middleware");
-const validateRequest = require("../../middlewares/validateRequest");
+const { validateRequest } = require("../../middlewares/validateRequest");
 const { createRoomTypeSchema } = require("../../validations/room.validation")
 
 const roomController = require("../../controllers/room.controller");

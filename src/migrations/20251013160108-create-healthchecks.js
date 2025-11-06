@@ -29,11 +29,31 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false
       },
+      capacity: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 100,
+      },
+      price: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00
+      },
       adminId: {
         type: Sequelize.UUID,
         allowNull: true, // để onDelete: SET NULL
         references: {
           model: 'Admins',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      buildingId: {
+        type: Sequelize.UUID,
+        allowNull: true, // để onDelete: SET NULL
+        references: {
+          model: 'Buildings',
           key: 'id'
         },
         onUpdate: 'CASCADE',

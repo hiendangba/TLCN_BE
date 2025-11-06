@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
             // Một Admin có thể quản lý nhiều thứ khác
             Admin.hasMany(models.RoomRegistration, { foreignKey: 'adminId' });
             Admin.hasMany(models.HealthCheck, { foreignKey: 'adminId' });
+            Admin.hasMany(models.MeterReading, { foreignKey: 'adminId' });
         }
     }
 

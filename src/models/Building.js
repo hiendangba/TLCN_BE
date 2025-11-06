@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
         otherKey: 'roomTypeId'
       }); 
       Building.hasMany(models.Floor, { foreignKey: 'buildingId' });
+      Building.hasMany(models.HealthCheck, { foreignKey: 'buildingId'});
     }
   }
 
