@@ -15,6 +15,7 @@ const {
 const e = require("express");
 
 
+
 const formatDate = (date) => {
   const iso = date.toISOString();
   return iso.replace('T', ' ').slice(0, 19);
@@ -22,6 +23,33 @@ const formatDate = (date) => {
 const formatDateRange = (start, end) => `${formatDate(start)} - ${formatDate(end)}`;
 
 const healthCheckService = {
+
+    deleteHealthCheck: async ( id, userId ) => {
+        try{
+            const admin = await Admin.findOne({
+                where: {
+                    userId
+                }
+            });
+            if (!admin) throw UserError.InvalidUser();
+
+            let healthCheck = await HealthCheck.findByPk(id);
+            if (!healthCheck){
+                throw HealthCheckError.NotFound();
+            }
+
+            await healthCheck.update({
+                status : "inactive",
+                updatedAt: new Date()
+            })
+
+            return "Xóa đợt khám thành công";
+        }
+        catch (err){
+            throw err;
+        }
+        
+    },
 
     registerHealthCheck: async ( registerHealthCheckRequest ) => {
         try {
@@ -59,11 +87,12 @@ const healthCheckService = {
                 throw HealthCheckError.NotFound()
             }
             // Kiểm tra còn thời hạn hay không
-            if (existingHealthCheck.endDate){
+            if (existingHealthCheck.registrationStartDate && existingHealthCheck.registrationEndDate ){
                 const now = new Date();
-                const endDate = new Date(existingHealthCheck.endDate);
-                if (now > endDate){
-                    throw HealthCheckError.RegistrationDDueReached();
+                const start  = new Date(existingHealthCheck.registrationStartDate);
+                const end  = new Date(existingHealthCheck.registrationEndDate);
+                if (now.getTime() < start.getTime() || now.getTime() > end.getTime()) {
+                    throw HealthCheckError.RegistrationDueReached();
                 }
             }
             if (existingHealthCheck.RegisterHealthChecks.length >= existingHealthCheck.capacity){
@@ -125,16 +154,19 @@ const healthCheckService = {
                         ],
                     },
                 ],
+                status: "active"
             };
         } else if (startDate) {
             // Chỉ có startDate → lấy đợt khám còn sau này này là được 
             whereClause = {
                 endDate: { [Op.gte]: startDate },
+                status: "active"
             };
         } else if (endDate) {
             // Chỉ có endDate → lấy đợt khám kết thúc trước hoặc bằng ngày đó
             whereClause = {
                 startDate: { [Op.lte]: endDate },
+                status: "active"
             };
         } 
 
@@ -165,7 +197,10 @@ const healthCheckService = {
                 capacity: hc.capacity,
                 price: hc.price,
                 buildingName: hc.Building?.name || null,
-                registeredCount: (hc.RegisterHealthChecks || []).length
+                registeredCount: (hc.RegisterHealthChecks || []).length,
+                registrationStartDate: formatDate(hc.registrationStartDate),
+                registrationEndDate: formatDate(hc.registrationEndDate),
+                status: hc.status
             }
         });
         return result;
@@ -185,58 +220,93 @@ const healthCheckService = {
             const {
                 buildingId,
                 startDate,
-                endDate
+                endDate,
+                healthCheckId
             } = createHealthCheckRequest;
+
             const building = await Building.findByPk(buildingId);
             if (!building) {
                 throw BuildingError.NotFound();
             }
 
+            const whereClause = {
+                buildingId,
+                [Op.or]: [{
+                        startDate: {
+                            [Op.between]: [startDate, endDate] // startDate của đợt cũ nằm trong khoảng mới
+                        }
+                    },
+                    {
+                        endDate: {
+                            [Op.between]: [startDate, endDate] // endDate của đợt cũ nằm trong khoảng mới
+                        }
+                    },
+                    {
+                        [Op.and]: [{
+                                startDate: {
+                                    [Op.lte]: startDate
+                                }
+                            }, // đợt cũ bắt đầu trước
+                            {
+                                endDate: {
+                                    [Op.gte]: endDate
+                                }
+                            } // và kết thúc sau (bao trùm đợt mới)
+                        ]
+                    }
+                ]
+            };
+
+            if (healthCheckId) {
+                whereClause.id = {
+                    [Op.ne]: healthCheckId
+                }
+            }
+
             // Kiem tra thoi diem kham co hop le hay khong
             const existingHealthCheck = await HealthCheck.findOne({
-                where: {
-                    buildingId,
-                    [Op.or]: [{
-                            startDate: {
-                                [Op.between]: [startDate, endDate] // startDate của đợt cũ nằm trong khoảng mới
-                            }
-                        },
-                        {
-                            endDate: {
-                                [Op.between]: [startDate, endDate] // endDate của đợt cũ nằm trong khoảng mới
-                            }
-                        },
-                        {
-                            [Op.and]: [{
-                                    startDate: {
-                                        [Op.lte]: startDate
-                                    }
-                                }, // đợt cũ bắt đầu trước
-                                {
-                                    endDate: {
-                                        [Op.gte]: endDate
-                                    }
-                                } // và kết thúc sau (bao trùm đợt mới)
-                            ]
-                        }
-                    ]
-                }
+                where: whereClause
             })
 
             if (existingHealthCheck) {
                 throw HealthCheckError.AlreadyExistsInPeriod();
             }
 
-            // Không còn lỗi nào nữa thì thêm vào 
-            const response = await HealthCheck.create({
-                ...createHealthCheckRequest,
-                adminId: admin.id
-            })
+            let entered;
 
-            //Thêm thông tin phụ để trả về cho client (không ảnh hưởng DB)
-            response.buildingName = building.name;
-            response.registeredCount = 0;
+            if (healthCheckId){
+                let healthCheck = await HealthCheck.findByPk(healthCheckId);
+                if (!healthCheck){
+                    throw HealthCheckError.NotFound();
+                }
+                entered = await healthCheck.update({
+                    ...createHealthCheckRequest,
+                    adminId: admin.id
+                },
+                { returning: true })
+            }
+            else{
+                entered = await HealthCheck.create({
+                    ...createHealthCheckRequest,
+                    adminId: admin.id
+                })
+            }
 
+            const response = {
+                id: entered.id,
+                title: entered.title,
+                description: entered.description,
+                startDate: formatDate(entered.startDate),
+                endDate: formatDate(entered.endDate),
+                capacity: entered.capacity,
+                registeredCount: 0,
+                buildingName: building.name,
+                price: entered.price,
+                registrationStartDate: formatDate(entered.registrationStartDate),
+                registrationEndDate: formatDate(entered.registrationEndDate),
+                status: entered.status
+            }
+            
             return response;
             
         } catch (err) {

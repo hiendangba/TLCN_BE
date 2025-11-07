@@ -20,7 +20,7 @@ class HealthCheckError extends AppError {
 
     static RegistrationDueReached() {
         return new HealthCheckError(
-            "Đợt khám đã quá hạn đăng ký.",
+            "Thời gian đăng ký đã hết hoặc chưa đến.",
             409, // 409 Conflict — trùng hoặc vượt giới hạn
             "HEALTH_CHECK_REGISTRATION_ DUE_REACHED"
         );

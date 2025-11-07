@@ -1,13 +1,16 @@
 class CreateHealthCheckRequest {
     constructor(data) {
+        this.healthCheckId = data.healthCheckId;
         this.buildingId = data.buildingId;
         this.title = data.title;
         this.description = data.description;
-        this.location = data.location;
         this.startDate = data.startDate;
         this.endDate = data.endDate;
         this.capacity = data.capacity;
         this.price = data.price;
+        this.registrationStartDate = data.registrationStartDate;
+        this.registrationEndDate = data.registrationEndDate;
+        this.status = data.status;
     }
 }
 

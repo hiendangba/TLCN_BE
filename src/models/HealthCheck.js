@@ -31,10 +31,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             allowNull: true,
         },
-        location: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
         startDate: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -52,6 +48,19 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: false,
             defaultValue: 0.00
+        },
+        registrationStartDate: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        registrationEndDate: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        status: {
+            type: DataTypes.ENUM('active', 'inactive'),
+            allowNull: false,
+            defaultValue: 'active'
         },
     }, {
         sequelize,

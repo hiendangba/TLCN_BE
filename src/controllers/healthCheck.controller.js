@@ -32,6 +32,17 @@ const healthCheckController = {
             new ApiResponse(registerHealthCheckResponse)
         );
     }),
+
+    deleteHealthCheck: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const userId = req.userId;
+
+        const result = await healthCheckService.deleteHealthCheck(id, userId);
+
+        return res.status(200).json(
+            new ApiResponse(result)
+        );
+    })
 }
 
 module.exports = healthCheckController

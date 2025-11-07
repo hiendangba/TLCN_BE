@@ -2,15 +2,18 @@
 
 class HealthCheckResponse {
     constructor(data) {
+        this.id = data.id
         this.title = data.title;
         this.description = data.description;
-        this.location = data.location;
         this.startDate = data.startDate;
         this.endDate = data.endDate;
         this.capacity = data.capacity;
         this.registeredCount = data.registeredCount;
         this.buildingName = data.buildingName;
         this.price = data.price;
+        this.registrationStartDate = data.registrationStartDate;
+        this.registrationEndDate = data.registrationEndDate;
+        this.status = data.status;
     }
 }
 class RegisterHealthCheckReponse  {
