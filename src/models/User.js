@@ -48,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
             nation: {
                 type: DataTypes.STRING,
             },
-            apostate: {
+            region: {
                 type: DataTypes.STRING,
             },
             avatar: {

@@ -7,7 +7,7 @@ const { userRegisterSchema, adminRegisterSchema, userLoginSchema } = require("..
 const { authMiddleware, isAdmin } = require("../../middlewares/auth.middleware");
 
 authRouter.post("/register", validateRequest(userRegisterSchema), authController.register);
-authRouter.post("/register-admin", authMiddleware, isAdmin, validateRequest(adminRegisterSchema), authController.registerAdmin);
+authRouter.post("/register-admin",validateRequest(adminRegisterSchema), authController.registerAdmin);
 authRouter.post("/login", validateRequest(userLoginSchema), authController.login);
 authRouter.post("/checkCCCD", uploadCCCD.single("CCCD"), authController.checkCCCD);
 authRouter.post("/checkAvatar", uploadAvatar.single("Avatar"), authController.checkAvatar);

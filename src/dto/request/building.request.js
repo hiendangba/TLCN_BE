@@ -18,4 +18,5 @@ class GetBuildingRequest {
     this.roomTypeId = data.roomTypeId;
   }
 }
+
 module.exports = { CreateBuildingRequest, GetBuildingRequest, DeleteBuildingRequest };

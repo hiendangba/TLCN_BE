@@ -54,7 +54,7 @@ const userRegisterSchema = Joi.object({
         "string.empty": "Quốc tịch không được để trống",
     }),
 
-    apostate: Joi.string().required().messages({
+    region: Joi.string().required().messages({
         "string.empty": "Tôn giáo không được để trống",
     }),
 
@@ -73,13 +73,7 @@ const userRegisterSchema = Joi.object({
             "string.guid": "roomSlotId phải là UUID hợp lệ",
         }),
 
-    endDate: Joi.date()
-        .greater('now')
-        .required()
-        .messages({
-            "date.base": "Ngày kết thúc hợp đồng không hợp lệ",
-            "date.greater": "Ngày kết thúc hợp đồng phải lớn hơn ngày hiện tại",
-        })
+    duration: Joi.string().required(),
 });
 
 const adminRegisterSchema = Joi.object({
@@ -136,7 +130,7 @@ const adminRegisterSchema = Joi.object({
         "string.empty": "Quốc tịch không được để trống",
     }),
 
-    apostate: Joi.string().required().messages({
+    region: Joi.string().required().messages({
         "string.empty": "Tôn giáo không được để trống",
     }),
 

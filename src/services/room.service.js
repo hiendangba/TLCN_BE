@@ -81,7 +81,6 @@ const roomServices = {
                     [RoomSlot, 'slotNumber', 'ASC']
                 ]
             });
-
             // Lọc các phòng có ít nhất một slot trống
             const availableRooms = rooms.filter(room =>
                 room.RoomSlots.some(slot => !slot.isOccupied)

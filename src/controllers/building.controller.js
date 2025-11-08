@@ -20,9 +20,18 @@ const buildingController = {
             new ApiResponse(response)
         );
     }),
-    
-    getBuilding: asyncHandler(async (req, res) => {
+
+    getBuildingByGenderRestriction: asyncHandler(async (req, res) => {
         const getBuildingRequest = new GetBuildingRequest(req.query);
+        const response = await buildingServices.getBuildingByGenderRestriction(getBuildingRequest)
+        const getBuildingResponses = response.map(item => new GetBuildingResponse(item));
+        return res.status(200).json(
+            new ApiResponse(getBuildingResponses)
+        );
+    }),
+
+
+    getBuilding: asyncHandler(async (req, res) => {
         const response = await buildingServices.getBuilding(getBuildingRequest)
         const getBuildingResponses = response.map(item => new GetBuildingResponse(item));
         return res.status(200).json(

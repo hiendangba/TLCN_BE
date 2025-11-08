@@ -40,7 +40,7 @@ const buildingServices = {
         }
     },
 
-    getBuilding: async (getBuildingRequest) => {
+    getBuildingByGenderRestriction: async (getBuildingRequest) => {
         try {
             const buildings = await Building.findAll({
                 include: [
@@ -52,6 +52,17 @@ const buildingServices = {
                 where: {
                     genderRestriction: getBuildingRequest.genderRestriction
                 },
+                order: [['name', 'ASC']]
+            });
+            return buildings;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getBuilding: async () => {
+        try {
+            const buildings = await Building.findAll({
                 order: [['name', 'ASC']]
             });
             return buildings;

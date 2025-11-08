@@ -20,6 +20,15 @@ const userController = {
             new ApiResponse(response)
         );
     }),
-};
+    
+    // mai sửa phần này
+    updateProfile: asyncHandler(async (req, res) => {
+        const changePasswordRequest = new ChangePasswordRequest({ ...req.body, userId: req.userId })
+        const response = await userServices.changePassword(changePasswordRequest)
+        return res.status(200).json(
+            new ApiResponse(response)
+        );
+    }),
+}
 
 module.exports = userController;

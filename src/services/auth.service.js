@@ -7,7 +7,6 @@ const AuthError = require("../errors/AuthError");
 const roomRegistrationServices = require("./roomRegistration.service")
 const { StudentStatus } = require("../dto/request/auth.request")
 const { CreateRoomRegistrationRequest } = require("../dto/request/roomRegistration.request")
-
 const { sequelize } = require('../config/database');
 let transaction;
 const authServices = {

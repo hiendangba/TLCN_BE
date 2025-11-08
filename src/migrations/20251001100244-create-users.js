@@ -13,7 +13,7 @@ module.exports = {
       phone: { type: Sequelize.STRING, unique: true },
       email: { type: Sequelize.STRING, unique: true, validate: { isEmail: true } },
       nation: Sequelize.STRING,
-      apostate: Sequelize.STRING,
+      region: Sequelize.STRING,
       address: Sequelize.STRING,
       status: Sequelize.STRING,
       avatar: { type: Sequelize.STRING, allowNull: true },

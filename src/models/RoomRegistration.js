@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         registerDate: DataTypes.DATE,
         approvedDate: DataTypes.DATE,
         endDate: DataTypes.DATE,
+        duration: DataTypes.STRING,
     }, {
         sequelize,
         modelName: 'RoomRegistration',

@@ -6,6 +6,7 @@ const { createBuildingSchema } = require("../../validations/building.validation"
 
 const buildingController = require("../../controllers/building.controller");
 buildingRouter.post("/", authMiddleware, isAdmin, validateRequest(createBuildingSchema), buildingController.createBuilding);
-buildingRouter.delete("/:id",authMiddleware,isAdmin,buildingController.deleteBuilding);
-buildingRouter.get("/", buildingController.getBuilding);
+buildingRouter.delete("/:id", authMiddleware, isAdmin, buildingController.deleteBuilding);
+buildingRouter.get("/get", buildingController.getBuildingByGenderRestriction);
+buildingRouter.get("/", authMiddleware, isAdmin, buildingController.getBuilding);
 module.exports = buildingRouter;

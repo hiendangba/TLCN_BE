@@ -24,7 +24,7 @@ class RegisterAccountRequest {
     this.avatar = data.avatar;
     this.frontIdentificationImage = data.frontIdentificationImage;
     this.roomSlotId = data.roomSlotId
-    this.endDate = data.endDate
+    this.duration = data.duration
   }
 }
 class LoginRequest {
@@ -45,7 +45,7 @@ class RegisterAccountAdminRequest {
     this.phone = data.phone;
     this.email = data.email;
     this.nation = data.nation;
-    this.apostate = data.apostate;
+    this.region = data.region;
     this.address = data.address;
     this.status = StudentStatus.APPROVED_NOT_CHANGED;
     this.avatar = data.avatar;

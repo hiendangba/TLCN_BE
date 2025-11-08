@@ -21,8 +21,8 @@ const authController = {
     if (!req.file) {
       throw UserError.NoImageUpload();
     }
+    
     //Gọi modal AI để nhận diện có khuôn mặt trong ảnh không
-
     const response = new CheckAvatarResponse(req.file);
 
     return res.status(201).json(
