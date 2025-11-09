@@ -17,12 +17,20 @@ const errorMiddleware = require("./middlewares/error.middleware");
     console.error('❌ Database connection failed:', error);
   }
 })();
+
+app.use(cors({
+  origin: ["http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
 // Middleware
 app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
 app.use("/api", routes);
 app.use(errorMiddleware);
+
 
 
 module.exports = app;

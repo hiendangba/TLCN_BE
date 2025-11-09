@@ -24,7 +24,11 @@ class UserError extends AppError {
     static PhoneExists() {
         return new UserError("Số điện thoại đã tồn tại", 409, "PHONE_EXISTS");
     }
-    
+
+    static AdminNotFound() {
+        return new UserError("Không tìm thấy adminId trong token", 404, "ADMIN_NOT_FOUND");
+    }
+
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }

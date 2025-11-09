@@ -10,6 +10,8 @@ const authMiddleware = (req, res, next) => {
         const token = authHeader.split(" ")[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.userId = decoded.id;
+        req.role = decoded.role;
+        req.roleId = decoded.roleId;
         next();
     } catch (err) {
         if (err.name === "TokenExpiredError") {
@@ -22,4 +24,10 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-module.exports = authMiddleware;
+const isAdmin = (req, res, next) => {
+    if (req.role !== "admin")
+        throw AuthError.IsAdmin();
+    next();
+};
+
+module.exports = {authMiddleware, isAdmin};

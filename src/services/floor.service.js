@@ -1,6 +1,6 @@
-const FloorError = require("../errors/FloorError");
 const { Floor, Building } = require("../models");
-
+const FloorError = require("../errors/FloorError");
+const RoomError = require("../errors/RoomError")
 const floorServices = {
     createFloor: async (createFloorRequest) => {
         try {
@@ -49,13 +49,25 @@ const floorServices = {
             const floors = await Floor.findAll({
                 where: { buildingId: getFloorRequest.buildingId },
                 order: [["number", "ASC"]],
-            }); 
+            });
 
             return floors;
         } catch (err) {
             throw err;
         }
     },
-    
+
+    deleteFloor: async (deleteFloorRequest) => {
+        try {
+            const floor = await Floor.findByPk(deleteFloorRequest.id);
+            if (!floor) {
+                throw RoomError.FloorNotFound()
+            }
+            const result = await Floor.destroy({ where: { id: deleteFloorRequest.id } });
+            return result
+        } catch (err) {
+            throw err;
+        }
+    },
 };
 module.exports = floorServices;

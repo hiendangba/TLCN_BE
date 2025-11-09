@@ -11,4 +11,10 @@ class GetFloorRequest {
     }
 }
 
-module.exports = { CreateFloorRequest, GetFloorRequest };
+
+class DeleteFloorRequest {
+    constructor(data) {
+        this.id = data.id;
+    }
+}
+module.exports = { CreateFloorRequest, GetFloorRequest, DeleteFloorRequest };

@@ -6,4 +6,17 @@ class CreateBuildingRequest {
   }
 }
 
-module.exports = {CreateBuildingRequest};
+class DeleteBuildingRequest {
+  constructor(data) {
+    this.id = data.id;
+  }
+}
+
+class GetBuildingRequest {
+  constructor(data) {
+    this.genderRestriction = data.genderRestriction;
+    this.roomTypeId = data.roomTypeId;
+  }
+}
+
+module.exports = { CreateBuildingRequest, GetBuildingRequest, DeleteBuildingRequest };

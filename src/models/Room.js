@@ -20,7 +20,6 @@ module.exports = (sequelize, DataTypes) => {
     roomNumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true
     },
     capicity: {
       type: DataTypes.INTEGER,

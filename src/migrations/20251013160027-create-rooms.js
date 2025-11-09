@@ -12,9 +12,8 @@ module.exports = {
       roomNumber: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true
       },
-      capicity: {
+      capacity: {
         type: Sequelize.INTEGER,
         allowNull: false
       },

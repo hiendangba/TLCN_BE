@@ -11,6 +11,8 @@ module.exports = (sequelize, DataTypes) => {
             Admin.hasMany(models.RoomRegistration, { foreignKey: 'adminId' });
             Admin.hasMany(models.HealthCheck, { foreignKey: 'adminId' });
             Admin.hasMany(models.MeterReading, { foreignKey: 'adminId' });
+            Admin.hasMany(models.NumberPlate, { foreignKey: 'adminId' });
+
         }
     }
 

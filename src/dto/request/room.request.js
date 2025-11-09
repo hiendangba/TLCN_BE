@@ -5,10 +5,21 @@ class CreateRoomTypeRequest {
     }
 }
 
-class GetFloorRequest {
+class CreateRoomRequest {
     constructor(data) {
-        this.buildingId = data.buildingId;
+        this.roomNumber = data.roomNumber;
+        this.capacity = data.capacity;
+        this.monthlyFee = data.monthlyFee;
+        this.floorId = data.floorId;
+        this.roomTypeId = data.roomTypeId;
     }
 }
 
-module.exports = { CreateRoomTypeRequest, GetFloorRequest };
+class GetRoomRequest {
+    constructor(data) {
+        this.buildingId = data.buildingId;
+        this.roomTypeId = data.roomTypeId;
+    }
+}
+
+module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest };

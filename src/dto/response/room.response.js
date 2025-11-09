@@ -5,14 +5,35 @@ class CreateRoomTypeResponse {
     }
 }
 
-class GetRoomResponse {
-    constructor(data){
-        this.floor = data.floor;  // phien ban response
-        this.building = data.building;  // phien ban response
-        this.availableSlots = data.availableSlots;
-        this.roomNumber = data.roomNumber;
-        this.roomType = data.roomType; // phien ban response
+class GetRoomTypeResponse {
+    constructor(data) {
+        this.id = data.id;
+        this.type = data.type;
+        this.amenities = data.amenities;
     }
 }
 
-module.exports = { CreateRoomTypeResponse, GetRoomResponse};
+class CreateRoomResponse {
+    constructor(data) {
+        this.roomNumber = data.roomNumber;
+        this.capacity = data.capacity;
+        this.monthlyFee = data.monthlyFee;
+        this.floorId = data.floorId;
+        this.roomTypeId = data.roomTypeId;
+    }
+}
+
+class GetRoomResponse {
+    constructor(data) {
+        this.id = data.id;
+        this.roomNumber = data.roomNumber;
+        this.capacity = data.capacity;
+        this.monthlyFee = data.monthlyFee;
+        this.floor_number = data.Floor.number;
+        this.roomType_type = data.RoomType.type;
+        this.roomType_amenities = data.RoomType.amenities;
+        this.roomSlots = data.RoomSlots;
+    }
+}
+module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse };
+
