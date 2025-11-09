@@ -15,7 +15,8 @@ const userServices = {
                     where: { id: getUserRequest.roleId }
                 })
             }
-            const data = { ...user.toJSON(), ...student?.toJSON() };
+
+            const data = { ...user.toJSON(), ...student?.toJSON(), role: getUserRequest.role };
             return data;
         } catch (err) {
             throw err;
@@ -29,9 +30,8 @@ const userServices = {
             })
             const hashedPassword = await bcrypt.hash(changePasswordRequest.password, 10);
             await user.update({ password: hashedPassword });
-            if(user.status === StudentStatus.APPROVED_NOT_CHANGED)
-            {
-                await user.update({ status: StudentStatus.APPROVED_CHANGED})
+            if (user.status === StudentStatus.APPROVED_NOT_CHANGED) {
+                await user.update({ status: StudentStatus.APPROVED_CHANGED })
             }
             return { message: "Đổi mật khẩu thành công" };
         } catch (err) {

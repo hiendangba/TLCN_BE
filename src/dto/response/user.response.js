@@ -13,7 +13,8 @@ class GetUserResponse {
         this.avatar = data.avatar;
         this.frontIdentificationImage = data.frontIdentificationImage;
         this.mssv = data.mssv;
-        this.school = data.school
+        this.school = data.school;
+        this.role = data.role;
     }
 }
 module.exports = { GetUserResponse };
