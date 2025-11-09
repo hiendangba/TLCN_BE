@@ -32,7 +32,7 @@ const buildingController = {
 
 
     getBuilding: asyncHandler(async (req, res) => {
-        const response = await buildingServices.getBuilding(getBuildingRequest)
+        const response = await buildingServices.getBuilding()
         const getBuildingResponses = response.map(item => new GetBuildingResponse(item));
         return res.status(200).json(
             new ApiResponse(getBuildingResponses)
