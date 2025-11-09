@@ -4,7 +4,7 @@ class HealthCheckError extends AppError {
     // 🔹 Khi tạo đợt khám mà đã có đợt trùng thời gian trong cùng tòa nhà
     static AlreadyExistsInPeriod() {
         return new HealthCheckError(
-            "Đợt khám đã tồn tại trong khoảng thời gian này.",
+            "Đã có đợt khám đã tồn tại trong khoảng thời gian này.",
             409, // 409 Conflict là mã HTTP chuẩn cho lỗi trùng dữ liệu
             "HEALTH_CHECK_ALREADY_EXISTS_IN_PERIOD"
         );

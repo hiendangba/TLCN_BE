@@ -184,7 +184,7 @@ const healthCheckService = {
                     attributes: ["id", "studentId"], // lấy các bản đăng ký
                 }
             ],
-            order: [["startDate", "ASC"]],
+            order: [["startDate", "DESC"]],
         });
 
         const result = existingHealthChecks.map( hc => {
