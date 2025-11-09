@@ -12,7 +12,14 @@ module.exports = {
       roomNumber: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true
+      },
+      capacity: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+      monthlyFee: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
       },
       floorId: {
         type: Sequelize.UUID,

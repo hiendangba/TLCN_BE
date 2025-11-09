@@ -5,6 +5,11 @@ module.exports = (sequelize, DataTypes) => {
     class RoomType extends Model {
         static associate(models) {
             RoomType.hasMany(models.Room, { foreignKey: 'roomTypeId', });
+            RoomType.belongsToMany(models.Building, {
+                through: 'BuildingRoomTypes',
+                foreignKey: 'roomTypeId',
+                otherKey: 'buildingId'
+            });
         }
     }
 
@@ -21,10 +26,6 @@ module.exports = (sequelize, DataTypes) => {
         amenities: {
             type: DataTypes.JSON,
             allowNull: true,
-        },
-        monthlyFee: {
-            type: DataTypes.DECIMAL,
-            allowNull: false,
         }
     }, {
         sequelize,

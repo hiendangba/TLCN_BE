@@ -17,10 +17,6 @@ module.exports = {
         type: Sequelize.JSON,
         allowNull: true
       },
-      monthlyFee: {
-        type: Sequelize.DECIMAL,
-        allowNull: false
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

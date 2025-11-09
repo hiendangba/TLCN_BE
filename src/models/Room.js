@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Room.belongsTo(models.Floor, { foreignKey: 'floorId' });
       Room.belongsTo(models.RoomType, { foreignKey: 'roomTypeId' });
-      Room.hasMany(models.RoomRegistration, { foreignKey: 'roomId' });
+      Room.hasMany(models.RoomSlot, { foreignKey: 'roomId' });
       Room.hasMany(models.MeterReading, { foreignKey: 'roomId' });
     }
   }
@@ -20,7 +20,14 @@ module.exports = (sequelize, DataTypes) => {
     roomNumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true
+    },
+    capacity: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    monthlyFee: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false
     }
   }, {
     sequelize,

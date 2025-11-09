@@ -9,11 +9,11 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true
       },
-      registrationDate: {
+      registerDate: {
         type: Sequelize.DATE,
         allowNull: true
       },
-      updateDate: {
+      approvedDate: {
         type: Sequelize.DATE,
         allowNull: true
       },
@@ -21,6 +21,7 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: true
       },
+      duration: Sequelize.STRING,
       studentId: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -31,11 +32,11 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      roomId: {
+      roomSlotId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Rooms',
+          model: 'RoomSlots',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -62,6 +63,17 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
     });
+
+    await queryInterface.sequelize.query(`
+      CREATE TRIGGER room_reg_before_update
+      BEFORE UPDATE ON RoomRegistrations
+      FOR EACH ROW
+      BEGIN
+        IF NEW.approvedDate IS NOT NULL THEN
+          SET NEW.endDate = DATE_ADD(NEW.approvedDate, INTERVAL CAST(NEW.duration AS UNSIGNED) MONTH);
+        END IF;
+      END;
+    `);
   },
 
   async down(queryInterface, Sequelize) {

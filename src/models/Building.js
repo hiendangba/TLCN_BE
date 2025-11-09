@@ -4,7 +4,11 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Building extends Model {
     static associate(models) {
-      // Một toà nhà có nhiều tầng
+      Building.belongsToMany(models.RoomType, {
+        through: 'BuildingRoomTypes', 
+        foreignKey: 'buildingId',
+        otherKey: 'roomTypeId'
+      }); 
       Building.hasMany(models.Floor, { foreignKey: 'buildingId' });
     }
   }
@@ -21,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     genderRestriction: {
       type: DataTypes.STRING,
-      allowNull: true // ví dụ: chỉ nam, chỉ nữ, hoặc null nếu không giới hạn
+      allowNull: false // ví dụ: chỉ nam, chỉ nữ, hoặc null nếu không giới hạn
     }
   }, {
     sequelize,
