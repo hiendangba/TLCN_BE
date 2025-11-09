@@ -7,7 +7,17 @@ const sequelize = new Sequelize(
   config.password,
   {
     host: config.host,
-    dialect: config.dialect
+    port: config.port,
+
+    dialect: config.dialect,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      },
+      connectTimeout: 30000 // 30 giây
+    },
+    logging: false
   }
 );
 
