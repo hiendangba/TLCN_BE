@@ -16,7 +16,7 @@ class RegisterAccountRequest {
     this.phone = data.phone;
     this.email = data.email;
     this.nation = data.nation;
-    this.apostate = data.apostate;
+    this.region = data.region;
     this.address = data.address;
     this.status = StudentStatus.REGISTERED;
     this.mssv = data.mssv;
