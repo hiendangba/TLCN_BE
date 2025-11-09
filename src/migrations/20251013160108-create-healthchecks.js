@@ -17,10 +17,6 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true
       },
-      location: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       startDate: {
         type: Sequelize.DATE,
         allowNull: false
@@ -29,11 +25,44 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false
       },
+      capacity: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 100,
+      },
+      price: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00
+      },
+      registrationStartDate: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      registrationEndDate: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      status: {
+        type: Sequelize.ENUM('active', 'inactive'),
+        allowNull: false,
+        defaultValue: 'active'
+      },
       adminId: {
         type: Sequelize.UUID,
         allowNull: true, // để onDelete: SET NULL
         references: {
           model: 'Admins',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      buildingId: {
+        type: Sequelize.UUID,
+        allowNull: true, // để onDelete: SET NULL
+        references: {
+          model: 'Buildings',
           key: 'id'
         },
         onUpdate: 'CASCADE',

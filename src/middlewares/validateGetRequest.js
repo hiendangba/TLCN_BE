@@ -1,8 +1,6 @@
-const AppError = require("../errors/AppError");
-
-const validateRequest = (schema) => {
+const validateRequestget = (schema) => {
     return (req, res, next) => {
-        const { error } = schema.validate(req.body, { abortEarly: false });
+        const { error } = schema.validate(req.query, { abortEarly: false });
         if (error) {
             const messages = error.details.map(d => d.message.replace(/"/g, '').trim());
             console.log(messages);
@@ -12,4 +10,4 @@ const validateRequest = (schema) => {
     };
 };
 
-module.exports =  validateRequest;
+module.exports = validateRequestget;

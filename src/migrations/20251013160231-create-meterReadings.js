@@ -29,6 +29,10 @@ module.exports = {
         type: Sequelize.DECIMAL(15, 0), // tương tự unitPrice
         allowNull: false
       },
+      period: {
+        type: Sequelize.CHAR(7), // format: "YYYY-MM"
+        allowNull: false,
+      },
       readingDate: {
         type: Sequelize.DATE,
         allowNull: false
@@ -38,6 +42,16 @@ module.exports = {
         allowNull: false,
         references: {
           model: 'Rooms',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      adminId: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        references: {
+          model: 'Admins',
           key: 'id'
         },
         onUpdate: 'CASCADE',

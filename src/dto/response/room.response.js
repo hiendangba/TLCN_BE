@@ -36,3 +36,4 @@ class GetRoomResponse {
     }
 }
 module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse };
+
