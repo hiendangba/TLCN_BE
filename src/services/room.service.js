@@ -69,7 +69,7 @@ const roomServices = {
                     },
                     {
                         model: RoomSlot,
-                        attributes: ["id",'slotNumber', 'isOccupied']
+                        attributes: ["id", 'slotNumber', 'isOccupied']
                     }
                 ],
                 where: {
@@ -85,7 +85,7 @@ const roomServices = {
             const availableRooms = rooms.filter(room =>
                 room.RoomSlots.some(slot => !slot.isOccupied)
             );
-            
+
             return availableRooms;
         } catch (err) {
             throw err;

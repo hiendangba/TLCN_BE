@@ -28,7 +28,6 @@ const errorMiddleware = (err, req, res, next) => {
             errorCode: err.code,
         });
     }
-
     // Trường hợp lỗi không xác định
     return res.status(500).json({
         success: false,

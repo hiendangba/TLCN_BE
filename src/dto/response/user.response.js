@@ -7,7 +7,7 @@ class GetUserResponse {
         this.phone = data.phone;
         this.email = data.email;
         this.nation = data.nation;
-        this.apostate = data.apostate;
+        this.region = data.region;
         this.address = data.address;
         this.status = data.status;
         this.avatar = data.avatar;
