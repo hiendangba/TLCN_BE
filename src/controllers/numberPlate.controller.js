@@ -16,6 +16,14 @@ const numberPlateController = {
             new ApiResponse(createNumberPlateResponse)
         );
     }),
+
+    getNumberPlate: asyncHandler(async (req, res) => {
+        const response = await numberPlateServices.createNumberPlate(createNumberPlateRequest, req.file.filename)
+        const createNumberPlateResponse = new CreateNumberPlateResponse(response)
+        return res.status(200).json(
+            new ApiResponse(createNumberPlateResponse)
+        );
+    }),
 };
 
 module.exports = numberPlateController;

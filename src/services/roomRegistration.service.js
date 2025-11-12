@@ -3,7 +3,7 @@ const RoomError = require("../errors/RoomError");
 const UserError = require("../errors/UserError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError");
 const { StudentStatus } = require("../dto/request/auth.request")
-
+const sendMail = require("../utils/mailer")
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
         try {
@@ -77,7 +77,7 @@ const roomRegistrationServices = {
             });
 
             if (!roomRegistration) {
-                throw RoomRegistrationError.IdNotFount();
+                throw RoomRegistrationError.IdNotFound();
             }
 
             if (roomRegistration.adminId && roomRegistration.approvedDate) {
@@ -92,18 +92,39 @@ const roomRegistrationServices = {
             if (!roomSlot) {
                 throw new RoomRegistrationError.RoomSlotNotFound();
             }
+            await roomSlot.update({
+                isOccupied: true
+            });
+
+            const room = await Room.findOne({
+                where: { id: roomSlot.roomId }
+            })
 
             await roomRegistration.update({
                 approvedDate: new Date(),
                 adminId: admin.id,
             });
-            await roomSlot.update({ isOccupied: true });
             await roomRegistration.reload();
 
-            await User.update(
+            const user = await User.findOne({
+                where: { id: roomRegistration.Student.userId },
+            });
+
+            await user.update(
                 { status: StudentStatus.APPROVED_NOT_CHANGED },
-                { where: { id: roomRegistration.Student.userId } }
-            ); 
+            )
+
+            await sendMail({
+                to: user.email,
+                subject: "Đơn đăng ký vào phòng của bạn đã được duyệt!!",
+                html: `
+                    <h3>Xin chào ${user.name}</h3>
+                    <p>Đơn đăng ký vào phòng ${room.roomNumber} vị trí giường số ${roomSlot.slotNumber} của bạn đã được duyệt</p>
+                    <p>Bây giờ bạn có thể đăng nhập tên tài khoản là số căn cước công dân và mật khẩu của bạn là "123456".</p>
+                    <p>Vui lòng đăng nhập và đổi mật khẩu. RoomLink xin cảm ơn!!</p>
+                `,
+            });
+
             return roomRegistration;
         } catch (err) {
             throw err;

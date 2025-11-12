@@ -7,7 +7,7 @@ const validateRequest = require("../../middlewares/validateRequest");
 const { createNumberPlateSchema } = require("../../validations/numberPlate.validation")
 const numberPlateController = require("../../controllers/numberPlate.controller");
 numberPlateRouter.post("/", authMiddleware, uploadNumberPlate.single("numberPlate"), validateRequest(createNumberPlateSchema), numberPlateController.createNumberPlate);
-// numberPlateRouter.get("/", floorController.getFloor);
+numberPlateRouter.get("/", numberPlateController.getNumberPlate);
 // numberPlateRouter.patch("/", authMiddleware, isAdmin, floorController.deleteFloor);
 // numberPlateRouter.delete("/:id", authMiddleware, isAdmin, floorController.deleteFloor);
 module.exports = numberPlateRouter;
