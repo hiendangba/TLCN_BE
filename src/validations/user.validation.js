@@ -61,10 +61,35 @@ const userRegisterSchema = Joi.object({
     address: Joi.string().required().messages({
         "string.empty": "Địa chỉ không được để trống",
     }),
-    mssv: Joi.string().required(),
-    school: Joi.string().required(),
-    frontIdentificationImage: Joi.string().required(),
-    avatar: Joi.string().required(),
+    mssv: Joi.string()
+        .required()
+        .messages({
+            "string.empty": "MSSV không được để trống.",
+            "any.required": "Vui lòng nhập MSSV.",
+        }),
+
+    school: Joi.string()
+        .required()
+        .messages({
+            "string.empty": "Tên trường không được để trống.",
+            "any.required": "Vui lòng nhập tên trường.",
+        }),
+
+    frontIdentificationImage: Joi.string()
+        .required()
+        .messages({
+            "string.base": "Ảnh căn cước (mặt trước) phải là chuỗi URL.",
+            "string.empty": "Ảnh căn cước mặt trước không được để trống.",
+            "any.required": "Vui lòng tải lên ảnh căn cước mặt trước.",
+        }),
+
+    avatar: Joi.string()
+        .required()
+        .messages({
+            "string.base": "Ảnh đại diện phải là chuỗi URL.",
+            "string.empty": "Ảnh đại diện không được để trống.",
+            "any.required": "Vui lòng tải lên ảnh đại diện.",
+        }),
 
     roomSlotId: Joi.string()
         .uuid()
@@ -148,18 +173,37 @@ const userLoginSchema = Joi.object({
             "string.empty": "CCCD không được để trống",
             "string.length": "CCCD phải đủ 12 số",
         }),
-    password: Joi.string().min(6).required()
+    password: Joi.string()
+        .min(6)
+        .required()
+        .messages({
+            "string.empty": "Mật khẩu không được để trống.",
+            "string.min": "Mật khẩu phải có ít nhất 6 ký tự.",
+            "any.required": "Vui lòng nhập mật khẩu.",
+        })
 });
 const userChangePasswordSchema = Joi.object({
-    password: Joi.string().min(6).required(),
+    password: Joi.string()
+        .min(6)
+        .required()
+        .messages({
+            "string.empty": "Mật khẩu không được để trống.",
+            "string.min": "Mật khẩu phải có ít nhất 6 ký tự.",
+            "any.required": "Vui lòng nhập mật khẩu mới.",
+        }),
+
     confirmPassword: Joi.string()
         .min(6)
         .required()
         .valid(Joi.ref("password"))
         .messages({
-            "any.only": "Mật khẩu xác nhận không khớp",
+            "string.empty": "Mật khẩu xác nhận không được để trống.",
+            "string.min": "Mật khẩu xác nhận phải có ít nhất 6 ký tự.",
+            "any.required": "Vui lòng nhập mật khẩu xác nhận.",
+            "any.only": "Mật khẩu xác nhận không khớp.",
         }),
 });
+
 module.exports = {
     userRegisterSchema,
     userLoginSchema,

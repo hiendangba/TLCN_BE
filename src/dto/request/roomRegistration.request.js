@@ -1,3 +1,12 @@
+class GetRoomRegistrationRequest {
+    constructor(data) {
+        this.page = parseInt(data.page)
+        this.limit = parseInt(data.limit)
+        this.keyword = data.keyword ? data.keyword.trim() : ""
+        this.status = data.status
+    }
+}
+
 class CreateRoomRegistrationRequest {
     constructor(data, studentId) {
         this.roomSlotId = data.roomSlotId
@@ -8,8 +17,15 @@ class CreateRoomRegistrationRequest {
 }
 class ApprovedRoomRegistrationRequest {
     constructor(data, adminId) {
-        this.id = data.id
+        this.ids = data.ids
         this.adminId = adminId
     }
 }
-module.exports = { CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest };
+
+
+class RejectRoomRegistrationRequest {
+    constructor(data) {
+        this.ids = data.ids
+    }
+}
+module.exports = { CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest, RejectRoomRegistrationRequest };

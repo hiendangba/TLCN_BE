@@ -110,46 +110,120 @@ module.exports = {
     await queryInterface.bulkInsert('RoomSlots', roomSlots);
 
 
+    const passwordHash = await bcrypt.hash('123456', 10);
 
-    const passwordHash = await bcrypt.hash('123456', 10); // bạn có thể đổi mật khẩu mặc định
-    const userId = uuidv4();
+    // ==================== USERS ====================
+    const users = [
+      {
+        id: uuidv4(),
+        name: 'Trần Đăng Ninh',
+        identification: '060203015004',
+        gender: 'male',
+        email: 'trandangninh@gmail.com',
+        phone: '0915726782',
+        dob: new Date('2004-06-30'),
+        nation: 'Việt Nam',
+        region: 'Không',
+        address: 'Phường Bình Thuận, Tỉnh Lâm Đồng',
+        password: passwordHash,
+        status: 'APPROVED_NOT_CHANGED',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
 
+    // 20 sinh viên mẫu
+    const studentNames = [
+      'Nguyễn Thị Thu Hà', 'Lê Văn Long', 'Phạm Thị Kim Ngân', 'Vũ Quốc Huy', 'Trần Anh Dũng',
+      'Ngô Minh Hào', 'Bùi Ngọc Trâm', 'Phạm Văn Hoàng', 'Nguyễn Tấn Phát', 'Trương Mỹ Duyên',
+      'Lâm Quốc Bảo', 'Lê Hoàng Anh', 'Nguyễn Đức Minh', 'Phan Thị Ngọc Bích', 'Võ Thành Nhân',
+      'Đặng Quang Huy', 'Trịnh Hồng Nhung', 'Nguyễn Quốc Khánh', 'Phạm Văn Tuấn', 'Lưu Thị Lan'
+    ];
+
+    studentNames.forEach((name, index) => {
+      users.push({
+        id: uuidv4(),
+        name,
+        identification: `079203015${(100 + index).toString().padStart(3, '0')}`,
+        gender: index % 2 === 0 ? 'female' : 'male',
+        email: `student${index + 1}@student.hcmute.edu.vn`,
+        phone: `090${(1000000 + index).toString().slice(0, 7)}`,
+        dob: new Date(`200${3 + (index % 5)}-${(index % 12) + 1}-15`),
+        nation: 'Việt Nam',
+        region: 'Không',
+        address: `Khu phố ${index + 1}, TP. Thủ Đức, TP.HCM`,
+        password: passwordHash,
+        status: 'REGISTERED',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    });
+
+    // 🧩 Thêm toàn bộ user
     try {
-      await queryInterface.bulkInsert('Users', [
-        {
-          id: userId,
-          name: 'Trần Đăng Ninh',
-          identification: '060203015004',
-          gender: 'male',
-          email: 'trandangninh@gmail.com',
-          phone: '0915726782',
-          dob: new Date('2004-06-30'),
-          nation: 'Viet Nam',
-          region: 'Không',
-          address: 'Phường Bình Thuận, Tỉnh Lâm Đồng',
-          password: passwordHash,
-          status: 'APPROVED_NOT_CHANGED',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ]);
+      await queryInterface.bulkInsert('Users', users);
+      console.log('✅ Users inserted successfully');
     } catch (error) {
-      console.error('Error inserting Users:', error);
+      console.error('❌ Error inserting Users:', error);
     }
 
+    // 👑 Admin: chỉ người đầu tiên
     try {
-      await queryInterface.bulkInsert('Admins', [
-        {
-          id: uuidv4(),
-          userId: userId,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ]);
+      const admin = {
+        id: uuidv4(),
+        userId: users[0].id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await queryInterface.bulkInsert('Admins', [admin]);
+      console.log('✅ Admin inserted successfully');
     } catch (error) {
-      console.error('Error inserting Admins:', error);
+      console.error('❌ Error inserting Admin:', error);
+    }
+
+    // 🎓 Students: còn lại từ users[1]
+    try {
+      const students = users.slice(1).map((user, index) => ({
+        id: uuidv4(),
+        userId: user.id,
+        mssv: `22110${320 + index}`,
+        school: 'Đại học Sư phạm Kỹ thuật TP.HCM',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+      await queryInterface.bulkInsert('Students', students);
+      console.log('✅ Students inserted successfully');
+    } catch (error) {
+      console.error('❌ Error inserting Students:', error);
+    }
+
+
+    try {
+      // Lấy lại tất cả roomSlots sau khi đã insert
+      const [slots] = await queryInterface.sequelize.query(`SELECT id FROM "RoomSlots" ORDER BY "createdAt" ASC`);
+      const [studentsList] = await queryInterface.sequelize.query(`SELECT id FROM "Students" ORDER BY "createdAt" ASC`);
+
+      // Gán lần lượt từng student vào 1 slot (nếu slot đủ)
+      const roomRegistrations = studentsList.map((student, index) => ({
+        id: uuidv4(),
+        studentId: student.id,
+        roomSlotId: slots[index % slots.length].id, // chia đều theo slot
+        registerDate: new Date(),
+        approvedDate: null,
+        endDate: null,
+        duration: '6',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+      await queryInterface.bulkInsert('RoomRegistrations', roomRegistrations);
+      console.log('✅ RoomRegistrations inserted successfully');
+    } catch (error) {
+      console.error('❌ Error inserting RoomRegistrations:', error);
     }
   },
+
 
   async down(queryInterface, Sequelize) {
     await queryInterface.bulkDelete('Rooms', null, {});
@@ -158,7 +232,9 @@ module.exports = {
     await queryInterface.bulkDelete('Buildings', null, {});
     await queryInterface.bulkDelete('RoomTypes', null, {});
     await queryInterface.bulkDelete('RoomSlots', null, {});
+    await queryInterface.bulkDelete('Students');
     await queryInterface.bulkDelete('Admins');
     await queryInterface.bulkDelete('Users');
+    await queryInterface.bulkDelete('RoomRegistrations')
   }
 };
