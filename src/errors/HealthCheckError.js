@@ -16,7 +16,7 @@ class HealthCheckError extends AppError {
             409, // 409 Conflict — trùng hoặc vượt giới hạn
             "HEALTH_CHECK_REGISTRATION_LIMIT_REACHED"
         );
-    }
+    } 
 
     static RegistrationDueReached() {
         return new HealthCheckError(
@@ -41,6 +41,24 @@ class HealthCheckError extends AppError {
             "HEALTH_CHECK_ALREADY_REGISTERED"
         );
     }
+
+    static InvalidRegisterDate() {
+        return new HealthCheckError(
+            "Ngày khám đã chọn nằm ngoài thời gian đợt khám",
+            400, // 400 Bad Request — dữ liệu không hợp lệ
+            "INVALID_REGISTER_DATE"
+        );
+    }
+
+    static InvalidTimeSlot() {
+        return new HealthCheckError(
+            "Timeslot không hợp lệ",
+            400, // 400 Bad Request — dữ liệu không hợp lệ
+            "InvalidTimeSlot"
+        );
+    }
+
+
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }

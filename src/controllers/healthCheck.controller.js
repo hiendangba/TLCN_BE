@@ -5,6 +5,10 @@ const { HealthCheckResponse, RegisterHealthCheckReponse  } = require("../dto/res
 const healthCheckService = require("../services/healthCheck.service");
 
 const healthCheckController = {
+    getRegisterHealthCheck: asyncHandler(async (req, res) => {
+
+    }),
+
     createHealthCheck: asyncHandler(async (req, res) => {
         const userId = req.userId;
         const createHealthCheckRequest = new CreateHealthCheckRequest(req.body);
@@ -26,7 +30,8 @@ const healthCheckController = {
 
     registerHealthCheck: asyncHandler(async (req, res) => {
         const registerHealthCheckRequest =  new RegisterHealthCheck(req.body);
-        const response = await healthCheckService.registerHealthCheck(registerHealthCheckRequest);
+        const userid = req.userId; 
+        const response = await healthCheckService.registerHealthCheck(registerHealthCheckRequest, userid);
         const registerHealthCheckResponse = new RegisterHealthCheckReponse(response);
         return res.status(200).json(
             new ApiResponse(registerHealthCheckResponse)

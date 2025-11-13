@@ -10,6 +10,7 @@ class HealthCheckResponse {
         this.capacity = data.capacity;
         this.registeredCount = data.registeredCount;
         this.buildingName = data.buildingName;
+        this.buildingId = data.buildingId;
         this.price = data.price;
         this.registrationStartDate = data.registrationStartDate;
         this.registrationEndDate = data.registrationEndDate;

@@ -1,3 +1,5 @@
+const AppError = require("../errors/AppError"); 
+
 const validateRequestget = (schema) => {
     return (req, res, next) => {
         const { error } = schema.validate(req.query, { abortEarly: false });

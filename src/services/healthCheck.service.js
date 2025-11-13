@@ -12,20 +12,64 @@ const UserError = require("../errors/UserError");
 const {
     Op,
 } = require("sequelize");
-const e = require("express");
+
 
 
 
 const formatDate = (date) => {
-  const iso = date.toISOString();
-  return iso.replace('T', ' ').slice(0, 19);
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2,"0");
+    const month = String(d.getMonth() + 1).padStart(2,"0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2,"0");
+    const minutes = String(d.getMinutes()).padStart(2,"0");
+    const seconds = String(d.getSeconds()).padStart(2, "0"); 
+
+    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
 const formatDateRange = (start, end) => `${formatDate(start)} - ${formatDate(end)}`;
+const checkTimeConstraint = (registerDate, existingHealthCheck) => {
+    // Kiem tra gio co hop le hay hong
+    const today = new Date();
+    const date = new Date(registerDate);
+    const start = new Date(existingHealthCheck.startDate);
+    const end = new Date(existingHealthCheck.endDate);
+    const registerStartDate = new Date(existingHealthCheck.registrationStartDate);
+    const registerEndDate = new Date(existingHealthCheck.registrationEndDate);
+
+    // Kiem tra xem con thoi han dang ky hong
+    if (today.getTime() < registerStartDate.getTime() || today.getTime() > registerEndDate.getTime()){
+        throw HealthCheckError.RegistrationDueReached();
+    }
+
+    // Kiem tra thoi gian dang ky kham co nam trong khoang thoi gian kham hay khong
+    if (date.getTime() < start.getTime() || date.getTime() > end.getTime()) {
+        throw HealthCheckError.InvalidRegisterDate();
+    }
+
+    // Kiem tra cái này thì phải đổi sang giờ local để mà so sánh nà
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const validHour = hours >= 8 && hours <= 17;
+    const validMinute = minutes % 10 === 0;
+    if (!validHour || !validMinute){
+        throw HealthCheckError.InvalidTimeSlot();
+    }   
+
+    // Kiem tra Timeslot da co nguoi dang ky chua 
+    const listRegisterDateOfHC = existingHealthCheck.RegisterHealthChecks || [];
+    const isTimeSlotExist = listRegisterDateOfHC.some(
+        item => new Date(item.registerDate).getTime() === date.getTime()
+    );
+    if (isTimeSlotExist){
+        throw HealthCheckError.InvalidTimeSlot();
+    }
+}
 
 const healthCheckService = {
 
-    deleteHealthCheck: async ( id, userId ) => {
-        try{
+    deleteHealthCheck: async (id, userId) => {
+        try {
             const admin = await Admin.findOne({
                 where: {
                     userId
@@ -34,81 +78,83 @@ const healthCheckService = {
             if (!admin) throw UserError.InvalidUser();
 
             let healthCheck = await HealthCheck.findByPk(id);
-            if (!healthCheck){
+            if (!healthCheck) {
                 throw HealthCheckError.NotFound();
             }
 
             await healthCheck.update({
-                status : "inactive",
+                status: "inactive",
                 updatedAt: new Date()
             })
 
             return "Xóa đợt khám thành công";
-        }
-        catch (err){
+        } catch (err) {
             throw err;
         }
-        
+
     },
 
-    registerHealthCheck: async ( registerHealthCheckRequest ) => {
+    registerHealthCheck: async (registerHealthCheckRequest, userId) => {
         try {
-            const { studentId, healthCheckId } = registerHealthCheckRequest;
+            const {
+                healthCheckId,
+                registerDate
+            } = registerHealthCheckRequest;
+
             // kiem tra user co ton tai hong
-            const student = await Student.findByPk(studentId, {
-                include: [
-                    {
-                        model: User,          // bảng liên quan
-                        attributes: ['name'], // chỉ lấy field name
-                    }
-                ]
+            const student = await Student.findOne({
+                where: {
+                    userId: userId,
+                },
+                include: [{
+                    model: User, // bảng liên quan
+                    attributes: ['id','name'], // chỉ lấy field name
+                }]
             });
 
-            if (!student){
+            if (!student) {
                 throw UserError.InvalidUser();
             }
-            // kiem tra dot kham co ton tai khong va con slot khong 
-            const existingHealthCheck =  await HealthCheck.findByPk(healthCheckId, {
-                include: [
-                    { 
+
+            const existingHealthCheck = await HealthCheck.findByPk(healthCheckId, {
+                include: [{
                         model: RegisterHealthCheck,
                         as: "RegisterHealthChecks",
-                        attributes: ["id", "studentId"], // lấy các bản đăng ký
+                        attributes: ["id", "studentId", "registerDate"], // lấy các bản đăng ký
                     },
-                    { 
+                    {
                         model: Building,
                         as: "Building",
                         attributes: ["name"], // lấy building
                     }
                 ]
             })
-            // Kiểm tra tồn tại
-            if (!existingHealthCheck){
+
+            if (!existingHealthCheck) {
                 throw HealthCheckError.NotFound()
             }
-            // Kiểm tra còn thời hạn hay không
-            if (existingHealthCheck.registrationStartDate && existingHealthCheck.registrationEndDate ){
-                const now = new Date();
-                const start  = new Date(existingHealthCheck.registrationStartDate);
-                const end  = new Date(existingHealthCheck.registrationEndDate);
-                if (now.getTime() < start.getTime() || now.getTime() > end.getTime()) {
-                    throw HealthCheckError.RegistrationDueReached();
-                }
-            }
-            if (existingHealthCheck.RegisterHealthChecks.length >= existingHealthCheck.capacity){
+            
+            // Kiem tra dot kham con slot dang ky khong
+            if (existingHealthCheck.RegisterHealthChecks.length >= existingHealthCheck.capacity) {
                 throw HealthCheckError.RegistrationLimitReached()
             }
 
-            
-            // kiem tra user nay da dang ki dot kham chua
-            const isRegistered = existingHealthCheck.RegisterHealthChecks.some( item => item.studentId === studentId);
+            // Kiem tra ca rang buoc ve mat thoi gian
+            checkTimeConstraint(registerDate, existingHealthCheck);
 
-            if (isRegistered){
+
+            // kiem tra user nay da dang ki dot kham chua
+            const isRegistered = existingHealthCheck.RegisterHealthChecks.some(item => item.studentId === student.id);
+
+            if (isRegistered) {
                 throw HealthCheckError.AlreadyRegistered();
             }
 
             // them no vao db thoi
-            const registered = await RegisterHealthCheck.create(registerHealthCheckRequest);
+            const registered = await RegisterHealthCheck.create({
+                ...registerHealthCheckRequest,
+                studentId: student.id
+            });
 
             // chuyen no thanh DTO
             const result = {
@@ -124,20 +170,22 @@ const healthCheckService = {
                 note: registered.note
             };
             return result;
-        }
-        catch (err){
+
+        } catch (err) {
             throw err;
         }
     },
 
     getHealthCheck: async (getHealthCheckRequest) => {
-        const { startDate, endDate } = getHealthCheckRequest;
+        const {
+            startDate,
+            endDate
+        } = getHealthCheckRequest;
         let whereClause = {};
         if (startDate && endDate) {
             // Nếu có cả 2 — lọc các đợt khám trùng / nằm trong khoảng
             whereClause = {
-                [Op.or]: [
-                    {
+                [Op.or]: [{
                         startDate: {
                             [Op.between]: [startDate, endDate],
                         },
@@ -148,9 +196,16 @@ const healthCheckService = {
                         },
                     },
                     {
-                        [Op.and]: [
-                            { startDate: { [Op.lte]: startDate } },
-                            { endDate: { [Op.gte]: endDate } },
+                        [Op.and]: [{
+                                startDate: {
+                                    [Op.lte]: startDate
+                                }
+                            },
+                            {
+                                endDate: {
+                                    [Op.gte]: endDate
+                                }
+                            },
                         ],
                     },
                 ],
@@ -159,36 +214,47 @@ const healthCheckService = {
         } else if (startDate) {
             // Chỉ có startDate → lấy đợt khám còn sau này này là được 
             whereClause = {
-                endDate: { [Op.gte]: startDate },
+                endDate: {
+                    [Op.gte]: startDate
+                },
                 status: "active"
             };
         } else if (endDate) {
             // Chỉ có endDate → lấy đợt khám kết thúc trước hoặc bằng ngày đó
             whereClause = {
-                startDate: { [Op.lte]: endDate },
+                startDate: {
+                    [Op.lte]: endDate
+                },
                 status: "active"
             };
-        } 
+        } else {
+            whereClause = {
+                status: "active"
+            }
+        }
 
+        console.log('WHERE CLAUSE:', JSON.stringify(whereClause, null, 2));
         const existingHealthChecks = await HealthCheck.findAll({
             where: whereClause,
-            include: [
-                {
+            include: [{
                     model: Building,
                     as: "Building",
-                    attributes: ["name"],
+                    attributes: ["id", "name"],
                 },
-                { 
+                {
                     model: RegisterHealthCheck,
                     as: "RegisterHealthChecks",
                     attributes: ["id", "studentId"], // lấy các bản đăng ký
                 }
             ],
-            order: [["startDate", "DESC"]],
+            order: [
+                ["startDate", "DESC"]
+            ],
         });
 
-        const result = existingHealthChecks.map( hc => {
-            return{
+        const result = existingHealthChecks.map(hc => {
+            return {
+                id: hc.id,
                 title: hc.title,
                 description: hc.description,
                 location: hc.location,
@@ -197,6 +263,7 @@ const healthCheckService = {
                 capacity: hc.capacity,
                 price: hc.price,
                 buildingName: hc.Building?.name || null,
+                buildingId: hc.Building?.id || null,
                 registeredCount: (hc.RegisterHealthChecks || []).length,
                 registrationStartDate: formatDate(hc.registrationStartDate),
                 registrationEndDate: formatDate(hc.registrationEndDate),
@@ -204,7 +271,7 @@ const healthCheckService = {
             }
         });
         return result;
-    }, 
+    },
 
     createHealthCheck: async (createHealthCheckRequest, userId) => {
         try {
@@ -254,7 +321,8 @@ const healthCheckService = {
                             } // và kết thúc sau (bao trùm đợt mới)
                         ]
                     }
-                ]
+                ],
+                status: "active",
             };
 
             if (healthCheckId) {
@@ -274,18 +342,18 @@ const healthCheckService = {
 
             let entered;
 
-            if (healthCheckId){
+            if (healthCheckId) {
                 let healthCheck = await HealthCheck.findByPk(healthCheckId);
-                if (!healthCheck){
+                if (!healthCheck) {
                     throw HealthCheckError.NotFound();
                 }
                 entered = await healthCheck.update({
                     ...createHealthCheckRequest,
                     adminId: admin.id
-                },
-                { returning: true })
-            }
-            else{
+                }, {
+                    returning: true
+                })
+            } else {
                 entered = await HealthCheck.create({
                     ...createHealthCheckRequest,
                     adminId: admin.id
@@ -306,9 +374,9 @@ const healthCheckService = {
                 registrationEndDate: formatDate(entered.registrationEndDate),
                 status: entered.status
             }
-            
+
             return response;
-            
+
         } catch (err) {
             throw err;
         }

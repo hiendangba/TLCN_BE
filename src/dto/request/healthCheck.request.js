@@ -23,7 +23,6 @@ class GetHealthCheck {
 
 class RegisterHealthCheck {
     constructor(data) {
-        this.studentId = data.studentId;
         this.healthCheckId = data.healthCheckId;
         this.registerDate = data.registerDate;
         this.note = data.note;

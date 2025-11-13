@@ -164,16 +164,6 @@ const getHealthCheck = Joi.object({
 
 
 const registerHealthCheck = Joi.object({
-    studentId: Joi.string()
-        .uuid({
-            version: ['uuidv4', 'uuidv1']
-        })
-        .required()
-        .messages({
-            "string.guid": "studentId phải là UUID hợp lệ",
-            "any.required": "Không được bỏ trống studentId",
-        }),
-
     healthCheckId: Joi.string()
         .uuid({
             version: ['uuidv4', 'uuidv1']
