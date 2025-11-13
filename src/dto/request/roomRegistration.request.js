@@ -21,4 +21,11 @@ class ApprovedRoomRegistrationRequest {
         this.adminId = adminId
     }
 }
-module.exports = { CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest };
+
+
+class RejectRoomRegistrationRequest {
+    constructor(data) {
+        this.ids = data.ids
+    }
+}
+module.exports = { CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest, RejectRoomRegistrationRequest };

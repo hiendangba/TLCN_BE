@@ -101,13 +101,12 @@ const roomRegistrationServices = {
     approveRoomRegistration: async (approvedRoomRegistrationRequest) => {
         const transaction = await sequelize.transaction();
         try {
-            const { ids, adminId } = approvedRoomRegistrationRequest;
 
-            const admin = await Admin.findOne({ where: { id: adminId } });
+            const admin = await Admin.findOne({ where: { id: approvedRoomRegistrationRequest.adminId } });
             if (!admin) throw UserError.AdminNotFound();
 
             const roomRegistrations = await RoomRegistration.findAll({
-                where: { id: ids },
+                where: { id: approvedRoomRegistrationRequest.ids },
                 include: [
                     {
                         model: Student,
@@ -146,7 +145,7 @@ const roomRegistrationServices = {
                             registrationId: registration.id,
                             roomNumber: roomSlot.Room.roomNumber,
                             slotNumber: roomSlot.slotNumber,
-                            reason: "Giường đã có người ở",
+                            reason: RoomRegistrationError.RoomSlotNotFound(),
                         });
                         continue;
                     }
@@ -204,7 +203,98 @@ const roomRegistrationServices = {
             if (!transaction.finished) await transaction.rollback();
             throw err;
         }
-    }
+    },
+
+    rejectRoomRegistration: async (rejectRoomRegistrationRequest) => {
+        const transaction = await sequelize.transaction();
+        try {
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: { id: rejectRoomRegistrationRequest.ids },
+                include: [
+                    {
+                        model: Student,
+                        as: "Student",
+                        attributes: ["id", "userId"],
+                        include: [{ model: User, attributes: ["id", "name", "email"] }],
+                    },
+                    {
+                        model: RoomSlot,
+                        include: [{ model: Room, attributes: ["roomNumber"] }],
+                    },
+                ],
+                transaction,
+            });
+
+            if (roomRegistrations.length === 0) {
+                throw RoomRegistrationError.IdNotFound();
+            }
+
+            const deletedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const registration of roomRegistrations) {
+                try {
+                    const student = registration.Student;
+                    const user = student?.User;
+                    const roomSlot = registration.RoomSlot;
+
+                    await RoomRegistration.destroy({
+                        where: { id: registration.id },
+                        transaction,
+                    });
+
+                    if (student) {
+                        await Student.destroy({
+                            where: { id: student.id },
+                            transaction,
+                        });
+                    }
+
+                    if (user?.email) {
+                        emailTasks.push(
+                            sendMail({
+                                to: user.email,
+                                subject: "Thông báo: Đơn đăng ký ký túc xá bị từ chối",
+                                html: `
+                                <h3>Xin chào ${user.name}</h3>
+                                <p>Rất tiếc, đơn đăng ký vào ký túc xá của bạn đã bị <strong>từ chối</strong>.</p>
+                                <p>Phòng: ${roomSlot.Room.roomNumber} - Giường: ${roomSlot.slotNumber}</p>
+                                <p>Nếu bạn muốn, bạn có thể đăng ký lại sau khi điều chỉnh thông tin.</p>
+                                <p>RoomLink cảm ơn bạn.</p>                            
+                                `,
+                            })
+                        );
+                    }
+                    if (user) {
+                        await User.destroy({
+                            where: { id: user.id },
+                            transaction,
+                        });
+                    }
+                    deletedList.push(registration.id);
+                } catch (innerErr) {
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Unknown error",
+                    });
+                }
+            }
+
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+
+            return {
+                deleted: deletedList,
+                skipped: skippedList,
+            };
+
+        } catch (err) {
+            if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
+
 };
 
 module.exports = roomRegistrationServices;
