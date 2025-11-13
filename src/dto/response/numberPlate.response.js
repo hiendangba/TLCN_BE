@@ -13,6 +13,7 @@ class GetNumberPlateResponse {
         this.registerDate = data.registerDate;
         this.image = data.image;
         this.number = data.number;
+        this.status = data.status; // Thêm status vào response
         this.studentId = data.studentId;
         this.userId = data.Student.userId
         this.mssv = data.Student.mssv;

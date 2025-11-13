@@ -38,6 +38,7 @@ const roomRegistrationServices = {
                     [Op.or]: [
                         { "$Student.User.name$": { [Op.like]: `%${keyword}%` } },
                         { "$Student.User.identification$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.mssv$": { [Op.like]: `%${keyword}%` } },
                         { "$RoomSlot.Room.roomNumber$": { [Op.like]: `%${keyword}%` } },
                     ],
                 }
@@ -69,7 +70,7 @@ const roomRegistrationServices = {
                         include: [
                             {
                                 model: User,
-                                attributes: ["id", "name", "identification", "dob", "gender", "address",],
+                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
                             },
                         ],
                     },
@@ -86,7 +87,11 @@ const roomRegistrationServices = {
                 ],
                 offset,
                 limit,
-                order: [["createdAt", "DESC"]],
+                order: [
+                    // Ưu tiên đơn chờ duyệt (approvedDate = NULL) lên trên
+                    [sequelize.literal('CASE WHEN "approvedDate" IS NULL THEN 0 ELSE 1 END'), 'ASC'],
+                    ["createdAt", "DESC"]
+                ],
             });
 
             return {
@@ -138,18 +143,33 @@ const roomRegistrationServices = {
 
             for (const registration of roomRegistrations) {
                 try {
-                    const roomSlot = registration.RoomSlot;
+                    // Reload roomSlot với lock để tránh race condition khi nhiều admin cùng duyệt
+                    const roomSlot = await RoomSlot.findByPk(registration.roomSlotId, {
+                        include: [{ model: Room, attributes: ["roomNumber"] }],
+                        lock: transaction.LOCK.UPDATE, // Lock row để tránh concurrent update
+                        transaction,
+                    });
 
+                    if (!roomSlot) {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            reason: "Không tìm thấy slot phòng",
+                        });
+                        continue;
+                    }
+
+                    // Kiểm tra lại lần nữa xem slot đã có người ở chưa
                     if (roomSlot.isOccupied === true) {
                         skippedList.push({
                             registrationId: registration.id,
                             roomNumber: roomSlot.Room.roomNumber,
                             slotNumber: roomSlot.slotNumber,
-                            reason: RoomRegistrationError.RoomSlotNotFound(),
+                            reason: "Chỗ ở này đã có người đăng ký",
                         });
                         continue;
                     }
 
+                    // Đánh dấu slot đã được sử dụng
                     await roomSlot.update({ isOccupied: true }, { transaction });
 
                     await registration.update(
@@ -252,6 +272,12 @@ const roomRegistrationServices = {
                     }
 
                     if (user?.email) {
+                        // Lấy lý do riêng cho đơn này, hoặc lý do chung
+                        const reason = rejectRoomRegistrationRequest.reasons?.[registration.id] || "";
+                        const reasonText = reason 
+                            ? `<p><strong>Lý do từ chối:</strong> ${reason}</p>` 
+                            : "";
+                        
                         emailTasks.push(
                             sendMail({
                                 to: user.email,
@@ -260,6 +286,7 @@ const roomRegistrationServices = {
                                 <h3>Xin chào ${user.name}</h3>
                                 <p>Rất tiếc, đơn đăng ký vào ký túc xá của bạn đã bị <strong>từ chối</strong>.</p>
                                 <p>Phòng: ${roomSlot.Room.roomNumber} - Giường: ${roomSlot.slotNumber}</p>
+                                ${reasonText}
                                 <p>Nếu bạn muốn, bạn có thể đăng ký lại sau khi điều chỉnh thông tin.</p>
                                 <p>RoomLink cảm ơn bạn.</p>                            
                                 `,

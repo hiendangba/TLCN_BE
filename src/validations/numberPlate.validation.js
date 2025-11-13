@@ -49,8 +49,23 @@ const rejectNumberPlateSchema = Joi.object({
         .required()
         .messages({
             "array.base": "Trường 'ids' phải là một danh sách (array).",
-            "array.min": "Phải có ít nhất một ID để duyệt.",
+            "array.min": "Phải có ít nhất một ID để từ chối.",
             "any.required": "Thiếu trường 'ids' trong yêu cầu.",
+        }),
+    reason: Joi.string()
+        .allow("")
+        .optional()
+        .messages({
+            "string.base": "Lý do từ chối phải là chuỗi.",
+        }),
+    reasons: Joi.object()
+        .pattern(
+            Joi.string().uuid(),
+            Joi.string().allow("")
+        )
+        .optional()
+        .messages({
+            "object.base": "Lý do từ chối phải là object.",
         }),
 });
 module.exports = { createNumberPlateSchema, approvedNumberPlateSchema, rejectNumberPlateSchema };
