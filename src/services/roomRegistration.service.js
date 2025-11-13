@@ -4,6 +4,9 @@ const UserError = require("../errors/UserError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError");
 const { StudentStatus } = require("../dto/request/auth.request")
 const sendMail = require("../utils/mailer")
+const { Op } = require("sequelize");
+const { sequelize } = require("../config/database");
+
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
         try {
@@ -25,110 +28,183 @@ const roomRegistrationServices = {
         }
     },
 
-    getRoomRegistration: async () => {
+    getRoomRegistration: async (getRoomRegistrationRequest) => {
         try {
-            const roomRegistration = await RoomRegistration.findAll({
+            const { page, limit, keyword, status } = getRoomRegistrationRequest;
+            const offset = (page - 1) * limit;
+
+            const searchCondition = keyword
+                ? {
+                    [Op.or]: [
+                        { "$Student.User.name$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.User.identification$": { [Op.like]: `%${keyword}%` } },
+                        { "$RoomSlot.Room.roomNumber$": { [Op.like]: `%${keyword}%` } },
+                    ],
+                }
+                : {};
+
+            let statusCondition = {};
+            switch (status) {
+                case "Approved":
+                    statusCondition = { approvedDate: { [Op.ne]: null } }; // Đã duyệt
+                    break;
+                case "Unapproved":
+                    statusCondition = { approvedDate: null }; // Chưa duyệt
+                    break;
+                case "All":
+                default:
+                    statusCondition = {};
+                    break;
+            }
+
+            const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
-                    approvedDate: null,
+                    ...statusCondition,
+                    ...searchCondition,
                 },
                 include: [
                     {
                         model: Student,
-                        attributes: ['id', 'mssv', 'school', 'userId'],
+                        attributes: ["id", "mssv", "school", "userId"],
                         include: [
                             {
                                 model: User,
-                                attributes: ['id', 'name', 'dob', 'gender', 'address']
-                            }
-                        ]
+                                attributes: ["id", "name", "identification", "dob", "gender", "address",],
+                            },
+                        ],
                     },
                     {
                         model: RoomSlot,
-                        attributes: ['id', 'slotNumber', 'isOccupied']
-                    }
-                ]
+                        attributes: ["id", "slotNumber", "isOccupied"],
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber"],
+                            },
+                        ],
+                    },
+                ],
+                offset,
+                limit,
+                order: [["createdAt", "DESC"]],
             });
 
-            return roomRegistration;
+            return {
+                totalItems: roomRegistration.count,
+                response: roomRegistration.rows,
+            };
         } catch (err) {
             throw err;
         }
     },
 
     approveRoomRegistration: async (approvedRoomRegistrationRequest) => {
+        const transaction = await sequelize.transaction();
         try {
-            const admin = await Admin.findOne({
-                where: { id: approvedRoomRegistrationRequest.adminId }
-            })
+            const { ids, adminId } = approvedRoomRegistrationRequest;
 
-            if (!admin) {
-                throw UserError.AdminNotFound();
-            }
+            const admin = await Admin.findOne({ where: { id: adminId } });
+            if (!admin) throw UserError.AdminNotFound();
 
-            const roomRegistration = await RoomRegistration.findOne({
-                where: { id: approvedRoomRegistrationRequest.id },
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: { id: ids },
                 include: [
                     {
                         model: Student,
-                        as: 'Student', // nếu trong associate bạn có dùng alias
-                        attributes: ['userId']
+                        as: "Student",
+                        attributes: ["userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "email"],
+                            },
+                        ],
+                    },
+                    {
+                        model: RoomSlot,
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber"],
+                            },
+                        ],
                     },
                 ],
+                transaction,
             });
 
-            if (!roomRegistration) {
-                throw RoomRegistrationError.IdNotFound();
+            const approvedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const registration of roomRegistrations) {
+                try {
+                    const roomSlot = registration.RoomSlot;
+
+                    if (roomSlot.isOccupied === true) {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            roomNumber: roomSlot.Room.roomNumber,
+                            slotNumber: roomSlot.slotNumber,
+                            reason: "Giường đã có người ở",
+                        });
+                        continue;
+                    }
+
+                    await roomSlot.update({ isOccupied: true }, { transaction });
+
+                    await registration.update(
+                        {
+                            approvedDate: new Date(),
+                            adminId: admin.id,
+                        },
+                        { transaction }
+                    );
+
+                    const user = registration.Student.User;
+                    if (user) {
+                        await user.update(
+                            { status: StudentStatus.APPROVED_NOT_CHANGED },
+                            { transaction }
+                        );
+
+                        emailTasks.push(
+                            sendMail({
+                                to: user.email,
+                                subject: "Đơn đăng ký vào phòng của bạn đã được duyệt!!",
+                                html: `
+                                        <h3>Xin chào ${user.name}</h3>
+                                        <p>Đơn đăng ký vào phòng ${roomSlot.Room.roomNumber} vị trí giường số ${roomSlot.slotNumber} của bạn đã được duyệt.</p>
+                                        <p>Bây giờ bạn có thể đăng nhập với tên tài khoản là số CCCD và mật khẩu mặc định là "123456".</p>
+                                        <p>Vui lòng đăng nhập và đổi mật khẩu. RoomLink xin cảm ơn!</p>
+                                    `,
+                            })
+                        );
+                    }
+
+                    approvedList.push(registration.id);
+
+                } catch (innerErr) {
+                    // 🧱 Nếu lỗi cục bộ (1 đơn) → ghi log, không rollback
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
             }
 
-            if (roomRegistration.adminId && roomRegistration.approvedDate) {
-                throw RoomRegistrationError.AlreadyApproved();
-            }
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+            return {
+                approved: approvedList,
+                skipped: skippedList,
+            };
 
-
-            const roomSlot = await RoomSlot.findOne({
-                where: { id: roomRegistration.roomSlotId }
-            })
-
-            if (!roomSlot) {
-                throw new RoomRegistrationError.RoomSlotNotFound();
-            }
-            await roomSlot.update({
-                isOccupied: true
-            });
-
-            const room = await Room.findOne({
-                where: { id: roomSlot.roomId }
-            })
-
-            await roomRegistration.update({
-                approvedDate: new Date(),
-                adminId: admin.id,
-            });
-            await roomRegistration.reload();
-
-            const user = await User.findOne({
-                where: { id: roomRegistration.Student.userId },
-            });
-
-            await user.update(
-                { status: StudentStatus.APPROVED_NOT_CHANGED },
-            )
-
-            await sendMail({
-                to: user.email,
-                subject: "Đơn đăng ký vào phòng của bạn đã được duyệt!!",
-                html: `
-                    <h3>Xin chào ${user.name}</h3>
-                    <p>Đơn đăng ký vào phòng ${room.roomNumber} vị trí giường số ${roomSlot.slotNumber} của bạn đã được duyệt</p>
-                    <p>Bây giờ bạn có thể đăng nhập tên tài khoản là số căn cước công dân và mật khẩu của bạn là "123456".</p>
-                    <p>Vui lòng đăng nhập và đổi mật khẩu. RoomLink xin cảm ơn!!</p>
-                `,
-            });
-
-            return roomRegistration;
         } catch (err) {
+            if (!transaction.finished) await transaction.rollback();
             throw err;
         }
     }
 };
+
 module.exports = roomRegistrationServices;

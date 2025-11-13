@@ -1,15 +1,16 @@
 const asyncHandler = require('express-async-handler');
-const { ApprovedRoomRegistrationRequest } = require("../dto/request/roomRegistration.request")
+const { ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest } = require("../dto/request/roomRegistration.request")
 const ApiResponse = require("../dto/response/api.response");
 const { GetRoomRegistrationResponse } = require("../dto/response/roomRegistration.response")
 const roomRegistrationService = require("../services/roomRegistration.service")
 const roomRegistrationController = {
     getRoomRegistration: asyncHandler(async (req, res) => {
-        const getRoomRegistrationRequest = n
-        const response = await roomRegistrationService.getRoomRegistration();
+        const getRoomRegistrationRequest = new GetRoomRegistrationRequest(req.query)
+        const { totalItems, response } = await roomRegistrationService.getRoomRegistration(getRoomRegistrationRequest);
         const getRoomRegistrationResponses = response.map(item => new GetRoomRegistrationResponse(item));
         return res.status(200).json(
-            new ApiResponse(getRoomRegistrationResponses)
+            new ApiResponse(getRoomRegistrationResponses,
+                { page: getRoomRegistrationRequest.page, limit: getRoomRegistrationRequest.limit, totalItems })
         );
     }),
 
