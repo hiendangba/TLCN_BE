@@ -1,9 +1,3 @@
-class CreateFloorResponse {
-    constructor(data) {
-        this.number = data.number;
-        this.buildingId = data.buildingId;
-    }
-}
 class GetFloorResponse {
     constructor(data) {
         this.id = data.id;
@@ -12,4 +6,4 @@ class GetFloorResponse {
     }
 }
 
-module.exports = { CreateFloorResponse, GetFloorResponse };
+module.exports = { GetFloorResponse };

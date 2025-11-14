@@ -2,37 +2,18 @@ const { Floor, Building } = require("../models");
 const FloorError = require("../errors/FloorError");
 const RoomError = require("../errors/RoomError")
 const floorServices = {
-    createFloor: async (createFloorRequest) => {
+    createFloor: async (createFloorRequest, transaction) => {
         try {
-            const building = await Building.findByPk(createFloorRequest.buildingId);
-            if (!building) {
-                throw FloorError.BuildingNotFound();
-            }
-            const existingFloor = await Floor.findOne({
-                where: {
+            const floors = [];
+
+            for (let i = 1; i <= createFloorRequest.numberFloor; i++) {
+                floors.push({
                     buildingId: createFloorRequest.buildingId,
-                    number: createFloorRequest.number
-                }
-            });
-
-            if (existingFloor) {
-                throw FloorError.FloorAlreadyExists();
-            }
-            const maxFloor = await Floor.findOne({
-                where: { buildingId: createFloorRequest.buildingId },
-                order: [['number', 'DESC']],
-            });
-
-            if (!maxFloor && createFloorRequest.number !== 1) {
-                throw FloorError.FirstFloorMustBeOne();
+                    number: i
+                });
             }
 
-            if (maxFloor && createFloorRequest.number !== maxFloor.number + 1) {
-                throw FloorError.InvalidFloorOrder(maxFloor.number + 1);
-            }
-            const floor = await Floor.create(createFloorRequest);
-            return floor;
-
+            await Floor.bulkCreate(floors, { transaction });
         } catch (err) {
             throw err;
         }
@@ -52,19 +33,6 @@ const floorServices = {
             });
 
             return floors;
-        } catch (err) {
-            throw err;
-        }
-    },
-
-    deleteFloor: async (deleteFloorRequest) => {
-        try {
-            const floor = await Floor.findByPk(deleteFloorRequest.id);
-            if (!floor) {
-                throw RoomError.FloorNotFound()
-            }
-            const result = await Floor.destroy({ where: { id: deleteFloorRequest.id } });
-            return result
         } catch (err) {
             throw err;
         }
