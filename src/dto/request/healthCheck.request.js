@@ -23,15 +23,23 @@ class GetHealthCheck {
 
 class RegisterHealthCheck {
     constructor(data) {
-        this.studentId = data.studentId;
         this.healthCheckId = data.healthCheckId;
         this.registerDate = data.registerDate;
         this.note = data.note;
     }
 }
 
+class GetRegisterHealthCheckRequest {
+    constructor (data) {
+        this.page = data.page ? Number(data.page) : 1;
+        this.limit = data.limit ? Number(data.limit) : 10;
+        this.keyword = data.keyword ? data.keyword.trim() : "";
+    }
+}
+
 module.exports = {
     CreateHealthCheckRequest,
     GetHealthCheck,
-    RegisterHealthCheck
+    RegisterHealthCheck,
+    GetRegisterHealthCheckRequest
 }
