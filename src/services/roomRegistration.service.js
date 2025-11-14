@@ -146,7 +146,7 @@ const roomRegistrationServices = {
                     // Reload roomSlot với lock để tránh race condition khi nhiều admin cùng duyệt
                     const roomSlot = await RoomSlot.findByPk(registration.roomSlotId, {
                         include: [{ model: Room, attributes: ["roomNumber"] }],
-                        lock: transaction.LOCK.UPDATE, // Lock row để tránh concurrent update
+                        lock: transaction.LOCK.UPDATE,
                         transaction,
                     });
 
@@ -181,6 +181,7 @@ const roomRegistrationServices = {
                     );
 
                     const user = registration.Student.User;
+
                     if (user) {
                         await user.update(
                             { status: StudentStatus.APPROVED_NOT_CHANGED },
@@ -204,7 +205,6 @@ const roomRegistrationServices = {
                     approvedList.push(registration.id);
 
                 } catch (innerErr) {
-                    // 🧱 Nếu lỗi cục bộ (1 đơn) → ghi log, không rollback
                     skippedList.push({
                         registrationId: registration.id,
                         reason: innerErr.message || "Lỗi không xác định",
@@ -274,10 +274,10 @@ const roomRegistrationServices = {
                     if (user?.email) {
                         // Lấy lý do riêng cho đơn này, hoặc lý do chung
                         const reason = rejectRoomRegistrationRequest.reasons?.[registration.id] || "";
-                        const reasonText = reason 
-                            ? `<p><strong>Lý do từ chối:</strong> ${reason}</p>` 
+                        const reasonText = reason
+                            ? `<p><strong>Lý do từ chối:</strong> ${reason}</p>`
                             : "";
-                        
+
                         emailTasks.push(
                             sendMail({
                                 to: user.email,

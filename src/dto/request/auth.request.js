@@ -27,13 +27,13 @@ class RegisterAccountRequest {
     this.duration = data.duration
   }
 }
+
 class LoginRequest {
   constructor(data) {
     this.identification = data.identification;
     this.password = data.password;
   }
 }
-
 
 class RegisterAccountAdminRequest {
   constructor(data) {
@@ -53,4 +53,31 @@ class RegisterAccountAdminRequest {
   }
 }
 
-module.exports = { RegisterAccountRequest, StudentStatus, LoginRequest, RegisterAccountAdminRequest };
+class ForgotPasswordRequest {
+  constructor(data) {
+    this.identification = data.identification;
+    this.email = data.email;
+  }
+}
+
+class ResendOTPRequest {
+  constructor(data) {
+    this.flowId = data.flowId;
+  }
+}
+
+class VerifyOTPRequest {
+  constructor(data) {
+    this.flowId = data.flowId;
+    this.otp = data.otp;
+  }
+}
+
+class ResetPasswordRequest {
+  constructor(data, payload) {
+    this.newPassword = data.newPassword;
+    this.payload = payload
+  }
+}
+
+module.exports = { RegisterAccountRequest, StudentStatus, LoginRequest, RegisterAccountAdminRequest, ForgotPasswordRequest, ResendOTPRequest, VerifyOTPRequest, ResetPasswordRequest };

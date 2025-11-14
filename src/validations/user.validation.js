@@ -182,6 +182,7 @@ const userLoginSchema = Joi.object({
             "any.required": "Vui lòng nhập mật khẩu.",
         })
 });
+
 const userChangePasswordSchema = Joi.object({
     password: Joi.string()
         .min(6)
@@ -204,9 +205,89 @@ const userChangePasswordSchema = Joi.object({
         }),
 });
 
+const userForgotPasswordSchema = Joi.object({
+    email: Joi.string()
+        .email()
+        .required()
+        .messages({
+            "string.empty": "Email không được để trống",
+            "string.email": "Email không hợp lệ",
+        }),
+
+    identification: Joi.string()
+        .length(12)
+        .required()
+        .messages({
+            "string.empty": "CCCD không được để trống",
+            "string.length": "CCCD phải đủ 12 số",
+        }),
+});
+
+const userResendOTPSchema = Joi.object({
+    flowId: Joi.string()
+        .length(24)
+        .regex(/^[A-Za-z0-9_-]+$/)
+        .required()
+        .messages({
+            "string.empty": "flowId không được để trống",
+            "string.length": "flowId không hợp lệ",
+            "string.pattern.base": "flowId không đúng định dạng",
+            "any.required": "Thiếu flowId",
+        })
+});
+
+const userVerifyOTPSchema = Joi.object({
+    flowId: Joi.string()
+        .length(24)
+        .regex(/^[A-Za-z0-9_-]+$/)
+        .required()
+        .messages({
+            "string.empty": "flowId không được để trống",
+            "string.length": "flowId không hợp lệ",
+            "string.pattern.base": "flowId không đúng định dạng",
+            "any.required": "Thiếu flowId",
+        }),
+
+    otp: Joi.string()
+        .length(6)
+        .regex(/^[0-9]{6}$/)
+        .required()
+        .messages({
+            "string.empty": "otp không được để trống",
+            "string.length": "otp phải gồm 6 ký tự",
+            "string.pattern.base": "otp chỉ được chứa số và gồm 6 chữ số",
+            "any.required": "Thiếu otp",
+        }),
+
+});
+
+
+const userResetPasswordSchema = Joi.object({
+    newPassword: Joi.string()
+        .min(6)
+        .required()
+        .messages({
+            "string.empty": "Mật khẩu mới không được để trống",
+            "string.min": "Mật khẩu mới phải có ít nhất 6 ký tự",
+            "any.required": "Thiếu mật khẩu mới",
+        }),
+
+    confirmPassword: Joi.any()
+        .valid(Joi.ref("newPassword"))
+        .required()
+        .messages({
+            "any.only": "Xác nhận mật khẩu không khớp",
+            "any.required": "Thiếu xác nhận mật khẩu",
+        }),
+});
+
 module.exports = {
     userRegisterSchema,
     userLoginSchema,
     adminRegisterSchema,
-    userChangePasswordSchema
+    userChangePasswordSchema,
+    userForgotPasswordSchema,
+    userResendOTPSchema,
+    userVerifyOTPSchema,
+    userResetPasswordSchema
 };
