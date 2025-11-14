@@ -12,18 +12,21 @@ const UserError = require("../errors/UserError");
 const {
     Op,
 } = require("sequelize");
+const {
+    response
+} = require("express");
 
 
 
 
 const formatDate = (date) => {
     const d = new Date(date);
-    const day = String(d.getDate()).padStart(2,"0");
-    const month = String(d.getMonth() + 1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2,"0");
-    const minutes = String(d.getMinutes()).padStart(2,"0");
-    const seconds = String(d.getSeconds()).padStart(2, "0"); 
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const seconds = String(d.getSeconds()).padStart(2, "0");
 
     return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
@@ -38,7 +41,7 @@ const checkTimeConstraint = (registerDate, existingHealthCheck) => {
     const registerEndDate = new Date(existingHealthCheck.registrationEndDate);
 
     // Kiem tra xem con thoi han dang ky hong
-    if (today.getTime() < registerStartDate.getTime() || today.getTime() > registerEndDate.getTime()){
+    if (today.getTime() < registerStartDate.getTime() || today.getTime() > registerEndDate.getTime()) {
         throw HealthCheckError.RegistrationDueReached();
     }
 
@@ -52,21 +55,115 @@ const checkTimeConstraint = (registerDate, existingHealthCheck) => {
     const minutes = date.getMinutes();
     const validHour = hours >= 8 && hours <= 17;
     const validMinute = minutes % 10 === 0;
-    if (!validHour || !validMinute){
+    if (!validHour || !validMinute) {
         throw HealthCheckError.InvalidTimeSlot();
-    }   
+    }
 
     // Kiem tra Timeslot da co nguoi dang ky chua 
     const listRegisterDateOfHC = existingHealthCheck.RegisterHealthChecks || [];
     const isTimeSlotExist = listRegisterDateOfHC.some(
         item => new Date(item.registerDate).getTime() === date.getTime()
     );
-    if (isTimeSlotExist){
+    if (isTimeSlotExist) {
         throw HealthCheckError.InvalidTimeSlot();
     }
 }
 
+
 const healthCheckService = {
+    getRegisterHealthCheck: async (getRegisterHealthCheckRequest) => {
+        try {
+            const {
+                page = 1, limit = 10, keyword = ""
+            } = getRegisterHealthCheckRequest;
+            const offset = (page - 1) * limit;
+
+            const searchCondition = keyword ?
+                {
+                    [Op.or]: [{
+                            "$Student.User.name$": {
+                                [Op.like]: `%${keyword}%`
+                            }
+                        },
+                        {
+                            "$Student.User.identification$": {
+                                [Op.like]: `%${keyword}%`
+                            }
+                        },
+                    ],
+                } :
+                {};
+
+            const registerHealthChecks = await RegisterHealthCheck.findAndCountAll({
+                where: {
+                    ...searchCondition,
+                },
+                include: [{
+                        model: Student,
+                        attributes: ["id", "mssv", "school", "userId"],
+                        include: [{
+                            model: User,
+                            attributes: ["id", "name", "identification"],
+                        }, ],
+                    },
+                    {
+                        model: HealthCheck,
+                        attributes: [
+                            "id",
+                            "title",
+                            "price",
+                            "startDate",
+                            "endDate",
+                            "registrationStartDate",
+                            "registrationEndDate",
+                        ],
+                        include: [{
+                            model: Building,
+                            attributes: ["id", "name"],
+                        }, ],
+                    },
+                ],
+                offset,
+                limit,
+                order: [
+                    ["createdAt", "DESC"]
+                ],
+            });
+            
+            console.log("ROWS:", registerHealthChecks.rows);
+            console.log("IS ARRAY:", Array.isArray(registerHealthChecks.rows));
+            
+            const responses = registerHealthChecks.rows.map((item) => {
+                // const data = item.dataValues;
+                // const student = item.Student;
+                // const user = student?.User;
+                // const healthCheck = item.HealthCheck;
+                // const building = healthCheck?.Building;
+
+                return {
+                    // studentId: student?.id,
+                    // healthCheckId: healthCheck?.id,
+                    // studentName: user?.name,
+                    // studentIdentification: user?.identification,
+                    // healthCheckTitle: healthCheck?.title,
+                    // healthCheckBuilding: building?.name,
+                    // period: formatDateRange(healthCheck?.startDate, healthCheck?.endDate),
+                    // fee: healthCheck?.price,
+                    // dueDate: formatDate(healthCheck?.endDate),
+                    registerDate: formatDate(item.registerDate),
+                    note: item.note,
+                };
+            });
+
+            return {
+                totalItems: registerHealthChecks.count,
+                response: responses,
+            };
+        } catch (err) {
+            console.log(err);
+            throw err;
+        }
+    },
 
     deleteHealthCheck: async (id, userId) => {
         try {
@@ -108,7 +205,7 @@ const healthCheckService = {
                 },
                 include: [{
                     model: User, // bảng liên quan
-                    attributes: ['id','name'], // chỉ lấy field name
+                    attributes: ['id', 'name', 'identification'], // chỉ lấy field name
                 }]
             });
 
@@ -133,7 +230,7 @@ const healthCheckService = {
             if (!existingHealthCheck) {
                 throw HealthCheckError.NotFound()
             }
-            
+
             // Kiem tra dot kham con slot dang ky khong
             if (existingHealthCheck.RegisterHealthChecks.length >= existingHealthCheck.capacity) {
                 throw HealthCheckError.RegistrationLimitReached()
@@ -161,6 +258,7 @@ const healthCheckService = {
                 studentId: registered.studentId,
                 healthCheckId: registered.healthCheckId,
                 studentName: student.User.name,
+                studentIdentification: student.User.identification,
                 healthCheckTitle: existingHealthCheck.title,
                 healthCheckBuilding: existingHealthCheck.Building.name,
                 period: formatDateRange(existingHealthCheck.startDate, existingHealthCheck.endDate),

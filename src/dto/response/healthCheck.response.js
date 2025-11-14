@@ -22,6 +22,7 @@ class RegisterHealthCheckReponse  {
         this.studentId = data.studentId;
         this.healthCheckId = data.healthCheckId;
         this.studentName = data.studentName;
+        this.studentIdentification = data.studentIdentification;
         this.healthCheckTitle = data.healthCheckTitle;
         this.healthCheckBuilding = data.healthCheckBuilding;
         this.period = data.period;

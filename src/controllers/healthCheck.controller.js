@@ -1,12 +1,24 @@
 const asyncHandler = require('express-async-handler');
 const ApiResponse = require("../dto/response/api.response");
-const { CreateHealthCheckRequest, GetHealthCheck, RegisterHealthCheck } = require("../dto/request/healthCheck.request");
+const { CreateHealthCheckRequest, GetHealthCheck, RegisterHealthCheck, GetRegisterHealthCheckRequest } = require("../dto/request/healthCheck.request");
 const { HealthCheckResponse, RegisterHealthCheckReponse  } = require("../dto/response/healthCheck.response");
 const healthCheckService = require("../services/healthCheck.service");
 
 const healthCheckController = {
     getRegisterHealthCheck: asyncHandler(async (req, res) => {
-
+        const getRegisterHealthCheckRequest = new GetRegisterHealthCheckRequest (req.query);
+        const { totalItems , reponse } = await healthCheckService.getRegisterHealthCheck(getRegisterHealthCheckRequest);
+        const registerHealthCheckReponse = reponse.map( item => new RegisterHealthCheckReponse(item) );
+        return res.status(200).json(
+            new ApiResponse(            
+                registerHealthCheckReponse,
+                {
+                    page: getRegisterHealthCheckRequest.page,
+                    limit: getRegisterHealthCheckRequest.limit,
+                    totalItems : totalItems,
+                }
+            )
+        )
     }),
 
     createHealthCheck: asyncHandler(async (req, res) => {
