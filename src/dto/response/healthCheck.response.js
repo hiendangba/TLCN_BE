@@ -19,6 +19,7 @@ class HealthCheckResponse {
 }
 class RegisterHealthCheckReponse  {
     constructor(data) {
+        this.id = data.id || ""
         this.studentId = data.studentId;
         this.healthCheckId = data.healthCheckId;
         this.studentName = data.studentName;

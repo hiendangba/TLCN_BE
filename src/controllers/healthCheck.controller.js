@@ -7,8 +7,8 @@ const healthCheckService = require("../services/healthCheck.service");
 const healthCheckController = {
     getRegisterHealthCheck: asyncHandler(async (req, res) => {
         const getRegisterHealthCheckRequest = new GetRegisterHealthCheckRequest (req.query);
-        const { totalItems , reponse } = await healthCheckService.getRegisterHealthCheck(getRegisterHealthCheckRequest);
-        const registerHealthCheckReponse = reponse.map( item => new RegisterHealthCheckReponse(item) );
+        const { totalItems , response } = await healthCheckService.getRegisterHealthCheck(getRegisterHealthCheckRequest);
+        const registerHealthCheckReponse = response.map( item => new RegisterHealthCheckReponse(item) );
         return res.status(200).json(
             new ApiResponse(            
                 registerHealthCheckReponse,

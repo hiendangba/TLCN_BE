@@ -130,34 +130,31 @@ const healthCheckService = {
                 ],
             });
             
-            console.log("ROWS:", registerHealthChecks.rows);
-            console.log("IS ARRAY:", Array.isArray(registerHealthChecks.rows));
-            
-            const responses = registerHealthChecks.rows.map((item) => {
-                // const data = item.dataValues;
-                // const student = item.Student;
-                // const user = student?.User;
-                // const healthCheck = item.HealthCheck;
-                // const building = healthCheck?.Building;
+            const response = registerHealthChecks.rows.map((item) => {
+                const student = item.Student;
+                const user = student?.User;
+                const healthCheck = item.HealthCheck;
+                const building = healthCheck?.Building;
 
                 return {
-                    // studentId: student?.id,
-                    // healthCheckId: healthCheck?.id,
-                    // studentName: user?.name,
-                    // studentIdentification: user?.identification,
-                    // healthCheckTitle: healthCheck?.title,
-                    // healthCheckBuilding: building?.name,
-                    // period: formatDateRange(healthCheck?.startDate, healthCheck?.endDate),
-                    // fee: healthCheck?.price,
-                    // dueDate: formatDate(healthCheck?.endDate),
+                    studentId: student?.id,
+                    healthCheckId: healthCheck?.id,
+                    studentName: user?.name,
+                    studentIdentification: user?.identification,
+                    healthCheckTitle: healthCheck?.title,
+                    healthCheckBuilding: building?.name,
+                    period: formatDateRange(healthCheck?.startDate, healthCheck?.endDate),
+                    fee: healthCheck?.price,
+                    dueDate: formatDate(healthCheck?.endDate),
                     registerDate: formatDate(item.registerDate),
                     note: item.note,
+                    id: item.id,
                 };
             });
 
             return {
                 totalItems: registerHealthChecks.count,
-                response: responses,
+                response: response,
             };
         } catch (err) {
             console.log(err);
