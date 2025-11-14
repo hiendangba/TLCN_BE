@@ -1,7 +1,7 @@
 const authServices = require("../services/auth.service");
 const asyncHandler = require('express-async-handler');
-const { RegisterAccountRequest, RegisterAccountAdminRequest, LoginRequest } = require("../dto/request/auth.request")
-const { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginResponse } = require("../dto/response/auth.response");
+const { RegisterAccountRequest, RegisterAccountAdminRequest, LoginRequest, ForgotPasswordRequest, ResendOTPRequest, VerifyOTPRequest, ResetPasswordRequest } = require("../dto/request/auth.request")
+const { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginResponse, ForgotPasswordResponse } = require("../dto/response/auth.response");
 const ApiResponse = require("../dto/response/api.response");
 const UserError = require("../errors/UserError");
 const authController = {
@@ -21,7 +21,7 @@ const authController = {
     if (!req.file) {
       throw UserError.NoImageUpload();
     }
-    
+
     //Gọi modal AI để nhận diện có khuôn mặt trong ảnh không
     const response = new CheckAvatarResponse(req.file);
 
@@ -62,7 +62,48 @@ const authController = {
     return res.status(200).json(
       new ApiResponse(loginResponse)
     );
-  })
+  }),
+
+  forgotPassword: asyncHandler(async (req, res) => {
+    const forgotPasswordRequest = new ForgotPasswordRequest(req.body);
+    const response = await authServices.forgotPassword(forgotPasswordRequest);
+    const forgotPasswordResponse = new ForgotPasswordResponse(response)
+    return res.status(202).json(
+      new ApiResponse(forgotPasswordResponse)
+    );
+  }),
+
+  resendOTP: asyncHandler(async (req, res) => {
+    const resendOTPRequest = new ResendOTPRequest(req.body);
+    const response = await authServices.resendOTP(resendOTPRequest);
+    return res.status(202).json(
+      new ApiResponse(response)
+    );
+  }),
+
+  verifyOTP: asyncHandler(async (req, res) => {
+    const verifyOTPRequest = new VerifyOTPRequest(req.body);
+    const response = await authServices.verifyOTP(verifyOTPRequest);
+    res.cookie('resetPassword_token', response.resetToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 10 * 60 * 1000
+    })
+    return res.status(202).json(
+      new ApiResponse(response.message)
+    );
+  }),
+
+  resetPassword: asyncHandler(async (req, res) => {
+    const resetPasswordRequest = new ResetPasswordRequest(req.body, req.resetPayload);
+    const response = await authServices.resetPassword(resetPasswordRequest);
+    res.clearCookie('resetPassword_token');
+    return res.status(202).json(
+      new ApiResponse(response.message)
+    );
+  }),
+
 };
 
 module.exports = authController;

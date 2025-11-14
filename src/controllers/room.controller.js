@@ -38,6 +38,7 @@ const roomController = {
             new ApiResponse(getRoomResponses)
         );
     }),
+
 };
 
 module.exports = roomController;
