@@ -5,6 +5,7 @@ const { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginRe
 const ApiResponse = require("../dto/response/api.response");
 const UserError = require("../errors/UserError");
 const authController = {
+
   checkCCCD: asyncHandler(async (req, res) => {
     if (!req.file) {
       throw UserError.NoImageUpload();
@@ -55,6 +56,7 @@ const authController = {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
+      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
     });
     const loginResponse = new LoginResponse(response)
@@ -86,8 +88,8 @@ const authController = {
     const response = await authServices.verifyOTP(verifyOTPRequest);
     res.cookie('resetPassword_token', response.resetToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: false,
+      sameSite: 'lax',
       maxAge: 10 * 60 * 1000
     })
     return res.status(202).json(
@@ -101,6 +103,26 @@ const authController = {
     res.clearCookie('resetPassword_token');
     return res.status(202).json(
       new ApiResponse(response.message)
+    );
+  }),
+
+  refreshToken: asyncHandler(async (req, res) => {
+    const response = await authServices.refreshToken(req.cookies.refresh_token);
+    return res.status(202).json(
+      new ApiResponse(response)
+    );
+  }),
+
+  logout: asyncHandler(async (req, res) => {
+    const response = await authServices.logout(req.cookies.refresh_token);
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/"
+    });
+    return res.status(202).json(
+      new ApiResponse(response)
     );
   }),
 

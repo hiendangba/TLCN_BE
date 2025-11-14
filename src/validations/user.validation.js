@@ -281,6 +281,36 @@ const userResetPasswordSchema = Joi.object({
         }),
 });
 
+const userUpdateProfileSchema = Joi.object({
+    email: Joi.string()
+        .email()
+        .messages({
+            "string.email": "Email không hợp lệ",
+        }),
+
+    phone: Joi.string()
+        .pattern(/^(0)\d{9}$/)
+        .messages({
+            "string.pattern.base": "Số điện thoại không hợp lệ",
+        }),
+
+    region: Joi.string()
+        .messages({
+            "string.empty": "Tôn giáo không được để trống",
+        }),
+
+    mssv: Joi.string()
+        .messages({
+            "string.empty": "MSSV không được để trống.",
+        }),
+
+    school: Joi.string()
+        .messages({
+            "string.empty": "Tên trường không được để trống.",
+        }),
+});
+
+
 module.exports = {
     userRegisterSchema,
     userLoginSchema,
@@ -289,5 +319,6 @@ module.exports = {
     userForgotPasswordSchema,
     userResendOTPSchema,
     userVerifyOTPSchema,
-    userResetPasswordSchema
+    userResetPasswordSchema,
+    userUpdateProfileSchema
 };

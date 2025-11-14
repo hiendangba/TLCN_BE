@@ -38,5 +38,37 @@ const userServices = {
             throw err;
         }
     },
+
+    updateProfile: async (updateProfileRequest) => {
+        try {
+            const user = await User.findOne({ where: { id: updateProfileRequest.userId } });
+            if (!user) {
+                throw UserError.UserNotFound();
+            }
+            const allowedFields = ["email", "phone", "nation", "region", "mssv", "school"];
+            const updateData = {};
+
+            for (const field of allowedFields) {
+                if (updateProfileRequest[field] !== undefined) {
+                    updateData[field] = updateProfileRequest[field];
+                }
+            }
+
+            await User.update(updateData, { where: { id: updateProfileRequest.userId } });
+            if (updateData.mssv !== undefined || updateData.school !== undefined) {
+                await Student.update(
+                    {
+                        mssv: updateData.mssv,
+                        school: updateData.school
+                    },
+                    { where: { id: updateProfileRequest.roleId } }
+                );
+            }
+
+            return { message: "Cập nhật thông tin thành công" };
+        } catch (err) {
+            throw err;
+        }
+    },
 };
 module.exports = userServices;

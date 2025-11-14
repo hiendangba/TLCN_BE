@@ -358,5 +358,66 @@ const authServices = {
             throw err;
         }
     },
+
+    refreshToken: async (refreshToken) => {
+        try {
+            if (!refreshToken) {
+                throw UserError.NoHaveToken();
+            }
+            const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+            const savedToken = await redisClient.get(`refresh:${decoded.id}`);
+
+            if (!savedToken || savedToken !== refreshToken) {
+                throw new AppError(UserError.REFRESH_TOKEN_INVALID);
+            }
+            const newAccessToken = jwt.sign(
+                { id: decoded.id, role: decoded.role, roleId: decoded.roleId },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES }
+            );
+
+            return { access_token: newAccessToken }
+        }
+        catch (err) {
+            if (err instanceof jwt.TokenExpiredError) {
+                throw UserError.TokenExpired();
+            }
+
+            if (err instanceof jwt.JsonWebTokenError) {
+                throw UserError.TokenInvalid();
+            }
+
+            throw err;
+        }
+    },
+
+    logout: async (refreshToken) => {
+        try {
+            if (!refreshToken) {
+                throw UserError.NoHaveToken();
+            }
+
+            const decoded = jwt.decode(refreshToken);
+
+            if (!decoded || !decoded.id) {
+                return { message: "Đăng xuất thành công" };
+            }
+
+            const key = `refresh:${decoded.id}`;
+            const savedToken = await redisClient.get(key);
+
+            if (!savedToken || savedToken !== refreshToken) {
+                return { message: "Đăng xuất thành công" };
+            }
+
+            await redisClient.del(key);
+
+            return { message: "Đăng xuất thành công" };
+
+        } catch (err) {
+            throw err;
+        }
+    }
+
 };
 module.exports = authServices;

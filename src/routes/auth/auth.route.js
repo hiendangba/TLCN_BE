@@ -15,7 +15,7 @@ authRouter.post("/forgot-password", validateRequest(userForgotPasswordSchema), a
 authRouter.post("/resend-otp", validateRequest(userResendOTPSchema), authController.resendOTP);
 authRouter.post("/verify-otp", validateRequest(userVerifyOTPSchema), authController.verifyOTP);
 authRouter.patch("/reset-password", resetPasswordMiddleware, validateRequest(userResetPasswordSchema), authController.resetPassword);
-
-// authRouter.post("/refresh-token", authController.refreshToken);
+authRouter.post("/refresh-token", authController.refreshToken);
+authRouter.post("/logout", authController.logout);
 
 module.exports = authRouter;

@@ -14,4 +14,16 @@ class ChangePasswordRequest {
     }
 }
 
-module.exports = { GetUserRequest, ChangePasswordRequest };
+class UpdateProfileRequest {
+    constructor(data, userId, roleId) {
+        this.userId = userId;
+        this.roleId = roleId;
+        if (data.email !== undefined) this.email = data.email;
+        if (data.phone !== undefined) this.phone = data.phone;
+        if (data.region !== undefined) this.region = data.region;
+        if (data.mssv !== undefined) this.mssv = data.mssv;
+        if (data.school !== undefined) this.school = data.school;
+    }
+}
+
+module.exports = { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest };
