@@ -35,10 +35,21 @@ module.exports = {
       { id: uuidv4(), name: 'Tòa B', genderRestriction: 'female', createdAt: new Date(), updatedAt: new Date() }
     ];
     await queryInterface.bulkInsert('Buildings', buildings);
-
     const buildingRoomTypes = [];
+
     buildings.forEach(building => {
-      roomTypes.forEach(roomType => {
+
+      // Random số lượng roomTypes cho tòa này (ví dụ 1 → 3 loại)
+      const numberOfTypes = Math.floor(Math.random() * roomTypes.length) + 1;
+
+      // Shuffle mảng roomTypes
+      const shuffled = roomTypes.sort(() => 0.5 - Math.random());
+
+      // Lấy ngẫu nhiên numberOfTypes loại
+      const selectedTypes = shuffled.slice(0, numberOfTypes);
+
+      // Push vào bảng quan hệ
+      selectedTypes.forEach(roomType => {
         buildingRoomTypes.push({
           buildingId: building.id,
           roomTypeId: roomType.id,
@@ -46,6 +57,7 @@ module.exports = {
           updatedAt: new Date()
         });
       });
+
     });
     await queryInterface.bulkInsert('BuildingRoomTypes', buildingRoomTypes);
 
@@ -71,17 +83,22 @@ module.exports = {
 
     const rooms = [];
 
-    // 2️⃣ Tạo 2 phòng/tầng
-    Floors.forEach(floor => {
-      // Giả lập 2 phòng mỗi tầng
-      for (let i = 1; i <= 2; i++) {
-        // Chọn RoomType theo tầng hoặc random
-        const roomType = roomTypes[i % roomTypes.length]; // ví dụ luân phiên
+    floors.forEach(floor => {
+      // Tìm building của floor
+      const building = buildings.find(b => b.id === floor.buildingId);
+
+      for (let i = 1; i <= 3; i++) { // mỗi tầng 3 phòng (hoặc 2 như bạn muốn)
+
+        const buildingLetter = building.name.slice(-1).toUpperCase();
+        const roomIndex = i.toString().padStart(2, "0");
+
+        const roomType = roomTypes[i % roomTypes.length];
+
         rooms.push({
           id: uuidv4(),
-          roomNumber: `T${floor.id.substring(0, 4)}-P${i}`, // phòng dễ nhận diện
+          roomNumber: `${buildingLetter}${floor.number}${roomIndex}`,
           capacity: roomType.type.includes('2') ? 2 : roomType.type.includes('4') ? 4 : 6,
-          monthlyFee: roomType.type.includes('2') ? 100 : roomType.type.includes('4') ? 200 : 300, // ví dụ phí
+          monthlyFee: roomType.type.includes('2') ? 100 : roomType.type.includes('4') ? 200 : 300,
           floorId: floor.id,
           roomTypeId: roomType.id,
           createdAt: new Date(),
@@ -89,6 +106,7 @@ module.exports = {
         });
       }
     });
+
     await queryInterface.bulkInsert('Rooms', rooms);
 
     const roomSlots = [];

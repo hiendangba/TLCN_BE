@@ -17,6 +17,22 @@ const createBuildingSchema = Joi.object({
         .messages({
             "any.only": "Giới hạn giới tính chỉ có thể là 'male', 'female'",
         }),
+
+    numberFloor: Joi.number()
+        .integer()
+        .positive()
+        .min(1)
+        .max(20)
+        .required()
+        .messages({
+            "number.base": "Số tầng phải là một số",
+            "number.integer": "Số tầng phải là số nguyên",
+            "number.positive": "Số tầng phải lớn hơn 0",
+            "number.min": "Tòa nhà phải có ít nhất 1 tầng",
+            "number.max": "Tòa nhà không được vượt quá 20 tầng",
+            "any.required": "Vui lòng nhập số tầng của tòa nhà"
+        }),
+
     roomTypeIds: Joi.array()
         .items(Joi.string().uuid().messages({
             "string.guid": "Mỗi ID loại phòng phải là một UUID hợp lệ",

@@ -1,6 +1,8 @@
-const { Room, RoomType, Floor, RoomSlot } = require("../models");
+const { Room, RoomType, Floor, RoomSlot, Building } = require("../models");
 const floorServices = require("./floor.service");
 const RoomError = require("../errors/RoomError");
+const FloorError = require("../errors/FloorError");
+
 const roomServices = {
     createRoomType: async (createRoomTypeRequest) => {
         try {
@@ -15,6 +17,27 @@ const roomServices = {
         try {
             const roomTypes = await RoomType.findAll();
             return roomTypes;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getRoomTypeForAdmin: async (getRoomTypeForAdminRequest) => {
+        try {
+            const building = await Building.findByPk(getRoomTypeForAdminRequest.buildingId, {
+                include: [
+                    {
+                        model: RoomType,
+                        attributes: ["id", "type", "amenities"]
+                    }
+                ]
+            });
+
+            if (!building) {
+                throw FloorError.BuildingNotFound();
+            }
+
+            return building.RoomTypes;
         } catch (err) {
             throw err;
         }
@@ -87,6 +110,59 @@ const roomServices = {
             );
 
             return availableRooms;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getRoomForAdmin: async (getRoomForAdminRequest) => {
+        try {
+            const { page, limit, floorId, status } = getRoomForAdminRequest;
+            const offset = (page - 1) * limit;
+            const floorCondition = floorId === "All" ? {} : { floorId };
+            const rooms = await Room.findAll({
+                where: {
+                    ...floorCondition,
+                },
+                include: [
+                    {
+                        model: RoomType,
+                        attributes: ['type', 'amenities']
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"]
+                    },
+                    {
+                        model: Floor,
+                        attributes: ["number"]
+                    }
+                ],
+                order: [
+                    ['roomNumber', 'ASC'],
+                    [RoomSlot, 'slotNumber', 'ASC']
+                ]
+            });
+
+            let filteredRooms = rooms;
+
+            if (status === "Available") {
+                filteredRooms = rooms.filter(room =>
+                    room.RoomSlots.some(slot => slot.isOccupied === false)
+                );
+            }
+
+            else if (status === "Full") {
+                filteredRooms = rooms.filter(room =>
+                    room.RoomSlots.every(slot => slot.isOccupied === true)
+                );
+            }
+
+            // Case "All" => Không lọc gì -> giữ nguyên filteredRooms = rooms
+            const totalItems = filteredRooms.length;
+            const pagedRooms = filteredRooms.slice(offset, offset + limit);
+            return { totalItems, response: pagedRooms };
+
         } catch (err) {
             throw err;
         }

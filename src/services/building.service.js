@@ -1,9 +1,13 @@
 const BuildingError = require("../errors/BuildingError");
 const { Building, RoomType } = require("../models");
 const FloorError = require("../errors/FloorError");
+const { CreateFloorRequest } = require("../dto/request/floor.request")
+const floorServices = require("./floor.service")
+const { sequelize } = require("../config/database");
 
 const buildingServices = {
     createBuilding: async (createBuildingRequest) => {
+        const transaction = await sequelize.transaction();
         try {
             const existsName = await Building.findOne({
                 where: { name: createBuildingRequest.name }
@@ -13,16 +17,23 @@ const buildingServices = {
                 throw BuildingError.NameExists();
             }
 
-            const building = await Building.create(createBuildingRequest);
+            const building = await Building.create(createBuildingRequest, { transaction });
 
             const roomTypes = await RoomType.findAll({
                 where: { id: createBuildingRequest.roomTypeIds }
             });
 
-            await building.addRoomTypes(roomTypes);
+            if (roomTypes.length !== createBuildingRequest.roomTypeIds.length) {
+                throw BuildingError.RoomTypeNotFound();
+            }
 
+            await building.addRoomTypes(roomTypes, { transaction });
+            const createFloorRequest = new CreateFloorRequest(createBuildingRequest.numberFloor, building.id)
+            await floorServices.createFloor(createFloorRequest, transaction)
+            await transaction.commit();
             return building;
         } catch (err) {
+            await transaction.rollback();
             throw err;
         }
     },

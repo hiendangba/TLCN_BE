@@ -7,6 +7,9 @@ class BuildingError extends AppError {
     static NotFound() {
         return new BuildingError("Tòa nhà không tồn tại", 404, "BUILDING_NOT_FOUND");
     }
+    static RoomTypeNotFound() {
+        return new AppError("Không tìm thấy loại phòng tương ứng.", 404, "ROOM_TYPES_NOT_FOUND");
+    }
 
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
