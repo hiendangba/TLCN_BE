@@ -100,6 +100,7 @@ const numberPlateServices = {
 
             const approvedList = [];
             const skippedList = [];
+            const emailTasks = [];
 
             for (const numberPlate of numberPlates) {
                 try {
@@ -155,6 +156,24 @@ const numberPlateServices = {
                         { transaction }
                     );
 
+                    // Gửi email thông báo duyệt
+                    const user = numberPlate.Student?.User;
+                    if (user?.email) {
+                        emailTasks.push(
+                            sendMail({
+                                to: user.email,
+                                subject: "Đơn đăng ký biển số xe của bạn đã được duyệt!!",
+                                html: `
+                                    <h3>Xin chào ${user.name}</h3>
+                                    <p>Đơn đăng ký biển số xe của bạn đã được <strong>duyệt</strong>.</p>
+                                    <p>Biển số: ${reloadedNumberPlate.number}</p>
+                                    <p>Bây giờ bạn có thể sử dụng biển số này để đăng ký vào ký túc xá.</p>
+                                    <p>RoomLink xin cảm ơn!</p>
+                                `,
+                            })
+                        );
+                    }
+
                     approvedList.push(numberPlate.id);
 
                 } catch (innerErr) {
@@ -167,6 +186,8 @@ const numberPlateServices = {
             }
 
             await transaction.commit();
+            await Promise.allSettled(emailTasks);
+
             return {
                 approved: approvedList,
                 skipped: skippedList,
