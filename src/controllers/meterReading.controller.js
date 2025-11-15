@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const ApiResponse = require("../dto/response/api.response");
-const { CreateMeterReading, ItemMeterReading } = require("../dto/request/meterReading.request");
+const { CreateMeterReading, ItemMeterReading, GetMeterReadingRequest } = require("../dto/request/meterReading.request");
 const meterReadingService  = require("../services/meterReading.service");
 const { CreateMeterReadingResponse } = require("../dto/response/meterReading.response");
 
@@ -17,6 +17,14 @@ const meterReadingController = {
             new ApiResponse(createMeterReadings)
         );
     }),
+
+    getMeterReading: asyncHandler(async (req, res) => {
+        const getMeterReadingRequest = new GetMeterReadingRequest(req.query);
+        const {totalItems, response} = await meterReadingService.getMeterReadingRequest(getMeterReadingRequest);
+        return res.status(200).json(
+            new ApiResponse(response, { page: getMeterReadingRequest.page, limit: getMeterReadingRequest.limit, totalItems })
+        )
+    })
 }
 
 module.exports = meterReadingController

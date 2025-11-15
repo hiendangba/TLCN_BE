@@ -78,4 +78,33 @@ const createMeterReadingValidation = Joi.object({
     }),
 });
 
-module.exports = { createMeterReadingValidation } ;
+
+const getMeterReadingValidation = Joi.object({
+    page: Joi.number()
+        .integer()
+        .required()
+        .messages({
+            "number.base": "page phải là số",
+            "number.integer": "page phải là số nguyên",
+            "any.required": "Không được bỏ trống page",
+        }),
+    limit: Joi.number()
+        .integer()
+        .required()
+        .messages({
+            "number.base": "limit phải là số",
+            "number.integer": "limit phải là số nguyên",
+            "any.required": "Không được bỏ trống limit",
+        }),
+    keyword: Joi.string()
+        .allow(null, "")
+        .max(50)
+        .messages({
+            "string.base": "keyword phải là chuỗi.",
+            "string.max": "keyword không được vượt quá {#limit} ký tự."
+        }),
+});
+
+
+
+module.exports = { createMeterReadingValidation, getMeterReadingValidation } ;

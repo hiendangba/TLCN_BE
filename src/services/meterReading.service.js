@@ -5,8 +5,72 @@ const {
 } = require("../models");
 const UserError = require("../errors/UserError");
 const MeterReadingError = require("../errors/MeterReadingError")
+const {
+    Op,
+} = require("sequelize");
 
 const meterReadingService = {
+    getMeterReadingRequest: async (getMeterReadingRequest) => {
+        try{
+            const { page = 1, limit = 10, keyword = "" } = getMeterReadingRequest;
+            const offset =  ( page - 1 ) * limit;
+
+            const searchCondition = keyword ? {
+                [Op.or]: [{
+                    type: keyword
+                }, {
+                    peroid: keyword
+                },{
+                    "$Room.roomNumber": {
+                        [Op.like]: `%${keyword}%`
+                    }
+                },]
+            } : {};
+
+            const result = await MeterReading.findAndCountAll({
+                where: {
+                    ... searchCondition,
+                },
+                include:[
+                    {
+                        model: Room,
+                        attributes: ["id", "roomNumber"]
+                    }
+                ],
+                offset,
+                limit,
+                order: [
+                    ["createdAt", "DESC"]
+                ]
+            })
+
+            const response = result.rows.map ((item) => {
+                return {
+                    id: item.id,
+                    roomId: item.Room.id,
+                    roomNumber:  item.Room.roomNumber,
+                    type: item.type,
+                    oldValue: item.oldValue,
+                    newValue: item.newValue,
+                    unitPrice: item.unitPrice,
+                    totalAmount: item.totalAmount,
+                    period: item.period,
+                    adminId: item.adminId,
+                    readingDate: item.readingDate
+                }
+            })
+
+            return {
+                totalItems: result.count,
+                response: response,
+            }
+        }
+        catch(err){
+            console.log(err);
+            throw err;
+        }
+    },
+
     createMeterReading: async (createMeterReadingRequest, userId) => {
         try {
             // Kiểm tra userId có tồn tại không
