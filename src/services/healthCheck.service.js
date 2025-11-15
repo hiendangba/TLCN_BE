@@ -300,7 +300,7 @@ const healthCheckService = {
                         ],
                     },
                 ],
-                status: "active"
+                // status: "active"
             };
         } else if (startDate) {
             // Chỉ có startDate → lấy đợt khám còn sau này này là được 
@@ -308,7 +308,7 @@ const healthCheckService = {
                 endDate: {
                     [Op.gte]: startDate
                 },
-                status: "active"
+                // status: "active"
             };
         } else if (endDate) {
             // Chỉ có endDate → lấy đợt khám kết thúc trước hoặc bằng ngày đó
@@ -316,11 +316,11 @@ const healthCheckService = {
                 startDate: {
                     [Op.lte]: endDate
                 },
-                status: "active"
+                // status: "active"
             };
         } else {
             whereClause = {
-                status: "active"
+                // status: "active"
             }
         }
 
