@@ -174,6 +174,13 @@ const getHealthCheck = Joi.object({
             "date.isoDate": "Ngày kết thúc khám phải ở định dạng ISO.",
         }),
     }),
+
+    status: Joi.string()
+        .valid('active', 'inactive')
+        .allow("") // cho phép chuỗi rỗng
+        .messages({
+            "any.only": "Trạng thái chỉ được là 'active' hoặc 'inactive'.",
+        }),
 });
 
 
