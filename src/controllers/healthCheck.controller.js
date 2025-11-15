@@ -33,10 +33,17 @@ const healthCheckController = {
 
     getHealthCheck: asyncHandler(async (req, res) => {
         const getHealthCheckRequest = new GetHealthCheck(req.query);
-        const response = await healthCheckService.getHealthCheck(getHealthCheckRequest);
-        const healthCheckResponses = response.map ( item => new HealthCheckResponse(item) );
+        const { data, totalItems } = await healthCheckService.getHealthCheck(getHealthCheckRequest);
+        const healthCheckResponses = data.map ( item => new HealthCheckResponse(item) );
         return res.status(200).json(
-            new ApiResponse(healthCheckResponses)
+            new ApiResponse(
+                healthCheckResponses,
+                {
+                    page: getHealthCheckRequest.page,
+                    limit: getHealthCheckRequest.limit,
+                    totalItems: totalItems,
+                }
+            )
         );
     }),
 
@@ -58,6 +65,15 @@ const healthCheckController = {
 
         return res.status(200).json(
             new ApiResponse(result)
+        );
+    }),
+
+    getHealthCheckById: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const response = await healthCheckService.getHealthCheckById(id);
+        const healthCheckResponse = new HealthCheckResponse(response);
+        return res.status(200).json(
+            new ApiResponse(healthCheckResponse)
         );
     })
 }

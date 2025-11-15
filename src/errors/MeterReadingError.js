@@ -2,7 +2,7 @@ const AppError = require("./AppError");
 
 class MeterReadingError extends AppError {
     static InValidPeriod() {
-        return new MeterReadingError("Period không hợp lệ", 400  , "INVALID_PERIOD");
+        return new MeterReadingError("Period không hợp lệ.", 400  , "INVALID_PERIOD");
     } 
     static AlreadyExistsForPeriod (messages) {
         return new MeterReadingError(messages, 400, "DUPLICATE_PERIOD");

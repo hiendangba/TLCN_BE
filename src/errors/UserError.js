@@ -2,35 +2,35 @@ const AppError = require("./AppError");
 
 class UserError extends AppError {
     static NoImageUpload() {
-        return new UserError("Không có ảnh tải lên", 400, "INVALID_IMAGE_UPLOAD");
+        return new UserError("Không có ảnh tải lên.", 400, "INVALID_IMAGE_UPLOAD");
     }
 
     static EmailExists() {
-        return new UserError("Email đã tồn tại", 409, "EMAIL_EXISTS");
+        return new UserError("Email đã tồn tại.", 409, "EMAIL_EXISTS");
     }
 
     static InvalidUser() {
-        return new UserError("User không tồn tại, hoặc không đúng role", 409, "INVALID_USER");
+        return new UserError("User không tồn tại, hoặc không đúng role.", 409, "INVALID_USER");
     }
     
     static MSSVExists() {
-        return new UserError("MSSV đã tồn tại", 409, "MSSV_EXISTS");
+        return new UserError("MSSV đã tồn tại.", 409, "MSSV_EXISTS");
     }
 
     static IdentificationExists() {
-        return new UserError("Số Căn cước công dân đã tồn tại", 409, "IDENTIFICATION_EXISTS");
+        return new UserError("Số Căn cước công dân đã tồn tại.", 409, "IDENTIFICATION_EXISTS");
     }
 
     static PhoneExists() {
-        return new UserError("Số điện thoại đã tồn tại", 409, "PHONE_EXISTS");
+        return new UserError("Số điện thoại đã tồn tại.", 409, "PHONE_EXISTS");
     }
 
     static AdminNotFound() {
-        return new UserError("Không tìm thấy adminId trong token", 404, "ADMIN_NOT_FOUND");
+        return new UserError("Không tìm thấy adminId trong token.", 404, "ADMIN_NOT_FOUND");
     }
 
     static UserNotFound() {
-        return new UserError("Không tìm thấy người dùng với email hoặc số căn cước đã cung cấp", 404, "USER_NOT_FOUND");
+        return new UserError("Không tìm thấy người dùng với email hoặc số căn cước đã cung cấp.", 404, "USER_NOT_FOUND");
     }
 
     static InvalidFlowId() {
@@ -50,7 +50,7 @@ class UserError extends AppError {
     }
 
     static OtpIncorrect() {
-        return new AppError("OTP không chính xác", 400, "OTP_INCORRECT");
+        return new AppError("OTP không chính xác.", 400, "OTP_INCORRECT");
     }
 
     static NoHaveToken() {

@@ -7,6 +7,7 @@ const { createHealthCheckValidation, getHealthCheck, registerHealthCheck, getReg
 const healthCheckController = require("../../controllers/healthCheck.controller");
 healthCheckRoute.post("/createHealthCheck", authMiddleware, validateRequest(createHealthCheckValidation), healthCheckController.createHealthCheck);
 healthCheckRoute.get("/getHealthCheck", authMiddleware, validateRequestget(getHealthCheck), healthCheckController.getHealthCheck);
+healthCheckRoute.get("/getHealthCheck/:id", authMiddleware, healthCheckController.getHealthCheckById);
 healthCheckRoute.post("/registerHealthCheck", authMiddleware, validateRequest(registerHealthCheck), healthCheckController.registerHealthCheck);
 healthCheckRoute.delete("/deleteHealthCheck/:id", authMiddleware, healthCheckController.deleteHealthCheck);
 healthCheckRoute.get("/getRegisterHealthCheck", authMiddleware, validateRequestget(getRegisterHealthCheck), healthCheckController.getRegisterHealthCheck);
