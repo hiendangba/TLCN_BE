@@ -270,9 +270,16 @@ const healthCheckService = {
     getHealthCheck: async (getHealthCheckRequest) => {
         const {
             startDate,
-            endDate
+            endDate,
+            status,
         } = getHealthCheckRequest;
+
         let whereClause = {};
+
+        if (status){
+            whereClause.status = status;
+        }
+
         if (startDate && endDate) {
             // Nếu có cả 2 — lọc các đợt khám trùng / nằm trong khoảng
             whereClause = {
@@ -300,7 +307,6 @@ const healthCheckService = {
                         ],
                     },
                 ],
-                // status: "active"
             };
         } else if (startDate) {
             // Chỉ có startDate → lấy đợt khám còn sau này này là được 
@@ -308,7 +314,6 @@ const healthCheckService = {
                 endDate: {
                     [Op.gte]: startDate
                 },
-                // status: "active"
             };
         } else if (endDate) {
             // Chỉ có endDate → lấy đợt khám kết thúc trước hoặc bằng ngày đó
@@ -316,12 +321,7 @@ const healthCheckService = {
                 startDate: {
                     [Op.lte]: endDate
                 },
-                // status: "active"
             };
-        } else {
-            whereClause = {
-                // status: "active"
-            }
         }
 
         console.log('WHERE CLAUSE:', JSON.stringify(whereClause, null, 2));

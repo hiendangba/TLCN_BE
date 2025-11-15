@@ -18,6 +18,7 @@ class GetHealthCheck {
     constructor(data) {
         this.startDate = data.startDate;
         this.endDate = data.endDate;
+        this.status = data.status;
     }
 }
 
