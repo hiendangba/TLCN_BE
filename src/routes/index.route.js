@@ -9,6 +9,8 @@ const healthCheckRoute = require("./client/healthCheck.route");
 const roomRegistrationRouter = require("./client/roomRegistration.route");
 const userRouter = require("./client/user.route")
 const numberPlate = require("./client/numberPlate.route")
+const paymentRoute = require("./client/payment.route");
+
 router.use("/auth", authRouter);
 router.use("/buildings", buildingRouter);
 router.use("/floors", floorRouter);
@@ -18,4 +20,5 @@ router.use("/healthCheck", healthCheckRoute);
 router.use("/room-registrations", roomRegistrationRouter);
 router.use("/number-plate", numberPlate)
 router.use("/user", userRouter)
+router.use("/pament", paymentRoute);
 module.exports = router;
