@@ -8,7 +8,11 @@ const roomRegistrationServices = require("./roomRegistration.service")
 const { StudentStatus } = require("../dto/request/auth.request")
 const { CreateRoomRegistrationRequest } = require("../dto/request/roomRegistration.request")
 const { sequelize } = require('../config/database');
+const generateOTP = require("../utils/generateOTP")
+const { nanoid } = require('nanoid');
+const sendMail = require('../utils/mailer')
 let transaction;
+
 const authServices = {
 
     register: async (registerAccountRequest) => {
@@ -170,5 +174,250 @@ const authServices = {
             throw err;
         }
     },
+
+    forgotPassword: async (forgotPasswordRequest) => {
+        try {
+            const user = await User.findOne({
+                where: {
+                    identification: forgotPasswordRequest.identification,
+                    email: forgotPasswordRequest.email,
+                    status: StudentStatus.APPROVED_CHANGED
+                }
+            })
+            const flowId = nanoid(24);
+            if (!user) {
+                return { flowId };
+            }
+
+            const otp = generateOTP();
+            const otpHashed = await bcrypt.hash(otp, parseInt(process.env.OTP_SALT));
+            const key = `fp:flow:${flowId}`;
+            await redisClient.set(
+                key,
+                JSON.stringify({
+                    userId: user.id,
+                    otpHashed: otpHashed,
+                    attempts: 0,
+                    maxAttempts: 3,
+                    resendCount: 0,
+                    maxResends: 3
+                }),
+                { EX: 600 }
+            );
+
+            await sendMail({
+                to: user.email,
+                subject: "Mã OTP xác minh từ RoomLink – Không chia sẻ cho bất kỳ ai!",
+                html: `
+                <h3>Xin chào ${user.name},</h3>
+
+                <p>Bạn vừa yêu cầu đặt lại mật khẩu tại <b>RoomLink</b>.</p>
+
+                <p>Mã OTP của bạn là:</p>
+                <h2 style="color:#2b6cb0;letter-spacing:2px;">${otp}</h2>
+
+                <p>Mã này có hiệu lực trong <b>10 phút</b>.</p>
+
+                <br/>
+                <p>Trân trọng,<br/><b>Đội ngũ RoomLink</b></p>
+            `,
+            });
+
+            return { flowId };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    resendOTP: async (resendOTPRequest) => {
+        try {
+            const key = `fp:flow:${resendOTPRequest.flowId}`;
+            const raw = await redisClient.get(key);
+            if (!raw)
+                throw UserError.InvalidFlowId();
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (err) {
+                await redisClient.del(key);
+                throw UserError.InvalidFlowData();
+            }
+
+            const requiredFields = ["userId", "otpHashed", "attempts", "maxAttempts", "resendCount", "maxResends"];
+            for (const field of requiredFields) {
+                if (data[field] === undefined) {
+                    await redisClient.del(key);
+                    throw UserError.InvalidFlowData();
+                }
+            }
+
+            if (data.resendCount >= data.maxResends) {
+                await redisClient.del(key);
+                throw UserError.OtpResendMaxAttempt();
+            }
+
+            const user = await User.findOne({ where: { id: data.userId } });
+            if (!user) {
+                throw UserError.UserNotFound();
+            }
+            const otp = generateOTP();
+            const otpHashed = await bcrypt.hash(otp, parseInt(process.env.OTP_SALT));
+
+            data.resendCount += 1;
+            data.otpHashed = otpHashed;
+            data.attempts = 0;
+
+            await sendMail({
+                to: user.email,
+                subject: "RoomLink - Gửi lại mã OTP xác thực",
+                html: `
+                    <p>Xin chào <b>${user.name}</b>,</p>
+                    <p>Chúng tôi đã nhận được yêu cầu <b>gửi lại mã OTP</b> của bạn.</p>
+                    <p>Mã OTP mới của bạn là:</p>
+                    <h2 style="color:#2b6cb0;letter-spacing:2px;">${otp}</h2>
+                    <p>Mã OTP này sẽ hết hạn trong <b>10 phút</b>.  
+                    Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>
+                    <p>Nếu bạn không yêu cầu gửi lại mã OTP, hãy bỏ qua email này.</p>
+                    <p>Trân trọng,<br>
+                    <b>Đội ngũ RoomLink</b></p>
+                `,
+            });
+            await redisClient.set(key, JSON.stringify(data), { EX: 600 });
+            return { message: "Gửi lại mã OTP thành công" };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    verifyOTP: async (verifyOTPRequest) => {
+        try {
+            const key = `fp:flow:${verifyOTPRequest.flowId}`;
+            const raw = await redisClient.get(key);
+
+            if (!raw)
+                throw UserError.InvalidFlowId();
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (err) {
+                await redisClient.del(key);
+                throw UserError.InvalidFlowData();
+            }
+
+            const requiredFields = ["userId", "otpHashed", "attempts", "maxAttempts", "resendCount", "maxResends"];
+            for (const field of requiredFields) {
+                if (data[field] === undefined) {
+                    await redisClient.del(key);
+                    throw UserError.InvalidFlowData();
+                }
+            }
+
+            if (data.attempts >= data.maxAttempts) {
+                throw UserError.OtpMaxAttempt();
+            }
+
+            const ok = await bcrypt.compare(verifyOTPRequest.otp, data.otpHashed);
+            if (!ok) {
+                data.attempts += 1;
+                await redisClient.set(key, JSON.stringify(data), { EX: 600 });
+                throw UserError.OtpIncorrect();
+            }
+
+            await redisClient.del(key);
+
+            const resetToken = jwt.sign(
+                { id: data.userId, purpose: "reset_password" },
+                process.env.JWT_SECRET,
+                { expiresIn: "10m" }
+            );
+
+            return { resetToken, message: "Xác thực OTP thành công." };
+        }
+        catch (err) {
+            throw err;
+        }
+    },
+
+    resetPassword: async (resetPasswordRequest) => {
+        try {
+            if (resetPasswordRequest.payload.purpose != "reset_password")
+                throw UserError.InvalidResetTokenPurpose();
+            console.log(resetPasswordRequest.payload)
+            const passHashed = await bcrypt.hash(resetPasswordRequest.newPassword, parseInt(process.env.OTP_SALT));
+
+            await User.update(
+                { password: passHashed },
+                { where: { id: resetPasswordRequest.payload.id } }
+            );
+
+            return { message: "Đặt lại mật khẩu thành công!" };
+        }
+        catch (err) {
+            throw err;
+        }
+    },
+
+    refreshToken: async (refreshToken) => {
+        try {
+            if (!refreshToken) {
+                throw UserError.NoHaveToken();
+            }
+            const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+            const savedToken = await redisClient.get(`refresh:${decoded.id}`);
+
+            if (!savedToken || savedToken !== refreshToken) {
+                throw new AppError(UserError.REFRESH_TOKEN_INVALID);
+            }
+            const newAccessToken = jwt.sign(
+                { id: decoded.id, role: decoded.role, roleId: decoded.roleId },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES }
+            );
+
+            return { access_token: newAccessToken }
+        }
+        catch (err) {
+            if (err instanceof jwt.TokenExpiredError) {
+                throw UserError.TokenExpired();
+            }
+
+            if (err instanceof jwt.JsonWebTokenError) {
+                throw UserError.TokenInvalid();
+            }
+
+            throw err;
+        }
+    },
+
+    logout: async (refreshToken) => {
+        try {
+            if (!refreshToken) {
+                throw UserError.NoHaveToken();
+            }
+
+            const decoded = jwt.decode(refreshToken);
+
+            if (!decoded || !decoded.id) {
+                return { message: "Đăng xuất thành công" };
+            }
+
+            const key = `refresh:${decoded.id}`;
+            const savedToken = await redisClient.get(key);
+
+            if (!savedToken || savedToken !== refreshToken) {
+                return { message: "Đăng xuất thành công" };
+            }
+
+            await redisClient.del(key);
+
+            return { message: "Đăng xuất thành công" };
+
+        } catch (err) {
+            throw err;
+        }
+    }
+
 };
 module.exports = authServices;

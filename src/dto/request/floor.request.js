@@ -1,7 +1,7 @@
 class CreateFloorRequest {
-    constructor(data) {
-        this.number = data.number;
-        this.buildingId = data.buildingId;
+    constructor(numberFloor, buildingId) {
+        this.numberFloor = numberFloor;
+        this.buildingId = buildingId;
     }
 }
 
@@ -12,9 +12,4 @@ class GetFloorRequest {
 }
 
 
-class DeleteFloorRequest {
-    constructor(data) {
-        this.id = data.id;
-    }
-}
-module.exports = { CreateFloorRequest, GetFloorRequest, DeleteFloorRequest };
+module.exports = { CreateFloorRequest, GetFloorRequest };

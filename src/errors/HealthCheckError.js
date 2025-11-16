@@ -44,7 +44,7 @@ class HealthCheckError extends AppError {
 
     static InvalidRegisterDate() {
         return new HealthCheckError(
-            "Ngày khám đã chọn nằm ngoài thời gian đợt khám",
+            "Thời gian đã chọn nằm ngoài lịch khám.",
             400, // 400 Bad Request — dữ liệu không hợp lệ
             "INVALID_REGISTER_DATE"
         );
@@ -52,7 +52,7 @@ class HealthCheckError extends AppError {
 
     static InvalidTimeSlot() {
         return new HealthCheckError(
-            "Timeslot không hợp lệ",
+            "Timeslot không hợp lệ.",
             400, // 400 Bad Request — dữ liệu không hợp lệ
             "InvalidTimeSlot"
         );

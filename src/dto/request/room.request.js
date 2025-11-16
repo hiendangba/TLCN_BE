@@ -22,4 +22,21 @@ class GetRoomRequest {
     }
 }
 
-module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest };
+class GetRoomForAdminRequest {
+    constructor(data) {
+        const pageNum = parseInt(data.page);
+        const limitNum = parseInt(data.limit);
+        this.page = !isNaN(pageNum) && pageNum > 0 ? pageNum : 1;
+        this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
+        this.floorId = data.floorId;
+        this.status = data.status
+    }
+}
+
+class GetRoomTypeForAdminRequest {
+    constructor(data) {
+        this.buildingId = data.buildingId;
+    }
+}
+
+module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest };

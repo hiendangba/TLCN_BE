@@ -7,6 +7,7 @@ const { sequelize } = require('./config/database');
 const routes = require("./routes/index.route");
 const app = express();
 const errorMiddleware = require("./middlewares/error.middleware");
+const cookieParser = require("cookie-parser");
 
 
 (async () => {
@@ -26,11 +27,9 @@ app.use(cors({
 }));
 // Middleware
 app.use(morgan('dev'));
-app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 app.use("/api", routes);
 app.use(errorMiddleware);
-
-
 
 module.exports = app;

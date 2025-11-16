@@ -33,4 +33,10 @@ class LoginResponse {
         this.access_token = data.access_token;
     }
 }
-module.exports = { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginResponse };
+
+class ForgotPasswordResponse {
+    constructor(data) {
+        this.flowId = data.flowId
+    }
+}
+module.exports = { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginResponse, ForgotPasswordResponse };

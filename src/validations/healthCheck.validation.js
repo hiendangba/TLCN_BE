@@ -6,7 +6,7 @@ const createHealthCheckValidation = Joi.object({
                 version: ['uuidv4', 'uuidv1']
             })
             .messages({
-                "string.guid": "ID đợt khám phải là UUID hợp lệ",
+                "string.guid": "ID đợt khám phải là UUID hợp lệ.",
             }),
 
         buildingId: Joi.string()
@@ -15,8 +15,8 @@ const createHealthCheckValidation = Joi.object({
             })
             .required()
             .messages({
-                "string.guid": "ID tòa nhà phải là UUID hợp lệ",
-                "any.required": "Không được bỏ trống ID tòa nhà",
+                "string.guid": "ID tòa nhà phải là UUID hợp lệ.",
+                "any.required": "Không được bỏ trống ID tòa nhà.",
             }),
 
         title: Joi.string()
@@ -181,6 +181,31 @@ const getHealthCheck = Joi.object({
         .messages({
             "any.only": "Trạng thái chỉ được là 'active' hoặc 'inactive'.",
         }),
+
+    availableForRegistration: Joi.boolean()
+        .messages({
+            "boolean.base": "availableForRegistration phải là true hoặc false.",
+        }),
+
+    page: Joi.number()
+        .integer()
+        .min(1)
+        .messages({
+            "number.base": "page phải là số.",
+            "number.integer": "page phải là số nguyên.",
+            "number.min": "page phải lớn hơn hoặc bằng 1.",
+        }),
+
+    limit: Joi.number()
+        .integer()
+        .min(1)
+        .max(100)
+        .messages({
+            "number.base": "limit phải là số.",
+            "number.integer": "limit phải là số nguyên.",
+            "number.min": "limit phải lớn hơn hoặc bằng 1.",
+            "number.max": "limit không được vượt quá 100.",
+        }),
 });
 
 
@@ -191,8 +216,8 @@ const registerHealthCheck = Joi.object({
         })
         .required()
         .messages({
-            "string.guid": "ID đợt khám phải là UUID hợp lệ",
-            "any.required": "Không được bỏ trống ID đợt khám",
+            "string.guid": "ID đợt khám phải là UUID hợp lệ.",
+            "any.required": "Không được bỏ trống ID đợt khám.",
         }),
 
     registerDate: Joi.date()
@@ -220,17 +245,17 @@ const getRegisterHealthCheck = Joi.object({
         .integer()
         .required()
         .messages({
-            "number.base": "page phải là số",
-            "number.integer": "page phải là số nguyên",
-            "any.required": "Không được bỏ trống page",
+            "number.base": "page phải là số.",
+            "number.integer": "page phải là số nguyên.",
+            "any.required": "Không được bỏ trống page.",
         }),
     limit: Joi.number()
         .integer()
         .required()
         .messages({
-            "number.base": "limit phải là số",
-            "number.integer": "limit phải là số nguyên",
-            "any.required": "Không được bỏ trống limit",
+            "number.base": "limit phải là số.",
+            "number.integer": "limit phải là số nguyên.",
+            "any.required": "Không được bỏ trống limit.",
         }),
     keyword: Joi.string()
         .allow(null, "")

@@ -5,17 +5,17 @@ const singleMeterReadingSchema = Joi.object({
         .uuid({ version: ['uuidv4', 'uuidv1'] })
         .required()
         .messages({
-            "string.guid": "roomId phải là UUID hợp lệ",
-            "any.required": "Không được bỏ trống roomId",
+            "string.guid": "roomId phải là UUID hợp lệ.",
+            "any.required": "Không được bỏ trống roomId.",
         }),
 
     type: Joi.string()
         .valid("water", "electricity")
         .required()
         .messages({
-            "any.only": "Loại hóa đơn chỉ có thể là 'water' hoặc 'electric'",
-            "string.base": "Loại phải là chuỗi",
-            "any.required": "Không được bỏ trống loại hóa đơn"
+            "any.only": "Loại hóa đơn chỉ có thể là 'water' hoặc 'electric'.",
+            "string.base": "Loại phải là chuỗi.",
+            "any.required": "Không được bỏ trống loại hóa đơn."
         }),
 
     oldValue: Joi.number()
@@ -24,10 +24,10 @@ const singleMeterReadingSchema = Joi.object({
         .positive()
         .required()
         .messages({
-            "number.base": "Chỉ số cũ phải là số thực",
-            "number.min": "Chỉ số cũ phải lớn hơn hoặc bằng 1",
-            "number.positive": "Chỉ số cũ phải là số dương",
-            "any.required": "Không được bỏ trống chỉ số cũ"
+            "number.base": "Chỉ số cũ phải là số thực.",
+            "number.min": "Chỉ số cũ phải lớn hơn hoặc bằng 1.",
+            "number.positive": "Chỉ số cũ phải là số dương.",
+            "any.required": "Không được bỏ trống chỉ số cũ."
         }),
 
     newValue: Joi.number()
@@ -37,11 +37,11 @@ const singleMeterReadingSchema = Joi.object({
         .greater(Joi.ref('oldValue')) // optional: đảm bảo newValue > oldValue
         .required()
         .messages({
-            "number.base": "Chỉ số mới phải là số thực",
-            "number.min": "Chỉ số mới phải lớn hơn hoặc bằng 1",
-            "number.positive": "Chỉ số mới phải là số dương",
-            "number.greater": "Chỉ số mới phải lớn hơn chỉ số cũ",
-            "any.required": "Không được bỏ trống chỉ số mới"
+            "number.base": "Chỉ số mới phải là số thực.",
+            "number.min": "Chỉ số mới phải lớn hơn hoặc bằng 1.",
+            "number.positive": "Chỉ số mới phải là số dương.",
+            "number.greater": "Chỉ số mới phải lớn hơn chỉ số cũ.",
+            "any.required": "Không được bỏ trống chỉ số mới."
         }),
 
     unitPrice: Joi.number()
@@ -50,10 +50,10 @@ const singleMeterReadingSchema = Joi.object({
         .positive()
         .required()
         .messages({
-            "number.base": "Đơn giá phải là số",
-            "any.required": "Không được bỏ trống đơn giá",
-            "number.min": "Đơn giá phải lớn hơn hoặc bằng 1",
-            "number.positive": "Đơn giá phải là số dương",
+            "number.base": "Đơn giá phải là số.",
+            "any.required": "Không được bỏ trống đơn giá.",
+            "number.min": "Đơn giá phải lớn hơn hoặc bằng 1.",
+            "number.positive": "Đơn giá phải là số dương.",
         }),
 });
 
@@ -63,8 +63,8 @@ const createMeterReadingValidation = Joi.object({
     .pattern(/^\d{4}-(0[1-9]|1[0-2])$/)
     .required()
     .messages({
-      "string.pattern.base": "Kỳ (period) phải có định dạng YYYY-MM, ví dụ: 2025-10",
-      "any.required": "Không được bỏ trống kỳ (period)",
+      "string.pattern.base": "Kỳ (period) phải có định dạng YYYY-MM, ví dụ: 2025-10.",
+      "any.required": "Không được bỏ trống kỳ (period).",
     }),
 
   listMeterReading: Joi.array()
@@ -72,9 +72,9 @@ const createMeterReadingValidation = Joi.object({
     .min(1)
     .required()
     .messages({
-      "array.base": "Danh sách meterReading phải là mảng",
-      "array.min": "Phải có ít nhất 1 meterReading",
-      "any.required": "Không được bỏ trống danh sách meterReading",
+      "array.base": "Danh sách meterReading phải là mảng.",
+      "array.min": "Phải có ít nhất 1 meterReading.",
+      "any.required": "Không được bỏ trống danh sách meterReading.",
     }),
 });
 
@@ -84,17 +84,17 @@ const getMeterReadingValidation = Joi.object({
         .integer()
         .required()
         .messages({
-            "number.base": "page phải là số",
-            "number.integer": "page phải là số nguyên",
-            "any.required": "Không được bỏ trống page",
+            "number.base": "page phải là số.",
+            "number.integer": "page phải là số nguyên.",
+            "any.required": "Không được bỏ trống page.",
         }),
     limit: Joi.number()
         .integer()
         .required()
         .messages({
-            "number.base": "limit phải là số",
-            "number.integer": "limit phải là số nguyên",
-            "any.required": "Không được bỏ trống limit",
+            "number.base": "limit phải là số.",
+            "number.integer": "limit phải là số nguyên.",
+            "any.required": "Không được bỏ trống limit.",
         }),
     keyword: Joi.string()
         .allow(null, "")

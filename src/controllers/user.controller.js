@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const ApiResponse = require("../dto/response/api.response");
-const { GetUserRequest, ChangePasswordRequest } = require("../dto/request/user.request")
+const { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest } = require("../dto/request/user.request")
 const { GetUserResponse } = require("../dto/response/user.response")
 const userServices = require("../services/user.service")
 const userController = {
@@ -20,11 +20,10 @@ const userController = {
             new ApiResponse(response)
         );
     }),
-    
-    // mai sửa phần này
+
     updateProfile: asyncHandler(async (req, res) => {
-        const changePasswordRequest = new ChangePasswordRequest({ ...req.body, userId: req.userId })
-        const response = await userServices.changePassword(changePasswordRequest)
+        const updateProfileRequest = new UpdateProfileRequest(req.body, req.userId, req.roleId)
+        const response = await userServices.updateProfile(updateProfileRequest)
         return res.status(200).json(
             new ApiResponse(response)
         );
