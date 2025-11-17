@@ -230,6 +230,8 @@ const healthCheckService = {
                 registerDate
             } = registerHealthCheckRequest;
 
+            console.log(userId);
+
             // kiem tra user co ton tai hong
             const student = await Student.findOne({
                 where: {
