@@ -13,6 +13,10 @@ const paymentController = {
         return res.status(200).json(
             new ApiResponse(getPaymentReponse)
         );
+    }),
+
+    checkPayment: asyncHandler(async(req, res) => {
+        console.log(req.query);
     })
 };
 

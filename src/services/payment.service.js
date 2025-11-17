@@ -25,7 +25,7 @@ const paymentService = {
 
         const payment = await Payment.findByPk(paymentId);
         if (!payment) {
-            throw PaymentError.InvalidPayment();
+            throw PaymentError.PaymentNotFound();
         }
         if (payment.status !== "pending") {
             throw PaymentError.AlreadyProcessed();
@@ -35,29 +35,25 @@ const paymentService = {
         var partnerCode = "MOMO";
         var accessKey = "F8BBA842ECF85";
         var secretkey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
-        var requestId = partnerCode + new Date().getTime();
-        var orderId = payment.id;
-        var orderInfo = `Content ${payment.content} - studentId: ${student.id}`;
-        var redirectUrl = "https://momo.vn/return"; //thay url call back ở đây
-        var ipnUrl = "https://callback.url/notify"; //thay url call back o day
-        // var ipnUrl = redirectUrl = "https://webhook.site/454e7b77-f177-4ece-8236-ddf1c26ba7f8";
-        var amount = payment.amount.toString();
-        var requestType = "captureWallet"
-        var extraData = ""; //pass empty value if your merchant does not have stores
 
-        //before sign HMAC SHA256 with format
+        var requestId = partnerCode + new Date().getTime();
+        var orderId = partnerCode + new Date().getTime();
+        var amount = payment.amount.toString();
+
+        var orderInfo = (`${payment.content}`);
+        var redirectUrl = "https://momo.vn/return";
+        var ipnUrl = "https://callback.url/notify";
+        var requestType = "captureWallet"
+        var extraData = "";
+
+        
         //accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl&orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId&requestType=$requestType
-        var rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType
-        //puts raw signature
-        console.log("--------------------RAW SIGNATURE----------------")
-        console.log(rawSignature)
+        var rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType;
         //signature
         const crypto = require('crypto');
         var signature = crypto.createHmac('sha256', secretkey)
             .update(rawSignature)
             .digest('hex');
-        console.log("--------------------SIGNATURE----------------")
-        console.log(signature)
 
         //json object send to MoMo endpoint
         const requestBody = JSON.stringify({
@@ -80,7 +76,8 @@ const paymentService = {
                 'Content-Type': 'application/json',
             },
         });
-        console.log("URL: ",response.data.payUrl);
+
+        console.log("Payment URL: ", response.data.payUrl);
         return response.data.payUrl;
     }
 }

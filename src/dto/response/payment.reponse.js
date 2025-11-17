@@ -1,6 +1,6 @@
 class GetPaymentReponse {
     constructor (data) { 
-        this.paymentUrl  = data.paymentUrl;
+        this.paymentUrl  = data;
     }
 }
 
