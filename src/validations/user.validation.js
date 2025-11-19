@@ -6,48 +6,48 @@ const userRegisterSchema = Joi.object({
         .max(50)
         .required()
         .messages({
-            "string.empty": "Họ tên không được để trống",
-            "string.min": "Họ tên phải ít nhất 2 ký tự",
-            "string.max": "Họ tên không được quá 50 ký tự",
+            "string.empty": "Họ tên không được để trống.",
+            "string.min": "Họ tên phải ít nhất 2 ký tự.",
+            "string.max": "Họ tên không được quá 50 ký tự.",
         }),
 
     email: Joi.string()
         .email()
         .required()
         .messages({
-            "string.empty": "Email không được để trống",
-            "string.email": "Email không hợp lệ",
+            "string.empty": "Email không được để trống.",
+            "string.email": "Email không hợp lệ.",
         }),
 
     identification: Joi.string()
         .length(12)
         .required()
         .messages({
-            "string.empty": "CCCD không được để trống",
-            "string.length": "CCCD phải đủ 12 số",
+            "string.empty": "CCCD không được để trống.",
+            "string.length": "CCCD phải đủ 12 số.",
         }),
 
     dob: Joi.date()
         .less("now")
         .required()
         .messages({
-            "date.base": "Ngày sinh không hợp lệ",
-            "date.less": "Ngày sinh phải nhỏ hơn ngày hiện tại",
+            "date.base": "Ngày sinh không hợp lệ.",
+            "date.less": "Ngày sinh phải nhỏ hơn ngày hiện tại.",
         }),
 
     gender: Joi.string()
         .valid("male", "female", "other")
         .required()
         .messages({
-            "any.only": "Giới tính phải là male, female hoặc other",
+            "any.only": "Giới tính phải là male, female hoặc other.",
         }),
 
     phone: Joi.string()
         .pattern(/^(0)\d{9}$/)
         .required()
         .messages({
-            "string.pattern.base": "Số điện thoại không hợp lệ",
-            "string.empty": "Số điện thoại không được để trống",
+            "string.pattern.base": "Số điện thoại không hợp lệ.",
+            "string.empty": "Số điện thoại không được để trống.",
         }),
 
     nation: Joi.string().required().messages({
@@ -95,7 +95,7 @@ const userRegisterSchema = Joi.object({
         .uuid()
         .required()
         .messages({
-            "string.guid": "roomSlotId phải là UUID hợp lệ",
+            "string.guid": "roomSlotId phải là UUID hợp lệ.",
         }),
 
     duration: Joi.string().required(),
@@ -107,48 +107,48 @@ const adminRegisterSchema = Joi.object({
         .max(50)
         .required()
         .messages({
-            "string.empty": "Họ tên không được để trống",
-            "string.min": "Họ tên phải ít nhất 2 ký tự",
-            "string.max": "Họ tên không được quá 50 ký tự",
+            "string.empty": "Họ tên không được để trống.",
+            "string.min": "Họ tên phải ít nhất 2 ký tự.",
+            "string.max": "Họ tên không được quá 50 ký tự.",
         }),
 
     email: Joi.string()
         .email()
         .required()
         .messages({
-            "string.empty": "Email không được để trống",
-            "string.email": "Email không hợp lệ",
+            "string.empty": "Email không được để trống.",
+            "string.email": "Email không hợp lệ.",
         }),
 
     identification: Joi.string()
         .length(12)
         .required()
         .messages({
-            "string.empty": "CCCD không được để trống",
-            "string.length": "CCCD phải đủ 12 số",
+            "string.empty": "CCCD không được để trống.",
+            "string.length": "CCCD phải đủ 12 số.",
         }),
 
     dob: Joi.date()
         .less("now")
         .required()
         .messages({
-            "date.base": "Ngày sinh không hợp lệ",
-            "date.less": "Ngày sinh phải nhỏ hơn ngày hiện tại",
+            "date.base": "Ngày sinh không hợp lệ.",
+            "date.less": "Ngày sinh phải nhỏ hơn ngày hiện tại.",
         }),
 
     gender: Joi.string()
         .valid("male", "female", "other")
         .required()
         .messages({
-            "any.only": "Giới tính phải là male, female hoặc other",
+            "any.only": "Giới tính phải là male, female hoặc other.",
         }),
 
     phone: Joi.string()
         .pattern(/^(0)\d{9}$/)
         .required()
         .messages({
-            "string.pattern.base": "Số điện thoại không hợp lệ",
-            "string.empty": "Số điện thoại không được để trống",
+            "string.pattern.base": "Số điện thoại không hợp lệ.",
+            "string.empty": "Số điện thoại không được để trống.",
         }),
 
     nation: Joi.string().required().messages({
@@ -170,8 +170,8 @@ const userLoginSchema = Joi.object({
         .length(12)
         .required()
         .messages({
-            "string.empty": "CCCD không được để trống",
-            "string.length": "CCCD phải đủ 12 số",
+            "string.empty": "CCCD không được để trống.",
+            "string.length": "CCCD phải đủ 12 số.",
         }),
     password: Joi.string()
         .min(6)
@@ -210,16 +210,16 @@ const userForgotPasswordSchema = Joi.object({
         .email()
         .required()
         .messages({
-            "string.empty": "Email không được để trống",
-            "string.email": "Email không hợp lệ",
+            "string.empty": "Email không được để trống.",
+            "string.email": "Email không hợp lệ.",
         }),
 
     identification: Joi.string()
         .length(12)
         .required()
         .messages({
-            "string.empty": "CCCD không được để trống",
-            "string.length": "CCCD phải đủ 12 số",
+            "string.empty": "CCCD không được để trống.",
+            "string.length": "CCCD phải đủ 12 số.",
         }),
 });
 
@@ -229,10 +229,10 @@ const userResendOTPSchema = Joi.object({
         .regex(/^[A-Za-z0-9_-]+$/)
         .required()
         .messages({
-            "string.empty": "flowId không được để trống",
-            "string.length": "flowId không hợp lệ",
-            "string.pattern.base": "flowId không đúng định dạng",
-            "any.required": "Thiếu flowId",
+            "string.empty": "flowId không được để trống.",
+            "string.length": "flowId không hợp lệ.",
+            "string.pattern.base": "flowId không đúng định dạng.",
+            "any.required": "Thiếu flowId.",
         })
 });
 
@@ -242,10 +242,10 @@ const userVerifyOTPSchema = Joi.object({
         .regex(/^[A-Za-z0-9_-]+$/)
         .required()
         .messages({
-            "string.empty": "flowId không được để trống",
-            "string.length": "flowId không hợp lệ",
-            "string.pattern.base": "flowId không đúng định dạng",
-            "any.required": "Thiếu flowId",
+            "string.empty": "flowId không được để trống.",
+            "string.length": "flowId không hợp lệ.",
+            "string.pattern.base": "flowId không đúng định dạng.",
+            "any.required": "Thiếu flowId.",
         }),
 
     otp: Joi.string()
@@ -253,10 +253,10 @@ const userVerifyOTPSchema = Joi.object({
         .regex(/^[0-9]{6}$/)
         .required()
         .messages({
-            "string.empty": "otp không được để trống",
-            "string.length": "otp phải gồm 6 ký tự",
-            "string.pattern.base": "otp chỉ được chứa số và gồm 6 chữ số",
-            "any.required": "Thiếu otp",
+            "string.empty": "otp không được để trống.",
+            "string.length": "otp phải gồm 6 ký tự.",
+            "string.pattern.base": "otp chỉ được chứa số và gồm 6 chữ số.",
+            "any.required": "Thiếu otp.",
         }),
 
 });
@@ -267,17 +267,17 @@ const userResetPasswordSchema = Joi.object({
         .min(6)
         .required()
         .messages({
-            "string.empty": "Mật khẩu mới không được để trống",
-            "string.min": "Mật khẩu mới phải có ít nhất 6 ký tự",
-            "any.required": "Thiếu mật khẩu mới",
+            "string.empty": "Mật khẩu mới không được để trống.",
+            "string.min": "Mật khẩu mới phải có ít nhất 6 ký tự.",
+            "any.required": "Thiếu mật khẩu mới.",
         }),
 
     confirmPassword: Joi.any()
         .valid(Joi.ref("newPassword"))
         .required()
         .messages({
-            "any.only": "Xác nhận mật khẩu không khớp",
-            "any.required": "Thiếu xác nhận mật khẩu",
+            "any.only": "Xác nhận mật khẩu không khớp.",
+            "any.required": "Thiếu xác nhận mật khẩu.",
         }),
 });
 
@@ -285,18 +285,18 @@ const userUpdateProfileSchema = Joi.object({
     email: Joi.string()
         .email()
         .messages({
-            "string.email": "Email không hợp lệ",
+            "string.email": "Email không hợp lệ.",
         }),
 
     phone: Joi.string()
         .pattern(/^(0)\d{9}$/)
         .messages({
-            "string.pattern.base": "Số điện thoại không hợp lệ",
+            "string.pattern.base": "Số điện thoại không hợp lệ.",
         }),
 
     region: Joi.string()
         .messages({
-            "string.empty": "Tôn giáo không được để trống",
+            "string.empty": "Tôn giáo không được để trống.",
         }),
 
     mssv: Joi.string()

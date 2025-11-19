@@ -18,6 +18,10 @@ class GetHealthCheck {
     constructor(data) {
         this.startDate = data.startDate;
         this.endDate = data.endDate;
+        this.status = data.status;
+        this.availableForRegistration = data.availableForRegistration === 'true' || data.availableForRegistration === true;
+        this.page = data.page ? Number(data.page) : 1;
+        this.limit = data.limit ? Number(data.limit) : 10;
     }
 }
 

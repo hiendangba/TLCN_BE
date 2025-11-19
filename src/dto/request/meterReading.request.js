@@ -15,4 +15,12 @@ class CreateMeterReading {
     }
 }
 
-module.exports = { CreateMeterReading, ItemMeterReading }
+class GetMeterReadingRequest {
+    constructor(data) {
+        this.page = data.page ? Number(data.page) : 1;
+        this.limit = data.limit ? Number(data.limit) : 10;
+        this.keyword = data.keyword ? data.keyword.trim() : "";
+    }
+}
+
+module.exports = { CreateMeterReading, ItemMeterReading, GetMeterReadingRequest }

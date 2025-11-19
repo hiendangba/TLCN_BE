@@ -9,13 +9,8 @@ const {
 const BuildingError = require("../errors/BuildingError");
 const HealthCheckError = require("../errors/HealthCheckError");
 const UserError = require("../errors/UserError");
-const {
-    Op,
-} = require("sequelize");
-const {
-    response
-} = require("express");
-
+const { Op } = require("sequelize");
+const { sequelize } = require("../config/database");
 
 
 
@@ -163,26 +158,66 @@ const healthCheckService = {
     },
 
     deleteHealthCheck: async (id, userId) => {
+        const transaction = await sequelize.transaction();
         try {
             const admin = await Admin.findOne({
                 where: {
                     userId
-                }
+                },
+                transaction
             });
             if (!admin) throw UserError.InvalidUser();
 
-            let healthCheck = await HealthCheck.findByPk(id);
+            let healthCheck = await HealthCheck.findByPk(id, { transaction });
             if (!healthCheck) {
                 throw HealthCheckError.NotFound();
             }
 
-            await healthCheck.update({
-                status: "inactive",
-                updatedAt: new Date()
-            })
+            // Check if there are any registrations by querying directly
+            const registrationCount = await RegisterHealthCheck.count({
+                where: {
+                    healthCheckId: id
+                },
+                transaction
+            });
 
-            return "Xóa đợt khám thành công";
+            const hasRegistrations = registrationCount > 0;
+            const isActive = healthCheck.status === 'active';
+
+            console.log('Delete Health Check Debug:', {
+                id,
+                status: healthCheck.status,
+                isActive,
+                registrationCount,
+                hasRegistrations
+            });
+
+            if (isActive && hasRegistrations) {
+                // If active and has registrations, only soft delete (set status to inactive)
+                await healthCheck.update({
+                    status: "inactive",
+                    updatedAt: new Date()
+                }, { transaction });
+                await transaction.commit();
+                return "Đợt khám đã được chuyển sang trạng thái tạm dừng";
+            } else {
+                // If inactive (regardless of registrations) or active but no registrations, hard delete
+                // Delete all related registrations first
+                await RegisterHealthCheck.destroy({
+                    where: {
+                        healthCheckId: id
+                    },
+                    transaction
+                });
+
+                // Then delete the health check itself
+                await healthCheck.destroy({ transaction });
+
+                await transaction.commit();
+                return "Xóa đợt khám thành công";
+            }
         } catch (err) {
+            await transaction.rollback();
             throw err;
         }
 
@@ -194,6 +229,8 @@ const healthCheckService = {
                 healthCheckId,
                 registerDate
             } = registerHealthCheckRequest;
+
+            console.log(userId);
 
             // kiem tra user co ton tai hong
             const student = await Student.findOne({
@@ -274,12 +311,30 @@ const healthCheckService = {
     getHealthCheck: async (getHealthCheckRequest) => {
         const {
             startDate,
-            endDate
+            endDate,
+            status,
+            availableForRegistration,
+            page = 1,
+            limit = 10,
         } = getHealthCheckRequest;
+
+        const offset = (page - 1) * limit;
+
         let whereClause = {};
+
+        // If availableForRegistration is true, only get active status
+        if (availableForRegistration) {
+            whereClause.status = 'active';
+        } else if (status) {
+            // If status filter is explicitly provided, use it
+            whereClause.status = status;
+        }
+        // If no status filter is provided, don't filter by status (show all: active and inactive)
+
         if (startDate && endDate) {
             // Nếu có cả 2 — lọc các đợt khám trùng / nằm trong khoảng
             whereClause = {
+                ...whereClause,
                 [Op.or]: [{
                         startDate: {
                             [Op.between]: [startDate, endDate],
@@ -304,32 +359,43 @@ const healthCheckService = {
                         ],
                     },
                 ],
-                status: "active"
             };
         } else if (startDate) {
             // Chỉ có startDate → lấy đợt khám còn sau này này là được 
             whereClause = {
+                ...whereClause,
                 endDate: {
                     [Op.gte]: startDate
                 },
-                status: "active"
             };
         } else if (endDate) {
             // Chỉ có endDate → lấy đợt khám kết thúc trước hoặc bằng ngày đó
             whereClause = {
+                ...whereClause,
                 startDate: {
                     [Op.lte]: endDate
                 },
-                status: "active"
             };
-        } else {
-            whereClause = {
-                status: "active"
-            }
         }
 
         console.log('WHERE CLAUSE:', JSON.stringify(whereClause, null, 2));
-        const existingHealthChecks = await HealthCheck.findAll({
+        
+        // Determine order: prioritize active status when no status filter
+        let orderClause;
+        if (!status) {
+            // Khi không có filter status, ưu tiên active trước, sau đó sắp xếp theo startDate DESC
+            orderClause = [
+                [sequelize.literal('CASE WHEN "HealthCheck"."status" = \'active\' THEN 0 ELSE 1 END'), 'ASC'],
+                ["startDate", "DESC"]
+            ];
+        } else {
+            // Khi có filter status, chỉ sắp xếp theo startDate DESC
+            orderClause = [
+                ["startDate", "DESC"]
+            ];
+        }
+
+        const { count, rows: existingHealthChecks } = await HealthCheck.findAndCountAll({
             where: whereClause,
             include: [{
                     model: Building,
@@ -342,16 +408,37 @@ const healthCheckService = {
                     attributes: ["id", "studentId"], // lấy các bản đăng ký
                 }
             ],
-            order: [
-                ["startDate", "DESC"]
-            ],
+            order: orderClause,
+            limit: limit,
+            offset: offset,
         });
 
-        const result = existingHealthChecks.map(hc => {
+        const now = new Date();
+        let filteredHealthChecks = existingHealthChecks;
+        let totalCount = count;
+
+        // Filter by availableForRegistration if requested
+        if (availableForRegistration) {
+            filteredHealthChecks = existingHealthChecks.filter(hc => {
+                const registeredCount = (hc.RegisterHealthChecks || []).length;
+                const registrationStartDate = new Date(hc.registrationStartDate);
+                const registrationEndDate = new Date(hc.registrationEndDate);
+                
+                // Check if registration is open: status is active, within registration period, and not full
+                return hc.status === 'active' &&
+                       registrationStartDate <= now &&
+                       now <= registrationEndDate &&
+                       registeredCount < hc.capacity;
+            });
+            // Update totalCount for availableForRegistration filter
+            totalCount = filteredHealthChecks.length;
+        }
+
+        const result = filteredHealthChecks.map(hc => {
             return {
                 id: hc.id,
                 title: hc.title,
-                description: hc.description,
+                // description removed from list - only available in detail endpoint
                 location: hc.location,
                 startDate: formatDate(hc.startDate),
                 endDate: formatDate(hc.endDate),
@@ -365,7 +452,43 @@ const healthCheckService = {
                 status: hc.status
             }
         });
-        return result;
+        return { data: result, totalItems: totalCount };
+    },
+
+    getHealthCheckById: async (id) => {
+        const healthCheck = await HealthCheck.findByPk(id, {
+            include: [{
+                model: Building,
+                as: "Building",
+                attributes: ["id", "name"],
+            },
+            {
+                model: RegisterHealthCheck,
+                as: "RegisterHealthChecks",
+                attributes: ["id", "studentId"],
+            }]
+        });
+
+        if (!healthCheck) {
+            throw HealthCheckError.NotFound();
+        }
+
+        return {
+            id: healthCheck.id,
+            title: healthCheck.title,
+            description: healthCheck.description,
+            location: healthCheck.location,
+            startDate: formatDate(healthCheck.startDate),
+            endDate: formatDate(healthCheck.endDate),
+            capacity: healthCheck.capacity,
+            price: healthCheck.price,
+            buildingName: healthCheck.Building?.name || null,
+            buildingId: healthCheck.Building?.id || null,
+            registeredCount: (healthCheck.RegisterHealthChecks || []).length,
+            registrationStartDate: formatDate(healthCheck.registrationStartDate),
+            registrationEndDate: formatDate(healthCheck.registrationEndDate),
+            status: healthCheck.status
+        };
     },
 
     createHealthCheck: async (createHealthCheckRequest, userId) => {
