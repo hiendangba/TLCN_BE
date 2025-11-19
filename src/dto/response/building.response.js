@@ -6,7 +6,7 @@ class CreateBuildingResponse {
 }
 
 
-class GetBuildingResponse {
+class GetBuildingByGenderRestrictionResponse {
   constructor(data) {
     this.id = data.id;
     this.name = data.name;
@@ -14,4 +14,13 @@ class GetBuildingResponse {
   }
 }
 
-module.exports = { CreateBuildingResponse, GetBuildingResponse };
+class GetBuildingResponse {
+  constructor(data) {
+    this.id = data.id;
+    this.name = data.name;
+    this.genderRestriction = data.genderRestriction;
+    this.numberFloor = data.numberFloor;
+  }
+}
+
+module.exports = { CreateBuildingResponse, GetBuildingByGenderRestrictionResponse, GetBuildingResponse };
