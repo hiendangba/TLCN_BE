@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const { ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest, RejectRoomRegistrationRequest } = require("../dto/request/roomRegistration.request")
+const { ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest, RejectRoomRegistrationRequest, CancelRoomRegistrationRequest } = require("../dto/request/roomRegistration.request")
 const ApiResponse = require("../dto/response/api.response");
 const { GetRoomRegistrationResponse } = require("../dto/response/roomRegistration.response")
 const roomRegistrationService = require("../services/roomRegistration.service")
@@ -26,6 +26,14 @@ const roomRegistrationController = {
     rejectRoomRegistration: asyncHandler(async (req, res) => {
         const rejectRoomRegistrationRequest = new RejectRoomRegistrationRequest(req.body)
         const response = await roomRegistrationService.rejectRoomRegistration(rejectRoomRegistrationRequest);
+        return res.status(200).json(
+            new ApiResponse(response)
+        );
+    }),
+
+    cancelRoomRegistration: asyncHandler(async (req, res) => {
+        const cancelRoomRegistrationRequest = new CancelRoomRegistrationRequest(req.body, req.roleId);
+        const response = await roomRegistrationService.cancelRoomRegistration(cancelRoomRegistrationRequest);
         return res.status(200).json(
             new ApiResponse(response)
         );

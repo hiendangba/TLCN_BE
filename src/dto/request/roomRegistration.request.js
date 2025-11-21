@@ -47,4 +47,15 @@ class RejectRoomRegistrationRequest {
         }
     }
 }
-module.exports = { CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest, RejectRoomRegistrationRequest };
+
+class CancelRoomRegistrationRequest {
+    constructor(data, roleId) {
+        this.reason = data.reason || "";
+        this.bankBin = data.bankBin;
+        this.bankAccountNumber = data.bankAccountNumber;
+        this.bankName = data.bankName;
+        this.checkoutDate = data.checkoutDate;
+        this.roleId = roleId;
+    }
+}
+module.exports = { CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest, RejectRoomRegistrationRequest, CancelRoomRegistrationRequest };

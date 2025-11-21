@@ -10,15 +10,15 @@ module.exports = {
         primaryKey: true
       },
       registerDate: {
-        type: Sequelize.DATE,
+        type: Sequelize.DATEONLY,
         allowNull: true
       },
       approvedDate: {
-        type: Sequelize.DATE,
+        type: Sequelize.DATEONLY,
         allowNull: true
       },
       endDate: {
-        type: Sequelize.DATE,
+        type: Sequelize.DATEONLY,
         allowNull: true
       },
       duration: Sequelize.STRING,
@@ -31,6 +31,11 @@ module.exports = {
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
+      },
+      status: {
+        type: Sequelize.ENUM('BOOKED', 'CONFIRMED', 'CANCELED', 'MOVED'),
+        defaultValue: 'BOOKED',
+        allowNull: false
       },
       roomSlotId: {
         type: Sequelize.UUID,
@@ -69,9 +74,10 @@ module.exports = {
       BEFORE UPDATE ON RoomRegistrations
       FOR EACH ROW
       BEGIN
-        IF NEW.approvedDate IS NOT NULL THEN
-          SET NEW.endDate = DATE_ADD(NEW.approvedDate, INTERVAL CAST(NEW.duration AS UNSIGNED) MONTH);
-        END IF;
+          -- Chỉ tính lại endDate nếu approvedDate khác NULL và status không phải CANCELLED
+          IF NEW.approvedDate IS NOT NULL AND NEW.status != 'CANCELED' AND NEW.status != 'MOVED'THEN
+              SET NEW.endDate = DATE_ADD(NEW.approvedDate, INTERVAL CAST(NEW.duration AS UNSIGNED) MONTH);
+          END IF;
       END;
     `);
   },
