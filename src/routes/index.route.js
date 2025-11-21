@@ -20,5 +20,5 @@ router.use("/healthCheck", healthCheckRoute);
 router.use("/room-registrations", roomRegistrationRouter);
 router.use("/number-plate", numberPlate)
 router.use("/user", userRouter)
-router.use("/pament", paymentRoute);
+router.use("/payment", paymentRoute);
 module.exports = router;
