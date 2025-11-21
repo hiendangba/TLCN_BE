@@ -10,5 +10,7 @@ roomRouter.get("/admin", authMiddleware, isAdmin, roomController.getRoomForAdmin
 roomRouter.post("/room-type", authMiddleware, isAdmin, validateRequest(createRoomTypeSchema), roomController.createRoomType);
 roomRouter.get("/room-type", roomController.getRoomType);
 roomRouter.get("/room-type/admin", authMiddleware, isAdmin, roomController.getRoomTypeForAdmin);
+roomRouter.get("/active", authMiddleware, roomController.getRoomByUser);
+roomRouter.get("/history", authMiddleware, roomController.getRoomHistoryByUser);
 
 module.exports = roomRouter;
