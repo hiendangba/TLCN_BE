@@ -9,6 +9,10 @@ class PaymentError extends AppError {
         return new PaymentError("Giao dịch này đã được xử lý trước đó.", 409, "PAYMENT_ALREADY_PROCESSED");
     };
 
+    static InvalidSignature() {
+        return new PaymentError("Chữ ký không hợp lệ.", 401, "InvalidSignature");
+    };
+
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }
