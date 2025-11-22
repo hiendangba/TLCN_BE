@@ -2,10 +2,10 @@ const asyncHandler = require('express-async-handler');
 const {
     ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest,
     RejectRoomRegistrationRequest, CancelRoomRegistrationRequest,
-    GetCancelRoomRequest
+    GetCancelRoomRequest, ApprovedCancelRoomRequest
 } = require("../dto/request/roomRegistration.request")
 const ApiResponse = require("../dto/response/api.response");
-const { GetRoomRegistrationResponse } = require("../dto/response/roomRegistration.response")
+const { GetRoomRegistrationResponse, GetRoomCancelResponse } = require("../dto/response/roomRegistration.response")
 const roomRegistrationService = require("../services/roomRegistration.service")
 const roomRegistrationController = {
     getRoomRegistration: asyncHandler(async (req, res) => {
@@ -44,14 +44,17 @@ const roomRegistrationController = {
 
     getCancelRoom: asyncHandler(async (req, res) => {
         const getCancelRoomRequest = new GetCancelRoomRequest(req.query);
-        const response = await roomRegistrationService.getCancelRoom(getCancelRoomRequest);
+        const { totalItems, response } = await roomRegistrationService.getCancelRoom(getCancelRoomRequest);
+        const getRoomCancelResponses = response.map(item => new GetRoomCancelResponse(item));
         return res.status(200).json(
-            new ApiResponse(response)
+            new ApiResponse(getRoomCancelResponses,
+                { page: getCancelRoomRequest.page, limit: getCancelRoomRequest.limit, totalItems })
         );
     }),
 
     approveCancelRoom: asyncHandler(async (req, res) => {
-        const response = await roomRegistrationService.approveCancelRoom();
+        const approvedCancelRoomRequest = new ApprovedCancelRoomRequest(req.body, req.roleId)
+        const response = await roomRegistrationService.approveCancelRoom(approvedCancelRoomRequest);
         return res.status(200).json(
             new ApiResponse(response)
         );
