@@ -10,6 +10,9 @@ class RoomRegistrationError extends AppError {
     static CheckoutDateAfterEndDate() {
         return new RoomRegistrationError("Ngày checkout không thể sau ngày kết thúc hợp đồng.", 400, "CHECKOUT_AFTER_END_DATE");
     }
+    static RoomRegistrationAlreadyCanceled() {
+        return new RoomRegistrationError("Đơn hủy phòng của bạn đang được admin xem xét để duyệt.", 400, "ROOM_REGISTRATION_ALREADY_CANCELED");
+    }
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }

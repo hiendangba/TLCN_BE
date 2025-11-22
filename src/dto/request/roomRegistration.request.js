@@ -56,7 +56,6 @@ class CancelRoomRegistrationRequest {
     }
 }
 
-
 class GetCancelRoomRequest {
     constructor(data) {
         const pageNum = parseInt(data.page);
@@ -64,11 +63,20 @@ class GetCancelRoomRequest {
         this.page = !isNaN(pageNum) && pageNum > 0 ? pageNum : 1;
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.keyword = data.keyword ? data.keyword.trim() : "";
+        this.status = data.status || "All";
+    }
+}
+
+class ApprovedCancelRoomRequest {
+    constructor(data, adminId) {
+        this.ids = data.ids
+        this.adminId = adminId
     }
 }
 
 module.exports = {
     CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest,
     GetRoomRegistrationRequest, RejectRoomRegistrationRequest,
-    CancelRoomRegistrationRequest, GetCancelRoomRequest
+    CancelRoomRegistrationRequest, GetCancelRoomRequest,
+    ApprovedCancelRoomRequest
 };
