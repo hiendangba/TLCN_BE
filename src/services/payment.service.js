@@ -1,6 +1,10 @@
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
-const { Student, Payment, } = require("../models");
+const {
+    Student,
+    Payment,
+    sequelize,
+} = require("../models");
 const axios = require('axios');
 require('dotenv').config();
 const crypto = require("crypto");
@@ -72,11 +76,12 @@ const paymentService = {
             if (!payment) {
                 throw PaymentError.PaymentNotFound();
             }
-            if (payment.status === "success") {
+            if (payment.status === "SUCCESS") {
                 throw PaymentError.AlreadyProcessed();
             }
 
-           
+            var partnerCode = "MOMO";
+            var accessKey = process.env.ACCESS_KEY_MOMO;
             var requestId = partnerCode + new Date().getTime();
             var orderId = `${payment.id}_${Date.now()}_${student.id}`;
             var amount = payment.amount.toString();
@@ -127,7 +132,7 @@ const paymentService = {
     checkPayment: async (momoResponse) => {
         try {
             const isValidSignature = verifyMomoCallbackSignature(momoResponse);
-            if (!isValidSignature){
+            if (!isValidSignature) {
                 throw PaymentError.InvalidSignature();
             }
             const {
@@ -153,11 +158,11 @@ const paymentService = {
             if (String(resultCode) === "0") {
                 // Cập nhật thông tin thanh toán thành công
                 payment.paidAt = new Date(Number(responseTime));
-                payment.status = "success";
+                payment.status = "SUCCESS";
                 payment.studentId = studentId;
-                payment
+                payment.transId = momoResponse.transId;
             } else {
-                payment.status = "failed";
+                payment.status = "FAILED";
             }
 
             await payment.save();
@@ -166,6 +171,38 @@ const paymentService = {
             console.log(err);
             throw (err);
         }
+    },
+
+
+    createPayment: async (paymentList) => {
+        const t = await sequelize.transaction();
+        try {
+            // Nếu đầu vào không phải là mãng, biến thành mãng
+            const list = Array.isArray(paymentList) ? paymentList : [paymentList];
+            const results = await Promise.all(
+                list.map(p => {
+                    return Payment.create({
+                        content: p.content,
+                        type: p.type,
+                        amount: p.amount,
+                        currency: "VND",
+                        transactionRef: null,
+                        paidAt: null,
+                        status: "PENDING",
+                    }, {
+                        transaction: t
+                    })
+                })
+            );
+
+            await t.commit();
+            return results;
+        } catch (err) {
+            console.log(err);
+            await t.rollback();
+            throw err;
+        }
+
     }
 
 }

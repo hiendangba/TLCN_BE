@@ -98,7 +98,7 @@ module.exports = {
           id: uuidv4(),
           roomNumber: `${buildingLetter}${floor.number}${roomIndex}`,
           capacity: roomType.type.includes('2') ? 2 : roomType.type.includes('4') ? 4 : 6,
-          monthlyFee: roomType.type.includes('2') ? 100 : roomType.type.includes('4') ? 200 : 300,
+          monthlyFee: roomType.type.includes('2') ? 100000 : roomType.type.includes('4') ? 200000 : 300000,
           floorId: floor.id,
           roomTypeId: roomType.id,
           createdAt: new Date(),
@@ -219,8 +219,8 @@ module.exports = {
 
     try {
       // Lấy lại tất cả roomSlots sau khi đã insert
-      const [slots] = await queryInterface.sequelize.query(`SELECT id FROM "RoomSlots" ORDER BY "createdAt" ASC`);
-      const [studentsList] = await queryInterface.sequelize.query(`SELECT id FROM "Students" ORDER BY "createdAt" ASC`);
+     const [slots] = await queryInterface.sequelize.query('SELECT id FROM `RoomSlots` ORDER BY `createdAt` ASC');
+const [studentsList] = await queryInterface.sequelize.query('SELECT id FROM `Students` ORDER BY `createdAt` ASC');
 
       // Gán lần lượt từng student vào 1 slot (nếu slot đủ)
       const roomRegistrations = studentsList.map((student, index) => ({

@@ -11,7 +11,8 @@ const HealthCheckError = require("../errors/HealthCheckError");
 const UserError = require("../errors/UserError");
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/database");
-
+const paymentService = require("../services/payment.service");
+const { content } = require("googleapis/build/src/apis/content");
 
 
 const formatDate = (date) => {
@@ -230,8 +231,6 @@ const healthCheckService = {
                 registerDate
             } = registerHealthCheckRequest;
 
-            console.log(userId);
-
             // kiem tra user co ton tai hong
             const student = await Student.findOne({
                 where: {
@@ -287,6 +286,16 @@ const healthCheckService = {
                 studentId: student.id
             });
 
+            // tao ra payment cho registerHealCheck
+            if (registered){
+                const payment = {
+                    content: `${existingHealthCheck.title}` ,
+                    type: "HEALTHCHECK",
+                    amount: Number(existingHealthCheck.price),
+                };
+                await paymentService.createPayment(payment);
+            }
+
             // chuyen no thanh DTO
             const result = {
                 studentId: registered.studentId,
@@ -324,7 +333,7 @@ const healthCheckService = {
 
         // If availableForRegistration is true, only get active status
         if (availableForRegistration) {
-            whereClause.status = 'active';
+            whereClause.status = "active";
         } else if (status) {
             // If status filter is explicitly provided, use it
             whereClause.status = status;
@@ -385,7 +394,7 @@ const healthCheckService = {
         if (!status) {
             // Khi không có filter status, ưu tiên active trước, sau đó sắp xếp theo startDate DESC
             orderClause = [
-                [sequelize.literal('CASE WHEN "HealthCheck"."status" = \'active\' THEN 0 ELSE 1 END'), 'ASC'],
+                [sequelize.literal("CASE WHEN `HealthCheck`.`status` = 'active' THEN 0 ELSE 1 END"), 'ASC'],
                 ["startDate", "DESC"]
             ];
         } else {

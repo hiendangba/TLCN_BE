@@ -6,6 +6,7 @@ const { StudentStatus } = require("../dto/request/auth.request")
 const sendMail = require("../utils/mailer")
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/database");
+const paymentService = require("../services/payment.service"); 
 
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
@@ -130,7 +131,7 @@ const roomRegistrationServices = {
                         include: [
                             {
                                 model: Room,
-                                attributes: ["roomNumber"],
+                                attributes: ["roomNumber", "monthlyFee"],
                             },
                         ],
                     },
@@ -139,6 +140,7 @@ const roomRegistrationServices = {
             });
 
             const approvedList = [];
+            const approvedListInfo = [];
             const skippedList = [];
             const emailTasks = [];
 
@@ -205,6 +207,7 @@ const roomRegistrationServices = {
                     }
 
                     approvedList.push(registration.id);
+                    approvedListInfo.push(registration);
 
                 } catch (innerErr) {
                     skippedList.push({
@@ -216,6 +219,33 @@ const roomRegistrationServices = {
 
             await transaction.commit();
             await Promise.allSettled(emailTasks);
+
+            // -----------------------------
+            // 🔥 CREATE PAYMENT AFTER COMMIT 
+            // -----------------------------
+
+            const paymentList = approvedListInfo.map(item => {
+                const roomFee = Number(item.RoomSlot.Room.monthlyFee);
+                const duration = Number(item.duration);
+                const startDate = new Date(item.approvedDate);
+                const endDate = new Date(item.endDate);
+                const amount = roomFee * duration;
+
+                console.log(item.RoomSlot.Room.monthlyFee);
+                console.log(item.duration);
+                console.log(roomFee);
+                console.log(duration);
+                const content = `Thanh toan tien phong ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
+
+                return {
+                    amount: amount,
+                    type: "ROOM",
+                    content: content
+                }
+            })
+
+            await paymentService.createPayment(paymentList);
+
             return {
                 approved: approvedList,
                 skipped: skippedList,
