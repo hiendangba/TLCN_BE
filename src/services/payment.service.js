@@ -79,10 +79,7 @@ const paymentService = {
                 throw PaymentError.AlreadyProcessed();
             }
 
-            // Goi momo de lay URL den trang thanh toan momo
-            var partnerCode = "MOMO";
-            var accessKey = process.env.ACCESS_KEY_MOMO;
-
+           
             var requestId = partnerCode + new Date().getTime();
             var orderId = `${payment.id}_${Date.now()}_${student.id}`;
             var amount = payment.amount.toString();
@@ -161,6 +158,7 @@ const paymentService = {
                 payment.paidAt = new Date(Number(responseTime));
                 payment.status = "success";
                 payment.studentId = studentId;
+                payment
             } else {
                 payment.status = "failed";
             }
