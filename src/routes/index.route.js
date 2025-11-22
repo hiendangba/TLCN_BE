@@ -11,7 +11,6 @@ const userRouter = require("./client/user.route")
 const numberPlateRouter = require("./client/numberPlate.route")
 const paymentRouter = require("./client/payment.route");
 const renewalRouter = require("./client/renewal.route");
-const bankRouter = require("./bank/bank.route")
 router.use("/auth", authRouter);
 router.use("/buildings", buildingRouter);
 router.use("/floors", floorRouter);
@@ -23,5 +22,4 @@ router.use("/number-plate", numberPlateRouter)
 router.use("/user", userRouter)
 router.use("/payment", paymentRouter);
 router.use("/renewals", renewalRouter)
-router.use("/banks", bankRouter)
 module.exports = router;

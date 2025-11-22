@@ -355,6 +355,7 @@ const roomRegistrationServices = {
             await roomRegistration.update({
                 status: "CANCELED"
             })
+
             const cancellationInfo = await CancellationInfo.create({
                 roomRegistrationId: roomRegistration.id,
                 bankBin: cancelRoomRegistrationRequest.bankBin,
@@ -365,7 +366,23 @@ const roomRegistrationServices = {
                 refundStatus: 'PENDING',
                 amount: monthDifferences * roomRegistration.RoomSlot.Room.monthlyFee,
             });
-            return roomRegistration;
+            return cancellationInfo;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getCancelRoom: async (getCancelRoomRequest) => {
+        try {
+            return true
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    approveRoomMove: async (roleId) => {
+        try {
+            return true
         } catch (err) {
             throw err;
         }
