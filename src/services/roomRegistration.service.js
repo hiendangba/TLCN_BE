@@ -90,9 +90,9 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    // Ưu tiên đơn chờ duyệt (approvedDate = NULL) lên trên
                     [sequelize.literal('CASE WHEN "approvedDate" IS NULL THEN 0 ELSE 1 END'), 'ASC'],
-                    ["createdAt", "DESC"]
+                    ["createdAt", "DESC"],
+                    ["id", "ASC"]
                 ],
             });
 
@@ -375,6 +375,16 @@ const roomRegistrationServices = {
             });
 
             if (!roomRegistration) {
+                const existing = await RoomRegistration.findOne({
+                    where: {
+                        studentId: cancelRoomRegistrationRequest.roleId,
+                        status: "CANCELED"
+                    },
+                });
+                if (existing) {
+                    throw RoomRegistrationError.RoomRegistrationAlreadyCanceled();
+                }
+
                 throw RoomRegistrationError.RoomRegistrationNotFound();
             }
 
@@ -388,14 +398,12 @@ const roomRegistrationServices = {
 
             const cancellationInfo = await CancellationInfo.create({
                 roomRegistrationId: roomRegistration.id,
-                bankBin: cancelRoomRegistrationRequest.bankBin,
-                bankAccountNumber: cancelRoomRegistrationRequest.bankAccountNumber,
-                bankName: cancelRoomRegistrationRequest.bankName,
                 reason: cancelRoomRegistrationRequest.reason,
                 checkoutDate: new Date(cancelRoomRegistrationRequest.checkoutDate),
                 refundStatus: 'PENDING',
                 amount: monthDifferences * roomRegistration.RoomSlot.Room.monthlyFee,
             });
+
             return cancellationInfo;
         } catch (err) {
             throw err;
@@ -404,19 +412,200 @@ const roomRegistrationServices = {
 
     getCancelRoom: async (getCancelRoomRequest) => {
         try {
-            return true
+            const { page, limit, keyword, status } = getCancelRoomRequest;
+            const offset = (page - 1) * limit;
+
+            const searchCondition = keyword
+                ? {
+                    [Op.or]: [
+                        { "$Student.User.name$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.User.identification$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.mssv$": { [Op.like]: `%${keyword}%` } },
+                        { "$RoomSlot.Room.roomNumber$": { [Op.like]: `%${keyword}%` } },
+                    ],
+                }
+                : {};
+
+            let statusCondition = {};
+            switch (status) {
+                case "Approved":
+                    statusCondition = { status: "CANCELED", "$CancellationInfo.refundStatus$": "APPROVED" };
+                    break;
+                case "Unapproved":
+                    statusCondition = { status: "CANCELED", "$CancellationInfo.refundStatus$": "PENDING" };
+                    break;
+                case "Reject":
+                    statusCondition = { status: "CANCELED", "$CancellationInfo.refundStatus$": "REJECT" };
+                    break;
+                default:
+                    statusCondition = {
+                        status: "CANCELED"
+                    };
+                    break;
+            }
+
+            const roomRegistration = await RoomRegistration.findAndCountAll({
+                where: {
+                    ...statusCondition,
+                    ...searchCondition,
+                },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["id", "mssv", "school", "userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                            },
+                        ],
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"],
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber"],
+                            },
+                        ],
+                    },
+                    {
+                        model: CancellationInfo,
+                        attributes: ["reason", "checkoutDate", "refundStatus", "amount"],
+                    }
+                ],
+                offset,
+                limit,
+                order: [
+                    [sequelize.literal(`CASE WHEN "CancellationInfo"."refundStatus" = 'PENDING' THEN 0 ELSE 1 END`), 'ASC'],
+                    ["createdAt", "DESC"],
+                    ["id", "ASC"]
+                ]
+            });
+
+            return {
+                totalItems: roomRegistration.count,
+                response: roomRegistration.rows,
+            };
         } catch (err) {
             throw err;
         }
     },
 
-    approveRoomMove: async (roleId) => {
+    approveCancelRoom: async (approvedCancelRoomRequest) => {
+        const transaction = await sequelize.transaction();
         try {
-            return true
+
+            const admin = await Admin.findOne({ where: { id: approvedCancelRoomRequest.adminId } });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: {
+                    id: approvedCancelRoomRequest.ids,
+                    status: "CANCELED"
+                },
+                include: [
+                    {
+                        model: Student,
+                        as: "Student",
+                        attributes: ["userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "email"],
+                            },
+                        ],
+                    },
+                    {
+                        model: RoomSlot,
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber"],
+                            },
+                        ],
+                    },
+                    {
+                        model: CancellationInfo,
+                    }
+                ],
+                transaction,
+            });
+
+            const approvedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const registration of roomRegistrations) {
+                try {
+                    // Reload roomSlot với lock để tránh race condition khi nhiều admin cùng duyệt
+                    const roomSlot = await RoomSlot.findByPk(registration.roomSlotId, {
+                        include: [{ model: Room, attributes: ["roomNumber"] }],
+                        lock: transaction.LOCK.UPDATE,
+                        transaction,
+                    });
+
+                    if (!roomSlot) {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            reason: "Không tìm thấy slot phòng",
+                        });
+                        continue;
+                    }
+
+                    await roomSlot.update({ isOccupied: false }, { transaction });
+
+                    await registration.update(
+                        {
+                            adminId: admin.id,
+                        },
+                        { transaction }
+                    );
+
+                    const user = registration.Student.User;
+
+                    if (user) {
+                        emailTasks.push(
+                            sendMail({
+                                to: user.email,
+                                subject: "Đơn hủy phòng của bạn đã được duyệt",
+                                html: `
+                                    <h3>Xin chào ${user.name},</h3>
+                                    <p>Đơn hủy phòng ${roomSlot.Room.roomNumber} vị trí giường số ${roomSlot.slotNumber} của bạn đã được duyệt.</p>
+                                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                                `,
+                            })
+                        );
+                    }
+
+                    approvedList.push(registration.id);
+                    
+                    //Kiểm tra đã refund chưa ở đây
+                    await registration.CancellationInfo.update({ refundStatus: "APPROVED" }, { transaction });
+
+
+                } catch (innerErr) {
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+            return {
+                approved: approvedList,
+                skipped: skippedList,
+            };
+
         } catch (err) {
+            if (!transaction.finished) await transaction.rollback();
             throw err;
         }
     },
+    
 };
 
 
