@@ -53,23 +53,19 @@ const rejectRoomRegistrationSchema = Joi.object({
         }),
 });
 
-const deleteRoomRegistrationSchema = Joi.object({
-    ids: Joi.array()
-        .items(
-            Joi.string()
-                .uuid()
-                .messages({
-                    "string.base": "Mỗi ID phải là chuỗi.",
-                    "string.guid": "ID không hợp lệ, vui lòng kiểm tra lại.",
-                })
-        )
-        .min(1)
+const cancelRoomRegistrationSchema = Joi.object({
+    reason: Joi.string()
+        .allow("")
+        .optional()
+        .messages({
+            "string.base": "Lý do từ chối phải là chuỗi.",
+        }),
+    checkoutDate: Joi.date()
         .required()
         .messages({
-            "array.base": "Trường 'ids' phải là một danh sách (array).",
-            "array.min": "Phải có ít nhất một ID để duyệt.",
-            "any.required": "Thiếu trường 'ids' trong yêu cầu.",
+            "date.base": "Ngày checkout không hợp lệ.",
+            "any.required": "Ngày checkout không được bỏ trống.",
         }),
 });
 
-module.exports = { approveRoomRegistrationSchema, rejectRoomRegistrationSchema, deleteRoomRegistrationSchema };
+module.exports = { approveRoomRegistrationSchema, rejectRoomRegistrationSchema, cancelRoomRegistrationSchema };

@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
             RoomRegistration.belongsTo(models.Student, { foreignKey: 'studentId' });
             RoomRegistration.belongsTo(models.RoomSlot, { foreignKey: 'roomSlotId' });
             RoomRegistration.belongsTo(models.Admin, { foreignKey: 'adminId' });
+            RoomRegistration.hasOne(models.CancellationInfo, { foreignKey: "roomRegistrationId" });
         }
     }
 
@@ -16,10 +17,15 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: DataTypes.UUIDV4,
             primaryKey: true
         },
-        registerDate: DataTypes.DATE,
-        approvedDate: DataTypes.DATE,
-        endDate: DataTypes.DATE,
+        registerDate: DataTypes.DATEONLY,
+        approvedDate: DataTypes.DATEONLY,
+        endDate: DataTypes.DATEONLY,
         duration: DataTypes.STRING,
+        status: {
+            type: DataTypes.ENUM('BOOKED', 'CONFIRMED', 'CANCELED', 'MOVED'),
+            defaultValue: 'BOOKED',
+            allowNull: false
+        },
     }, {
         sequelize,
         modelName: 'RoomRegistration',

@@ -31,9 +31,12 @@ async function sendMail({ to, subject, html }) {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    const res = await gmail.users.messages.send({
+    await gmail.users.messages.send({
       userId: 'me',
-      requestBody: { raw: encodedMessage },
+      requestBody: {
+        raw: encodedMessage,
+        labelIds: ['SENT']
+      },
     });
   } catch (error) {
     console.error("❌ Lỗi gửi mail:", error);

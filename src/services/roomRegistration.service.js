@@ -1,4 +1,4 @@
-const { Room, RoomRegistration, RoomSlot, Student, User, Admin } = require("../models");
+const { Room, RoomRegistration, RoomSlot, Student, User, Admin, CancellationInfo } = require("../models");
 const RoomError = require("../errors/RoomError");
 const UserError = require("../errors/UserError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError");
@@ -47,14 +47,15 @@ const roomRegistrationServices = {
             let statusCondition = {};
             switch (status) {
                 case "Approved":
-                    statusCondition = { approvedDate: { [Op.ne]: null } }; // Đã duyệt
+                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "CANCELED"] } }; // Đã duyệt
                     break;
                 case "Unapproved":
-                    statusCondition = { approvedDate: null }; // Chưa duyệt
+                    statusCondition = { approvedDate: null, status: "BOOKED" }; // Chưa duyệt
                     break;
                 case "All":
                 default:
-                    statusCondition = {};
+                    statusCondition = {
+                    };
                     break;
             }
 
@@ -175,6 +176,7 @@ const roomRegistrationServices = {
                     await registration.update(
                         {
                             approvedDate: new Date(),
+                            status: "CONFIRMED",
                             adminId: admin.id,
                         },
                         { transaction }
@@ -322,6 +324,85 @@ const roomRegistrationServices = {
         }
     },
 
+    cancelRoomRegistration: async (cancelRoomRegistrationRequest) => {
+        try {
+            const roomRegistration = await RoomRegistration.findOne({
+                where: {
+                    studentId: cancelRoomRegistrationRequest.roleId,
+                    status: "CONFIRMED"
+                },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["userId"],
+                        include: [{ model: User, attributes: ["name", "identification"] }],
+                    },
+                    {
+                        model: RoomSlot,
+                        include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
+                    },
+                ],
+            });
+
+            if (!roomRegistration) {
+                throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+
+            if (new Date(cancelRoomRegistrationRequest.checkoutDate) > roomRegistration.endDate) {
+                throw RoomRegistrationError.CheckoutDateAfterEndDate();
+            }
+            const monthDifferences = getMonthsDifference(cancelRoomRegistrationRequest.checkoutDate, roomRegistration.endDate)
+            await roomRegistration.update({
+                status: "CANCELED"
+            })
+
+            const cancellationInfo = await CancellationInfo.create({
+                roomRegistrationId: roomRegistration.id,
+                bankBin: cancelRoomRegistrationRequest.bankBin,
+                bankAccountNumber: cancelRoomRegistrationRequest.bankAccountNumber,
+                bankName: cancelRoomRegistrationRequest.bankName,
+                reason: cancelRoomRegistrationRequest.reason,
+                checkoutDate: new Date(cancelRoomRegistrationRequest.checkoutDate),
+                refundStatus: 'PENDING',
+                amount: monthDifferences * roomRegistration.RoomSlot.Room.monthlyFee,
+            });
+            return cancellationInfo;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getCancelRoom: async (getCancelRoomRequest) => {
+        try {
+            return true
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    approveRoomMove: async (roleId) => {
+        try {
+            return true
+        } catch (err) {
+            throw err;
+        }
+    },
 };
+
+
+function getMonthsDifference(checkoutDate, endDate) {
+    const checkout = new Date(checkoutDate);
+    const end = new Date(endDate);
+    const yearsDiff = end.getFullYear() - checkout.getFullYear();
+    const monthsDiff = end.getMonth() - checkout.getMonth();
+
+    let totalMonths = yearsDiff * 12 + monthsDiff;
+
+    if (end.getDate() < checkout.getDate()) {
+        totalMonths -= 1;
+    }
+
+    return totalMonths;
+}
 
 module.exports = roomRegistrationServices;

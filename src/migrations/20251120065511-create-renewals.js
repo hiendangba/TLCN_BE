@@ -3,47 +3,32 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Payments', {
+    await queryInterface.createTable('Renewals', {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true
       },
-      content: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      type: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      amount: {
-        type: Sequelize.DECIMAL(15, 0), // 15 chữ số, không thập phân
-        allowNull: false
-      },
-      currency: {
-        type: Sequelize.STRING,
+      isActive: {
+        type: Sequelize.BOOLEAN,
         allowNull: false,
-        defaultValue: 'VND'
+        defaultValue: true
       },
-      transId: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      paidAt: {
-        type: Sequelize.DATE,
-        allowNull: true
-      },
-      status: {
-        type: Sequelize.ENUM('pending', 'success', 'failed'),
+      startedBy: {
+        type: Sequelize.UUID,
         allowNull: false,
-        defaultValue: 'pending'
+        references: {
+          model: 'Admins',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      studentId: {
+      stoppedBy: {
         type: Sequelize.UUID,
         allowNull: true,
         references: {
-          model: 'Students',
+          model: 'Admins',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -63,6 +48,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Payments');
+    await queryInterface.dropTable('Renewals');
   }
 };

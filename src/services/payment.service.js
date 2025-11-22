@@ -1,9 +1,6 @@
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
-const {
-    Student,
-    Payment,
-} = require("../models");
+const { Student, Payment, } = require("../models");
 const axios = require('axios');
 require('dotenv').config();
 const crypto = require("crypto");

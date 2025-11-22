@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const buildingServices = require("../services/building.service")
 const { CreateBuildingRequest, GetBuildingRequest, DeleteBuildingRequest } = require("../dto/request/building.request")
-const { CreateBuildingResponse, GetBuildingResponse } = require("../dto/response/building.response")
+const { CreateBuildingResponse, GetBuildingResponse, GetBuildingByGenderRestrictionResponse } = require("../dto/response/building.response")
 const ApiResponse = require("../dto/response/api.response");
 const buildingController = {
     createBuilding: asyncHandler(async (req, res) => {
@@ -24,12 +24,11 @@ const buildingController = {
     getBuildingByGenderRestriction: asyncHandler(async (req, res) => {
         const getBuildingRequest = new GetBuildingRequest(req.query);
         const response = await buildingServices.getBuildingByGenderRestriction(getBuildingRequest)
-        const getBuildingResponses = response.map(item => new GetBuildingResponse(item));
+        const getBuildingResponses = response.map(item => new GetBuildingByGenderRestrictionResponse(item));
         return res.status(200).json(
             new ApiResponse(getBuildingResponses)
         );
     }),
-
 
     getBuilding: asyncHandler(async (req, res) => {
         const response = await buildingServices.getBuilding()

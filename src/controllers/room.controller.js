@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const roomServices = require("../services/room.service")
 const ApiResponse = require("../dto/response/api.response");
 const { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest } = require("../dto/request/room.request")
-const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse } = require("../dto/response/room.response")
+const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse } = require("../dto/response/room.response")
 const roomController = {
     createRoomType: asyncHandler(async (req, res) => {
         const createRoomTypeRequest = new CreateRoomTypeRequest(req.body);
@@ -48,6 +48,21 @@ const roomController = {
         );
     }),
 
+    getRoomByUser: asyncHandler(async (req, res) => {
+        const response = await roomServices.getRoomByUser(req.roleId)
+        const getRoomByUserResponse = new GetRoomByUserResponse(response);
+        return res.status(200).json(
+            new ApiResponse(getRoomByUserResponse)
+        );
+    }),
+
+
+    getRoomHistoryByUser: asyncHandler(async (req, res) => {
+        const response = await roomServices.getRoomHistoryByUser(req.roleId)
+        return res.status(200).json(
+            new ApiResponse(response)
+        );
+    }),
 
     getRoomForAdmin: asyncHandler(async (req, res) => {
         const getRoomForAdminRequest = new GetRoomForAdminRequest(req.query);

@@ -1,7 +1,9 @@
-const { Room, RoomType, Floor, RoomSlot, Building } = require("../models");
+const { Room, RoomRegistration, RoomSlot, RoomType, Floor, Building, Student, User } = require("../models");
 const floorServices = require("./floor.service");
 const RoomError = require("../errors/RoomError");
+const RoomRegistrationError = require("../errors/RoomRegistrationError")
 const FloorError = require("../errors/FloorError");
+const { Op } = require("sequelize");
 
 const roomServices = {
     createRoomType: async (createRoomTypeRequest) => {
@@ -110,6 +112,111 @@ const roomServices = {
             );
 
             return availableRooms;
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getRoomByUser: async (roleId) => {
+        try {
+            const roomRegistration = await RoomRegistration.findOne({
+                where: {
+                    studentId: roleId,
+                    status: "CONFIRMED",
+                    endDate: {
+                        [Op.gt]: new Date()
+                    }
+                },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ['name', 'identification']
+                            }
+                        ]
+                    }
+                ]
+            });
+            if (!roomRegistration) {
+                throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+            const roomSlot = await RoomSlot.findByPk(roomRegistration.roomSlotId)
+            const room = await Room.findByPk(roomSlot.roomId, {
+                include: [
+                    {
+                        model: RoomSlot,
+                        attributes: ['slotNumber', 'isOccupied'],
+                    },
+                    {
+                        model: RoomType,
+                        attributes: ['type', 'amenities']
+                    }
+                ],
+                order: [
+                    [RoomSlot, 'slotNumber', 'ASC']
+                ]
+            });
+            return {
+                ...roomRegistration.toJSON(),
+                ...roomSlot.toJSON(),
+                ...room.toJSON()
+            };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getRoomHistoryByUser: async (roleId) => {
+        try {
+            console.log(roleId)
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: {
+                    studentId: roleId,
+                    status: { [Op.in]: ["CANCELED", "MOVED"] },
+                    endDate: { [Op.lte]: new Date() }
+                },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["name", "identification"]
+                            }
+                        ]
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["slotNumber", "isOccupied"],
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber", "capacity", "monthlyFee"],
+                                include: [
+                                    {
+                                        model: RoomType,
+                                        attributes: ["type", "amenities"]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                order: [
+                    ["endDate", "DESC"],
+                    [RoomSlot, "slotNumber", "ASC"]
+                ]
+            });
+
+            if (!roomRegistrations || roomRegistrations.length === 0) {
+                throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+            return roomRegistrations;
+
         } catch (err) {
             throw err;
         }

@@ -1,6 +1,8 @@
 const { User, Student } = require("../models");
 const bcrypt = require("bcryptjs");
-const { StudentStatus } = require("../dto/request/auth.request")
+const { StudentStatus } = require("../dto/request/auth.request");
+const UserError = require("../errors/UserError");
+const { Op } = require("sequelize");
 
 const userServices = {
     getUser: async (getUserRequest) => {
@@ -56,15 +58,21 @@ const userServices = {
 
             await User.update(updateData, { where: { id: updateProfileRequest.userId } });
             if (updateData.mssv !== undefined || updateData.school !== undefined) {
-                await Student.update(
-                    {
-                        mssv: updateData.mssv,
-                        school: updateData.school
-                    },
-                    { where: { id: updateProfileRequest.roleId } }
-                );
+                const student = await Student.findOne({
+                    where: { mssv: updateData.mssv }
+                })
+                if (student && student.id != updateProfileRequest.roleId) {
+                    throw UserError.MSSVExists();
+                } else {
+                    await Student.update(
+                        {
+                            mssv: updateData.mssv,
+                            school: updateData.school
+                        },
+                        { where: { id: updateProfileRequest.roleId } }
+                    );
+                }
             }
-
             return { message: "Cập nhật thông tin thành công" };
         } catch (err) {
             throw err;
