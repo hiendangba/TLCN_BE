@@ -35,5 +35,22 @@ class GetRoomResponse {
         this.roomSlots = data.RoomSlots;
     }
 }
-module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse };
+
+class GetRoomByUserResponse {
+    constructor(data) {
+        this.registerDate = data.registerDate;
+        this.endDate = data.endDate;
+        this.duration = data.duration;
+        this.status = data.status;
+        this.name = data.Student.User.name;
+        this.identification = data.Student.User.identification;
+        this.mySlotNumber = data.slotNumber;
+        this.roomNumber = data.roomNumber;
+        this.capacity = data.capacity;
+        this.monthlyFee = data.monthlyFee;
+        this.roomSlot = data.RoomSlots
+        this.roomType = data.RoomType
+    }
+}
+module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse };
 

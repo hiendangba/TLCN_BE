@@ -1,5 +1,5 @@
 const BuildingError = require("../errors/BuildingError");
-const { Building, RoomType } = require("../models");
+const { Building, RoomType, Floor } = require("../models");
 const FloorError = require("../errors/FloorError");
 const { CreateFloorRequest } = require("../dto/request/floor.request")
 const floorServices = require("./floor.service")
@@ -74,7 +74,23 @@ const buildingServices = {
     getBuilding: async () => {
         try {
             const buildings = await Building.findAll({
-                order: [['name', 'ASC']]
+                order: [['name', 'ASC']],
+                attributes: {
+                    include: [
+                        [
+                            sequelize.fn("COUNT", sequelize.col("Floors.id")),
+                            "numberFloor"
+                        ]
+                    ]
+                },
+                include: [
+                    {
+                        model: Floor,
+                        attributes: [],
+                    }
+                ],
+                group: ["Building.id"],
+                raw: true
             });
             return buildings;
         } catch (err) {

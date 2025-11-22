@@ -12,7 +12,7 @@ class UserError extends AppError {
     static InvalidUser() {
         return new UserError("User không tồn tại, hoặc không đúng role.", 409, "INVALID_USER");
     }
-    
+
     static MSSVExists() {
         return new UserError("MSSV đã tồn tại.", 409, "MSSV_EXISTS");
     }
