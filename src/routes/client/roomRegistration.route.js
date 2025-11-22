@@ -7,6 +7,11 @@ const { approveRoomRegistrationSchema, rejectRoomRegistrationSchema, cancelRoomR
 roomRegistrationRouter.get("/", authMiddleware, isAdmin, roomRegistrationController.getRoomRegistration);
 roomRegistrationRouter.patch("/", authMiddleware, isAdmin, validateRequest(approveRoomRegistrationSchema), roomRegistrationController.approveRoomRegistration);
 roomRegistrationRouter.delete("/reject", authMiddleware, isAdmin, validateRequest(rejectRoomRegistrationSchema), roomRegistrationController.rejectRoomRegistration);
-roomRegistrationRouter.delete("/cancel", authMiddleware, validateRequest(cancelRoomRegistrationSchema), roomRegistrationController.cancelRoomRegistration);
 
+roomRegistrationRouter.delete("/cancel", authMiddleware, validateRequest(cancelRoomRegistrationSchema), roomRegistrationController.cancelRoomRegistration);
+roomRegistrationRouter.get("/cancel-requests", authMiddleware, isAdmin, roomRegistrationController.getCancelRoom);
+roomRegistrationRouter.patch("/cancel-requests/approve", authMiddleware, isAdmin, roomRegistrationController.approveCancelRoom);
+
+roomRegistrationRouter.patch("/request-move", authMiddleware, roomRegistrationController.requestRoomMove);
+roomRegistrationRouter.patch("/approve-move", authMiddleware, isAdmin, roomRegistrationController.approveRoomMove);
 module.exports = roomRegistrationRouter;

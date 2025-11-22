@@ -19,18 +19,6 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      bankBin: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      bankAccountNumber: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      bankName: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
       reason: {
         type: Sequelize.STRING,
         allowNull: true

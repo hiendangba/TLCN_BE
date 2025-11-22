@@ -26,11 +26,7 @@ module.exports = {
         allowNull: false,
         defaultValue: 'VND'
       },
-      qrContent: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      transactionRef: {
+      transId: {
         type: Sequelize.STRING,
         allowNull: true
       },
@@ -45,7 +41,7 @@ module.exports = {
       },
       studentId: {
         type: Sequelize.UUID,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'Students',
           key: 'id'

@@ -54,24 +54,6 @@ const rejectRoomRegistrationSchema = Joi.object({
 });
 
 const cancelRoomRegistrationSchema = Joi.object({
-    bankBin: Joi.string()
-        .required()
-        .messages({
-            "string.base": "Bank BIN phải là chuỗi.",
-            "any.required": "Bank BIN không được bỏ trống.",
-        }),
-    bankAccountNumber: Joi.string()
-        .required()
-        .messages({
-            "string.base": "Số tài khoản phải là chuỗi.",
-            "any.required": "Số tài khoản không được bỏ trống.",
-        }),
-    bankName: Joi.string()
-        .required()
-        .messages({
-            "string.base": "Tên ngân hàng phải là chuỗi.",
-            "any.required": "Tên ngân hàng không được bỏ trống.",
-        }),
     reason: Joi.string()
         .allow("")
         .optional()
@@ -85,6 +67,5 @@ const cancelRoomRegistrationSchema = Joi.object({
             "any.required": "Ngày checkout không được bỏ trống.",
         }),
 });
-
 
 module.exports = { approveRoomRegistrationSchema, rejectRoomRegistrationSchema, cancelRoomRegistrationSchema };

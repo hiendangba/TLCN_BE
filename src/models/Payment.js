@@ -30,11 +30,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       defaultValue: 'VND',
     },
-    qrContent: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    transactionRef: {
+    transId: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -43,8 +39,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('pending', 'success', 'failed'),
-      defaultValue: 'pending',
+      type: DataTypes.ENUM('PENDING', 'SUCCESS', 'FAILED'),
+      defaultValue: 'PENDING',
       allowNull: false,
     }
   }, {

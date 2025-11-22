@@ -1,11 +1,7 @@
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
-const {
-    Student,
-    Payment,
-} = require("../models");
+const { Student, Payment, } = require("../models");
 const axios = require('axios');
-
 
 const paymentService = {
     getPayment: async (userId, paymentRequest) => {
@@ -46,7 +42,7 @@ const paymentService = {
         var requestType = "captureWallet"
         var extraData = "";
 
-        
+
         //accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl&orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId&requestType=$requestType
         var rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType;
         //signature
