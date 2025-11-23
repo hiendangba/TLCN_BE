@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         endDate: DataTypes.DATEONLY,
         duration: DataTypes.STRING,
         status: {
-            type: DataTypes.ENUM('BOOKED', 'CONFIRMED', 'CANCELED', 'MOVED'),
+            type: DataTypes.ENUM('PENDING', 'BOOKED', 'CONFIRMED', 'CANCELED', 'MOVE_PENDING', 'MOVED', 'EXTENDING'),
             defaultValue: 'BOOKED',
             allowNull: false
         },
