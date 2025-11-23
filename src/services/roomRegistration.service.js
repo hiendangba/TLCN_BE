@@ -703,7 +703,7 @@ const roomRegistrationServices = {
             });
             const newRoomRegistration = await RoomRegistration.findAll({
                 where: {
-                    status: "PENDING",
+                    status: { [Op.in]: ["PENDING", "CONFIRMED"] },
                     studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) }
                 },
                 include: [
