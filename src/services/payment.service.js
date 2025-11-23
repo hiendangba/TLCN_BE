@@ -173,6 +173,18 @@ const paymentService = {
         }
     },
 
+    getPaymentByStudentId: async (studentId, type) => {
+        const payment = await Payment.findOne({
+            where: {
+                studentId: studentId,
+                type: type
+            },
+            order: [
+                ['paidAt', 'DESC']
+            ]
+        });
+        return payment;
+    },
 
     createPayment: async (paymentList) => {
         const t = await sequelize.transaction();

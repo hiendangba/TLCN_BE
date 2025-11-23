@@ -7,4 +7,5 @@ const paymentRoute = express.Router();
 
 paymentRoute.post("/getPayment", authMiddleware, validateRequest(PaymentRequestSchema), paymentController.getPayment);
 paymentRoute.get("/checkPayment", paymentController.checkPayment);
+
 module.exports = paymentRoute;
