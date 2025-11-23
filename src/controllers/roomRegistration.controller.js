@@ -66,6 +66,7 @@ const roomRegistrationController = {
     getRoomMove: asyncHandler(async (req, res) => {
         const getRoomMoveRequest = new GetRoomMoveRequest(req.query);
         const { totalItems, response } = await roomRegistrationService.getRoomMove(getRoomMoveRequest);
+        console.log(response);
         const getRoomMoveResponses = response.map(item => new GetRoomMoveResponse(item));
         return res.status(200).json(
             new ApiResponse(getRoomMoveResponses,
