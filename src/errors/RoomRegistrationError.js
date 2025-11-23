@@ -13,6 +13,12 @@ class RoomRegistrationError extends AppError {
     static RoomRegistrationAlreadyCanceled() {
         return new RoomRegistrationError("Đơn hủy phòng của bạn đang được admin xem xét để duyệt.", 400, "ROOM_REGISTRATION_ALREADY_CANCELED");
     }
+    static RoomMoveAlreadyRequested() {
+        return new RoomRegistrationError("Đơn chuyển phòng của bạn đang được admin xem xét để duyệt.", 400, "ROOM_MOVE_ALREADY_REQUESTED");
+    }
+    static InvalidMoveRequest() {
+        return new RoomRegistrationError("Chỉ những đơn đang ở trạng thái CONFIRMED mới được phép yêu cầu chuyển phòng.", 400, "INVALID_MOVE_REQUEST");
+    }
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }

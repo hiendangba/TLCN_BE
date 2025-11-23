@@ -33,7 +33,7 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       status: {
-        type: Sequelize.ENUM('BOOKED', 'CONFIRMED', 'CANCELED', 'MOVED'),
+        type: Sequelize.ENUM('PENDING', 'BOOKED', 'CONFIRMED', 'CANCELED', 'MOVE_PENDING', 'MOVED', 'EXTENDING'),
         defaultValue: 'BOOKED',
         allowNull: false
       },
@@ -68,18 +68,6 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
     });
-
-    await queryInterface.sequelize.query(`
-      CREATE TRIGGER room_reg_before_update
-      BEFORE UPDATE ON RoomRegistrations
-      FOR EACH ROW
-      BEGIN
-          -- Chỉ tính lại endDate nếu approvedDate khác NULL và status không phải CANCELLED
-          IF NEW.approvedDate IS NOT NULL AND NEW.status != 'CANCELED' AND NEW.status != 'MOVED'THEN
-              SET NEW.endDate = DATE_ADD(NEW.approvedDate, INTERVAL CAST(NEW.duration AS UNSIGNED) MONTH);
-          END IF;
-      END;
-    `);
   },
 
   async down(queryInterface, Sequelize) {

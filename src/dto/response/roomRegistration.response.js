@@ -47,4 +47,32 @@ class GetRoomCancelResponse {
         this.refundAmount = data.CancellationInfo.amount;
     }
 }
-module.exports = { GetRoomRegistrationResponse, GetRoomCancelResponse };
+
+
+class GetRoomMoveResponse {
+    constructor(data) {
+        this.id = data.originalRegistration.id;
+        this.registerDate = data.originalRegistration.registerDate;
+        this.approvedDate = data.originalRegistration.approvedDate;
+        this.endDate = data.originalRegistration.endDate;
+        this.duration = data.originalRegistration.duration;
+        this.studentId = data.originalRegistration.studentId;
+        this.userId = data.originalRegistration.Student.userId
+        this.mssv = data.originalRegistration.Student.mssv;
+        this.school = data.originalRegistration.Student.school;
+        this.identification = data.originalRegistration.Student.User.identification
+        this.name = data.originalRegistration.Student.User.name;
+        this.dob = data.originalRegistration.Student.User.dob;
+        this.gender = data.originalRegistration.Student.User.gender;
+        this.address = data.originalRegistration.Student.User.address;
+        this.avatar = data.originalRegistration.Student.User.avatar;
+        this.frontIdentificationImage = data.originalRegistration.Student.User.frontIdentificationImage;
+        this.slotNumber = data.originalRegistration.RoomSlot.slotNumber;
+        this.roomNumber = data.originalRegistration.RoomSlot.Room.roomNumber;
+        this.monthlyFee = data.originalRegistration.RoomSlot.Room.monthlyFee;
+        this.newSlotNumber = data.newRegistration.RoomSlot.slotNumber;
+        this.newRoomNumber = data.newRegistration.RoomSlot.Room.roomNumber;
+        this.newMonthlyFee = data.newRegistration.RoomSlot.Room.monthlyFee;
+    }
+}
+module.exports = { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse };

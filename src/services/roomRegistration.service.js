@@ -47,15 +47,14 @@ const roomRegistrationServices = {
             let statusCondition = {};
             switch (status) {
                 case "Approved":
-                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "CANCELED"] } }; // Đã duyệt
+                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING"] } }; // Đã duyệt
                     break;
                 case "Unapproved":
                     statusCondition = { approvedDate: null, status: "BOOKED" }; // Chưa duyệt
                     break;
                 case "All":
                 default:
-                    statusCondition = {
-                    };
+                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING"] } }
                     break;
             }
 
@@ -173,11 +172,16 @@ const roomRegistrationServices = {
                     // Đánh dấu slot đã được sử dụng
                     await roomSlot.update({ isOccupied: true }, { transaction });
 
+                    const approvedDate = new Date();
+                    const endDate = new Date(approvedDate);
+                    endDate.setMonth(endDate.getMonth() + Number(registration.duration));
+                    console.log(endDate);
                     await registration.update(
                         {
                             approvedDate: new Date(),
                             status: "CONFIRMED",
                             adminId: admin.id,
+                            endDate: getTodayDateString(endDate),
                         },
                         { transaction }
                     );
@@ -550,7 +554,7 @@ const roomRegistrationServices = {
                     }
 
                     approvedList.push(registration.id);
-                    
+
                     //Kiểm tra đã refund chưa ở đây
                     await registration.CancellationInfo.update({ refundStatus: "APPROVED" }, { transaction });
 
@@ -575,7 +579,367 @@ const roomRegistrationServices = {
             throw err;
         }
     },
-    
+
+    requestRoomMove: async (roomMoveRequest) => {
+        try {
+            const roomSlot = await RoomSlot.findOne({
+                where: { id: roomMoveRequest.roomSlotId }
+            });
+
+            if (!roomSlot) {
+                throw RoomError.RoomSlotNotFound();
+            }
+
+            if (roomSlot.isOccupied === true) {
+                throw RoomError.RoomSlotIsOccupied();
+            }
+
+            const roomRegistration = await RoomRegistration.findOne({
+                where: {
+                    studentId: roomMoveRequest.roleId,
+                    status: "CONFIRMED"
+                },
+            });
+
+            if (!roomRegistration) {
+                const existing = await RoomRegistration.findOne({
+                    where: {
+                        studentId: roomMoveRequest.roleId,
+                        status: "MOVE_PENDING",
+                    },
+                });
+                if (existing) {
+                    throw RoomRegistrationError.RoomMoveAlreadyRequested();
+                }
+
+                throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+
+            if (roomRegistration.status !== "CONFIRMED") {
+                throw RoomRegistrationError.InvalidMoveRequest();
+            }
+
+            await roomRegistration.update({
+                status: "MOVE_PENDING"
+            })
+            await RoomRegistration.create({
+                studentId: roomMoveRequest.roleId,
+                roomSlotId: roomMoveRequest.roomSlotId,
+                status: "PENDING",
+                registerDate: new Date(),
+            });
+            return roomRegistration;
+
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getRoomMove: async (getRoomMoveRequest) => {
+        try {
+            const { page, limit, keyword, status } = getRoomMoveRequest;
+            const offset = (page - 1) * limit;
+
+            const searchCondition = keyword
+                ? {
+                    [Op.or]: [
+                        { "$Student.User.name$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.User.identification$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.mssv$": { [Op.like]: `%${keyword}%` } },
+                        { "$RoomSlot.Room.roomNumber$": { [Op.like]: `%${keyword}%` } },
+                    ],
+                }
+                : {};
+
+            let statusCondition = {};
+            switch (status) {
+                case "Approved":
+                    statusCondition = { status: "MOVED" };
+                    break;
+                case "Unapproved":
+                    statusCondition = { status: "MOVE_PENDING" };
+                    break;
+                default:
+                    statusCondition = {
+                        status: { [Op.in]: ["MOVED", "MOVE_PENDING"] }
+                    };
+                    break;
+            }
+
+            const roomRegistration = await RoomRegistration.findAndCountAll({
+                where: {
+                    ...statusCondition,
+                    ...searchCondition,
+                },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["id", "mssv", "school", "userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                            },
+                        ],
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"],
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber", "monthlyFee"],
+                            },
+                        ],
+                    }
+                ],
+                offset,
+                limit,
+                order: [
+                    [sequelize.literal(`CASE WHEN "status" = 'MOVE_PENDING' THEN 0 ELSE 1 END`), 'ASC'],
+                    ["createdAt", "DESC"],
+                    ["id", "ASC"]
+                ]
+            });
+            const newRoomRegistration = await RoomRegistration.findAll({
+                where: {
+                    status: "PENDING",
+                    studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) }
+                },
+                include: [
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"],
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber", "monthlyFee"],
+                            },
+                        ],
+                    }
+                ],
+            });
+            const registrationMap = {};
+            roomRegistration.rows.forEach(reg => {
+                registrationMap[reg.studentId] = {
+                    original: reg,
+                    new: null
+                };
+            });
+
+            newRoomRegistration.forEach(reg => {
+                if (registrationMap[reg.studentId]) {
+                    registrationMap[reg.studentId].new = reg;
+                }
+            });
+
+            const combinedRegistrations = Object.values(registrationMap).map(item => ({
+                originalRegistration: item.original,
+                newRegistration: item.new,
+            }));
+
+            return {
+                totalItems: roomRegistration.count,
+                response: combinedRegistrations,
+            };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    approveRoomMove: async (approvedMoveRoomRequest) => {
+        const transaction = await sequelize.transaction();
+        try {
+
+            const admin = await Admin.findOne({ where: { id: approvedMoveRoomRequest.adminId } });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: {
+                    id: approvedMoveRoomRequest.ids,
+                    status: "MOVE_PENDING"
+                },
+                include: [
+                    {
+                        model: Student,
+                        as: "Student",
+                        attributes: ["id"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "email"],
+                            },
+                        ],
+                    },
+                    {
+                        model: RoomSlot,
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber", "monthlyFee"],
+                            },
+                        ],
+                    }
+                ],
+                transaction,
+            });
+
+            const approvedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const registration of roomRegistrations) {
+                try {
+                    let monthlyFeeDifference;
+
+                    const roomSlot = await RoomSlot.findByPk(registration.roomSlotId, {
+                        include: [{ model: Room, attributes: ["roomNumber"] }],
+                        lock: transaction.LOCK.UPDATE,
+                        transaction,
+                    });
+                    const approveDate = new Date();
+                    const approvePlus2Months = new Date(approveDate);
+                    approvePlus2Months.setMonth(approveDate.getMonth() + 2);
+
+                    const approvedDateStr = getTodayDateString(approvePlus2Months);
+
+                    if (registration.endDate < approvedDateStr) {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            reason: "Hợp đồng còn lại dưới 2 tháng",
+                        });
+                        continue;
+                    }
+
+                    if (!roomSlot) {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            reason: "Không tìm thấy slot phòng",
+                        });
+                        continue;
+                    }
+
+                    await roomSlot.update({ isOccupied: false }, { transaction });
+
+                    const fourteenDaysLater = new Date();
+                    fourteenDaysLater.setDate(fourteenDaysLater.getDate() + 14);
+                    const dayStr = getTodayDateString(fourteenDaysLater);
+                    const endDateRecord = registration.endDate;
+                    await registration.update(
+                        {
+                            status: "MOVED",
+                            adminId: admin.id,
+                            endDate: dayStr,
+                        },
+                        { transaction }
+                    );
+
+                    const newRegistration = await RoomRegistration.findOne({
+                        where: {
+                            studentId: registration.studentId,
+                            status: "PENDING"
+                        },
+                        include: [
+                            {
+                                model: RoomSlot,
+                                include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
+                            }
+                        ],
+                        transaction,
+                    });
+
+                    if (!newRegistration) {
+                        skippedList.push({
+                            registrationId: registration.id
+                        })
+                        continue;
+
+                    } else {
+
+                        await newRegistration.update(
+                            {
+                                status: "CONFIRMED",
+                                approvedDate: dayStr,
+                                duration: registration.duration,
+                                endDate: endDateRecord,
+                                adminId: admin.id,
+                            },
+                            { transaction }
+                        );
+
+                        await RoomSlot.update(
+                            { isOccupied: true },
+                            {
+                                where: { id: newRegistration.roomSlotId },
+                                transaction,
+                                lock: transaction.LOCK.UPDATE,
+                            }
+                        );
+
+
+                        const monthDifference = getMonthsDifference(dayStr, registration.endDate);
+                        monthlyFeeDifference = (newRegistration.RoomSlot.Room.monthlyFee - registration.RoomSlot.Room.monthlyFee) * monthDifference;
+                        const dayFormatted = formatDateVN(dayStr);
+
+                        const user = registration.Student.User;
+
+                        if (user) {
+                            let feeMessage = '';
+                            if (monthlyFeeDifference > 0) {
+                                feeMessage = `<p>Vui lòng thanh toán thêm <b>${formatCurrencyVND(monthlyFeeDifference)}</b> do chênh lệch phí phòng.</p>`;
+                            } else if (monthlyFeeDifference < 0) {
+                                feeMessage = `<p>Bạn sẽ được hoàn <b>${formatCurrencyVND(Math.abs(monthlyFeeDifference))}</b> do chênh lệch phí phòng.</p>`;
+                            }
+                            else {
+                                feeMessage = `<p>Phí phòng của bạn không thay đổi do chênh lệch phí phòng.</p>`;
+                            }
+                            emailTasks.push(
+                                sendMail({
+                                    to: user.email,
+                                    subject: "Đơn chuyển phòng của bạn đã được duyệt",
+                                    html: `
+                                        <h3>Xin chào ${user.name},</h3>
+                                        <p>Đơn chuyển phòng của bạn đã được <b>duyệt thành công</b>.</p>
+                                        <p><b>Chuyển từ phòng:</b> ${roomSlot.Room.roomNumber}, vị trí giường số ${roomSlot.slotNumber}</p>
+                                        <p><b>Đến phòng:</b> ${newRegistration.RoomSlot.Room.roomNumber}, vị trí giường số ${newRegistration.RoomSlot.slotNumber}</p>
+                                        <p>Vui lòng sắp xếp và hoàn thành việc chuyển sang phòng mới trong vòng <b>14 ngày</b> kể từ ngày ${dayFormatted}</p>
+                                        ${feeMessage}
+                                        <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                                    `,
+                                })
+                            );
+                        }
+                        approvedList.push(registration.id);
+
+                        //Khi thiếu cần chuyển thêm
+                        if (monthlyFeeDifference > 0) {
+
+                        }
+                        //Khi dư cần hoàn tiền
+                        else if (monthlyFeeDifference < 0) {
+
+                        }
+                    }
+                } catch (innerErr) {
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+            return {
+                approved: approvedList,
+                skipped: skippedList,
+            };
+
+        } catch (err) {
+            if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
 };
 
 
@@ -592,6 +956,25 @@ function getMonthsDifference(checkoutDate, endDate) {
     }
 
     return totalMonths;
+}
+
+function getTodayDateString(today) {
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Tháng 0 → +1
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatDateVN(dateStr) {
+    const d = new Date(dateStr);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+}
+
+function formatCurrencyVND(amount) {
+    return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 }
 
 module.exports = roomRegistrationServices;

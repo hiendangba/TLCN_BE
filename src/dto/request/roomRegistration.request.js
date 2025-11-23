@@ -74,9 +74,34 @@ class ApprovedCancelRoomRequest {
     }
 }
 
+class RoomMoveRequest {
+    constructor(data, roleId) {
+        this.roomSlotId = data.roomSlotId;
+        this.roleId = roleId;
+    }
+}
+
+class GetRoomMoveRequest {
+    constructor(data) {
+        const pageNum = parseInt(data.page);
+        const limitNum = parseInt(data.limit);
+        this.page = !isNaN(pageNum) && pageNum > 0 ? pageNum : 1;
+        this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
+        this.keyword = data.keyword ? data.keyword.trim() : "";
+        this.status = data.status || "All";
+    }
+}
+
+class ApprovedMoveRoomRequest {
+    constructor(data, adminId) {
+        this.ids = data.ids
+        this.adminId = adminId
+    }
+}
 module.exports = {
     CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest,
     GetRoomRegistrationRequest, RejectRoomRegistrationRequest,
     CancelRoomRegistrationRequest, GetCancelRoomRequest,
-    ApprovedCancelRoomRequest
+    ApprovedCancelRoomRequest, RoomMoveRequest,
+    GetRoomMoveRequest, ApprovedMoveRoomRequest
 };
