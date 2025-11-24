@@ -57,6 +57,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
+      previousRegistrationId: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        references: {
+          model: 'RoomRegistrations',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

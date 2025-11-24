@@ -73,6 +73,8 @@ class GetRoomMoveResponse {
         this.newSlotNumber = data.newRegistration.RoomSlot.slotNumber;
         this.newRoomNumber = data.newRegistration.RoomSlot.Room.roomNumber;
         this.newMonthlyFee = data.newRegistration.RoomSlot.Room.monthlyFee;
+        this.newDuration = data.newRegistration.duration;
+        this.newEndDate = data.newRegistration.endDate;
     }
 }
 
