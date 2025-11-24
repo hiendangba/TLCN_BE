@@ -4,6 +4,7 @@ const { RegisterAccountRequest, RegisterAccountAdminRequest, LoginRequest, Forgo
 const { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginResponse, ForgotPasswordResponse } = require("../dto/response/auth.response");
 const ApiResponse = require("../dto/response/api.response");
 const UserError = require("../errors/UserError");
+const { detectFace } = require('../services/faceDetection.service');
 const authController = {
 
   checkCCCD: asyncHandler(async (req, res) => {
@@ -22,8 +23,11 @@ const authController = {
     if (!req.file) {
       throw UserError.NoImageUpload();
     }
+    const face = await detectFace(req.file.path)
+    if (face.length === 0) {
+      throw UserError.NoFaceDetected();
+    }
 
-    //Gọi modal AI để nhận diện có khuôn mặt trong ảnh không
     const response = new CheckAvatarResponse(req.file);
 
     return res.status(201).json(
