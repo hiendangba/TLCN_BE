@@ -1540,7 +1540,6 @@ const roomRegistrationServices = {
 
 };
 
-
 function getMonthsDifference(checkoutDate, endDate) {
     const checkout = new Date(checkoutDate);
     const end = new Date(endDate);
