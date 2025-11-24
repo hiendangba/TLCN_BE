@@ -98,7 +98,7 @@ module.exports = {
           id: uuidv4(),
           roomNumber: `${buildingLetter}${floor.number}${roomIndex}`,
           capacity: roomType.type.includes('2') ? 2 : roomType.type.includes('4') ? 4 : 6,
-          monthlyFee: roomType.type.includes('2') ? 100 : roomType.type.includes('4') ? 200 : 300,
+          monthlyFee: roomType.type.includes('2') ? 100000 : roomType.type.includes('4') ? 200000 : 300000,
           floorId: floor.id,
           roomTypeId: roomType.id,
           createdAt: new Date(),

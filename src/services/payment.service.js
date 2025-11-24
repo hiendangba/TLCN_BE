@@ -1,63 +1,22 @@
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
-const { Student, Payment, } = require("../models");
-const axios = require('axios');
+const {
+    Student,
+    Payment,
+    sequelize,
+} = require("../models");
 require('dotenv').config();
-const crypto = require("crypto");
-
-const generateMomoSignature = (rawSignature) => {
-    var signature = crypto.createHmac('sha256', process.env.SECRET_KEY_MOMO)
-        .update(rawSignature)
-        .digest('hex');
-
-    return signature;
-};
-
-
-const verifyMomoCallbackSignature = (momoData) => {
-    const {
-        partnerCode,
-        orderId,
-        requestId,
-        amount,
-        orderInfo,
-        orderType,
-        transId,
-        resultCode,
-        message,
-        payType,
-        responseTime,
-        extraData,
-        signature
-    } = momoData;
-
-    const rawSignature =
-        "accessKey=" + process.env.ACCESS_KEY_MOMO +
-        "&amount=" + amount +
-        "&extraData=" + (extraData || "") +
-        "&message=" + message +
-        "&orderId=" + orderId +
-        "&orderInfo=" + orderInfo +
-        "&orderType=" + orderType +
-        "&partnerCode=" + partnerCode +
-        "&payType=" + payType +
-        "&requestId=" + requestId +
-        "&responseTime=" + responseTime +
-        "&resultCode=" + resultCode +
-        "&transId=" + transId;
-
-    const expectedSignature = crypto.createHmac("sha256", process.env.SECRET_KEY_MOMO).update(rawSignature).digest("hex");
-
-    return expectedSignature === signature;
-}
+const momoUtils = require("../utils/momo.util");
 
 const paymentService = {
-    getPayment: async (userId, paymentRequest) => {
+
+    getPaymentUrl: async (userId, paymentRequest) => {
         try {
             const {
                 paymentId
             } = paymentRequest;
             // Check user va payment co ton tai khong
+
             const student = await Student.findOne({
                 where: {
                     userId: userId
@@ -72,55 +31,22 @@ const paymentService = {
             if (!payment) {
                 throw PaymentError.PaymentNotFound();
             }
-            if (payment.status === "success") {
+            if (payment.status === "SUCCESS") {
                 throw PaymentError.AlreadyProcessed();
             }
 
-            // Goi momo de lay URL den trang thanh toan momo
-            var partnerCode = "MOMO";
-            var accessKey = process.env.ACCESS_KEY_MOMO;
+            
+            const { body, rawSignature} = momoUtils.generateMomoRawSignatureGetUrl(payment, student);
+            const signature = momoUtils.generateMomoSignature(rawSignature);
 
-            var requestId = partnerCode + new Date().getTime();
-            var orderId = `${payment.id}_${Date.now()}_${student.id}`;
-            var amount = payment.amount.toString();
-
-            var orderInfo = (`${payment.content}`);
-            var redirectUrl = process.env.REDIRECT_URL_MOMO;
-            var ipnUrl = process.env.IPN_URL_MOMO;
-            var requestType = "captureWallet"
-            var extraData = "";
-
-            //accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl&orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId&requestType=$requestType
-            var rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType;
-            const signature = generateMomoSignature(rawSignature);
-
-            //json object send to MoMo endpoint
-            const requestBody = JSON.stringify({
-                partnerCode: partnerCode,
-                accessKey: accessKey,
-                requestId: requestId,
-                amount: amount,
-                orderId: orderId,
-                orderInfo: orderInfo,
-                redirectUrl: redirectUrl,
-                ipnUrl: ipnUrl,
-                extraData: extraData,
-                requestType: requestType,
-                signature: signature,
-                lang: 'en'
-            });
-
-            const response = await axios.post('https://test-payment.momo.vn/v2/gateway/api/create', requestBody, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
+            const response = await momoUtils.getPaymentUrl(body,signature);
 
             if (response.data.payUrl) {
                 return response.data.payUrl;
             } else {
                 return "";
             }
+
         } catch (err) {
             console.log(err);
             throw err;
@@ -129,14 +55,15 @@ const paymentService = {
 
     checkPayment: async (momoResponse) => {
         try {
-            const isValidSignature = verifyMomoCallbackSignature(momoResponse);
-            if (!isValidSignature){
+            const isValidSignature = momoUtils.verifyMomoCallbackSignature(momoResponse);
+            if (!isValidSignature) {
                 throw PaymentError.InvalidSignature();
             }
             const {
                 orderId,
                 resultCode,
-                responseTime
+                responseTime,
+                amount
             } = momoResponse;
             const paymentId = orderId.split("_")[0];
             const studentId = orderId.split("_")[2];
@@ -153,21 +80,69 @@ const paymentService = {
                 throw UserError.InvalidUser();
             }
 
-            if (String(resultCode) === "0") {
-                // Cập nhật thông tin thanh toán thành công
-                payment.paidAt = new Date(Number(responseTime));
-                payment.status = "success";
-                payment.studentId = studentId;
-            } else {
-                payment.status = "failed";
+            if (String(resultCode) !== "0" || Number(amount) !== Number(payment.amount)){
+                payment.status = "FAILED";
+                await payment.save();
+                throw PaymentError.PaymentFailed();
             }
 
+            payment.paidAt = new Date(Number(responseTime));
+            payment.status = "SUCCESS";
+            payment.studentId = studentId;
+            payment.transId = momoResponse.transId;
             await payment.save();
             return payment;
+
         } catch (err) {
             console.log(err);
             throw (err);
         }
+    },
+
+    getPaymentByStudentId: async (studentId, type) => {
+        const payment = await Payment.findOne({
+            where: {
+                studentId: studentId,
+                type: type
+            },
+            order: [
+                ['paidAt', 'DESC']
+            ]
+        });
+        return payment;
+    },
+
+    createPayment: async (paymentList) => {
+        const t = await sequelize.transaction();
+        try {
+            // Nếu đầu vào không phải là mãng, biến thành mãng
+            const isSingle = !Array.isArray(paymentList);
+            const list = isSingle ? [paymentList] : paymentList;
+
+            const results = await Promise.all(
+                list.map(p => {
+                    return Payment.create({ 
+                        content: p.content,
+                        type: p.type,
+                        amount: p.amount,
+                        currency: "VND",
+                        transactionRef: null,
+                        paidAt: null,
+                        status: "PENDING",
+                    }, {
+                        transaction: t
+                    })
+                })
+            );
+
+            await t.commit();
+            return isSingle ? results[0] : results;
+        } catch (err) {
+            console.log(err);
+            await t.rollback();
+            throw err;
+        }
+
     }
 
 }

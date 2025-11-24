@@ -13,6 +13,18 @@ class PaymentError extends AppError {
         return new PaymentError("Chữ ký không hợp lệ.", 401, "InvalidSignature");
     };
 
+    static InvalidAmount() {
+        return new PaymentError("Số tiền hoàn lại không hợp lệ!.", 401, "InvalidAmount");
+    };
+
+    static PaymentFailed() {
+        return new PaymentError(
+            "Thanh toán thất bại",
+            402,
+            "PaymentFailed"
+        );
+    }
+
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }

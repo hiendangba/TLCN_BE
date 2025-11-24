@@ -8,6 +8,7 @@ const {
     rejectRoomRegistrationSchema,
     cancelRoomRegistrationSchema,
     approvedCancelRoomSchema,
+    rejectCancelRoomSchema,
     movedRoomRegistrationSchema,
     approvedMoveRoomSchema,
     extendRoomRegistrationSchema,
@@ -21,6 +22,7 @@ roomRegistrationRouter.delete("/reject", authMiddleware, isAdmin, validateReques
 roomRegistrationRouter.delete("/cancel", authMiddleware, validateRequest(cancelRoomRegistrationSchema), roomRegistrationController.cancelRoomRegistration);
 roomRegistrationRouter.get("/cancel-requests", authMiddleware, isAdmin, roomRegistrationController.getCancelRoom);
 roomRegistrationRouter.patch("/cancel-requests/approve", authMiddleware, isAdmin, validateRequest(approvedCancelRoomSchema), roomRegistrationController.approveCancelRoom);
+roomRegistrationRouter.patch("/cancel-requests/reject", authMiddleware, isAdmin, validateRequest(rejectCancelRoomSchema), roomRegistrationController.rejectCancelRoom);
 
 roomRegistrationRouter.get("/move-requests", authMiddleware, isAdmin, roomRegistrationController.getRoomMove);
 roomRegistrationRouter.patch("/request-move", authMiddleware, validateRequest(movedRoomRegistrationSchema), roomRegistrationController.requestRoomMove);

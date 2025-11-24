@@ -123,29 +123,19 @@ const createHealthCheckValidation = Joi.object({
 
 
         if (registrationStartDate >= startDate) {
-            return helpers.error("any.invalid", {
-                message: "Ngày bắt đầu đăng ký phải nhỏ hơn ngày bắt đầu khám."
-            });
+            return helpers.message("Ngày bắt đầu đăng ký phải nhỏ hơn ngày bắt đầu khám.");
         }
 
-
         if (registrationEndDate >= startDate) {
-            return helpers.error("any.invalid", {
-                message: "Ngày kết thúc đăng ký phải nhỏ hơn ngày bắt đầu khám."
-            });
+            return helpers.message("Ngày kết thúc đăng ký phải nhỏ hơn ngày bắt đầu khám.");
         }
 
         if (registrationStartDate >= endDate) {
-            return helpers.error("any.invalid", {
-                message: "Ngày bắt đầu đăng ký phải nhỏ hơn ngày kết thúc khám."
-            });
+            return helpers.message("Ngày bắt đầu đăng ký phải nhỏ hơn ngày kết thúc khám.");
         }
 
-        
         if (registrationEndDate >= endDate) {
-            return helpers.error("any.invalid", {
-                message: "Ngày kết thúc đăng ký phải nhỏ hơn ngày kết thúc khám."
-            });
+            return helpers.message("Ngày kết thúc đăng ký phải nhỏ hơn ngày kết thúc khám.");
         }
 
         return value;

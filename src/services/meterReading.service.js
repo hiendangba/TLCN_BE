@@ -8,6 +8,7 @@ const MeterReadingError = require("../errors/MeterReadingError")
 const {
     Op,
 } = require("sequelize");
+const paymentService = require("../services/payment.service");
 
 const meterReadingService = {
     getMeterReadingRequest: async (getMeterReadingRequest) => {
@@ -130,6 +131,22 @@ const meterReadingService = {
                 adminId: admin.id,
                 period: period
             }));
+
+            // Tạo payment cho các hóa đơn này
+            
+            const paymentList = handledMeterReadings.map(item => {
+                const typeString = item.type === "electricity" ? "điện" : "nước";
+                const content = `Thanh toán tiền ${typeString} - ${item.period}`;
+                const amount = Number(item.totalAmount) * Number(item.unitPrice);
+
+                return {
+                    amount: amount,
+                    type: item.type.toUpperCase(),
+                    content: content
+                }
+            })
+
+            await paymentService.createPayment(paymentList);
 
             // Lưu nhiều bản ghi cùng lúc
             return await MeterReading.bulkCreate(handledMeterReadings, {
