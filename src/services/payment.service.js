@@ -16,6 +16,7 @@ const paymentService = {
                 paymentId
             } = paymentRequest;
             // Check user va payment co ton tai khong
+
             const student = await Student.findOne({
                 where: {
                     userId: userId

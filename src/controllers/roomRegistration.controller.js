@@ -4,7 +4,7 @@ const {
     RejectRoomRegistrationRequest, CancelRoomRegistrationRequest,
     GetCancelRoomRequest, ApprovedCancelRoomRequest,
     RoomMoveRequest, GetRoomMoveRequest,
-    ApprovedMoveRoomRequest
+    ApprovedMoveRoomRequest, RejectCancelRoomRequest,
 } = require("../dto/request/roomRegistration.request")
 const ApiResponse = require("../dto/response/api.response");
 const { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse } = require("../dto/response/roomRegistration.response")
@@ -58,6 +58,14 @@ const roomRegistrationController = {
     approveCancelRoom: asyncHandler(async (req, res) => {
         const approvedCancelRoomRequest = new ApprovedCancelRoomRequest(req.body, req.roleId)
         const response = await roomRegistrationService.approveCancelRoom(approvedCancelRoomRequest);
+        return res.status(200).json(
+            new ApiResponse(response)
+        );
+    }),
+
+    rejectCancelRoom: asyncHandler(async (req, res) => {
+        const rejectCancelRoomRequest = new RejectCancelRoomRequest(req.body, req.roleId);
+        const response = await roomRegistrationService.rejectCancelRoom(rejectCancelRoomRequest);
         return res.status(200).json(
             new ApiResponse(response)
         );

@@ -24,7 +24,6 @@ const paymentService = require("../services/payment.service");
 const {
 } = require("googleapis/build/src/apis/content");
 require('dotenv').config();
-const axios = require("axios");
 const PaymentError = require("../errors/PaymentError");
 const momoUtils = require("../utils/momo.util");
 
@@ -675,7 +674,7 @@ const roomRegistrationServices = {
                             })
                         );
                     }
-                    
+
                     await registration.CancellationInfo.update({
                         refundStatus: "APPROVED"
                     }, {
@@ -695,19 +694,146 @@ const roomRegistrationServices = {
                     const oldPayment = await paymentService.getPaymentByStudentId(registration.Student.id, "ROOM");
 
                     const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
-                    const signature = generateMomoSignature(rawSignature);
+                    const signature = momoUtils.generateMomoSignature(rawSignature);
 
                     const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
 
-                    if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== amount) {
+                    if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
                         throw PaymentError.InvalidAmount();
                     } else {
-                        paymentInstance.status = "SUCCESS";
-                        paymentInstance.transId = refundResponse.data.transId;
-                        await paymentInstance.save();
+                        payment.status = "SUCCESS";
+                        payment.transId = refundResponse.data.transId;
+                        await payment.save();
                         approvedList.push(registration.id);
 
                     }
+
+                } catch (innerErr) {
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+
+
+            return {
+                approved: approvedList,
+                skipped: skippedList,
+            };
+
+        } catch (err) {
+            if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
+
+    rejectCancelRoom: async (rejectCancelRoomRequest) => {
+        const { adminId, ids, reasons } = rejectCancelRoomRequest;
+        const transaction = await sequelize.transaction();
+
+        try {
+
+            const admin = await Admin.findOne({
+                where: {
+                    id: adminId,
+                }
+            });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: {
+                    id: ids,
+                    status: "CANCELED"
+                },
+                include: [{
+                        model: Student,
+                        as: "Student",
+                        attributes: ["id","userId"],
+                        include: [{
+                            model: User,
+                            attributes: ["id", "name", "email"],
+                        }, ],
+                    },
+                    {
+                        model: RoomSlot,
+                        include: [{
+                            model: Room,
+                            attributes: ["roomNumber"],
+                        }, ],
+                    },
+                    {
+                        model: CancellationInfo,
+                    }
+                ],
+                transaction,
+            });
+
+            const approvedList = [];
+            const skippedList = [];
+            const emailTasks =  [];
+
+            for (const registration of roomRegistrations) {
+                try {
+                    // Reload roomSlot với lock để tránh race condition khi nhiều admin cùng duyệt
+                    const roomSlot = await RoomSlot.findByPk(registration.roomSlotId, {
+                        include: [{
+                            model: Room,
+                            attributes: ["roomNumber"]
+                        }],
+                        lock: transaction.LOCK.UPDATE,
+                        transaction,
+                    });
+
+                    if (!roomSlot) {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            reason: "Không tìm thấy slot phòng",
+                        });
+                        continue;
+                    }
+
+                    // Phòng này vẫn còn chổ
+                    await roomSlot.update({
+                        isOccupied: true
+                    }, {
+                        transaction
+                    });
+
+                    const user = registration.Student.User;
+                    const reasonText = reasons[registration.id] || "Yêu cầu không phù hợp";
+
+                    if (user) {
+                        emailTasks.push(
+                            sendMail({
+                                to: user.email,
+                                subject: "Đơn hủy phòng của bạn đã bị từ chối",
+                                html: `
+                                    <h3>Xin chào ${user.name},</h3>
+                                    <p>Đơn hủy phòng ${roomSlot.Room.roomNumber} vị trí giường số ${roomSlot.slotNumber} của bạn đã bị từ chối.</p>
+                                    <p>Lý do từ chối: ${reasonText}</p>
+                                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                                `,
+                            })
+                        );
+                    }
+
+                    // Cập nhật lại trạng thái 
+                    await registration.update({
+                        adminId: admin.id,
+                        status: "CONFIRMED"
+                    }, {transaction});
+
+                    // Xóa CancellationInfo của nó luôn
+                    if(registration.CancellationInfo){
+                        await registration.CancellationInfo.destroy({ transaction });
+                    }
+
+                    approvedList.push(registration.id);
+
 
                 } catch (innerErr) {
                     skippedList.push({

@@ -74,6 +74,30 @@ class ApprovedCancelRoomRequest {
     }
 }
 
+class RejectCancelRoomRequest {
+    constructor(data, adminId) {
+        this.ids = data.ids;
+        this.adminId = adminId;
+        // reasons có thể là:
+        // - string: lý do chung cho tất cả đơn
+        // - object: { [id]: reason } - lý do riêng cho từng đơn
+        if (typeof data.reasons === 'object' && !Array.isArray(data.reasons) && data.reasons !== null) {
+            // Nếu là object, map id -> reason
+            this.reasons = data.reasons;
+        } else if (data.reason) {
+            // Nếu là string, tạo object với cùng lý do cho tất cả
+            const commonReason = data.reason.trim();
+            this.reasons = {};
+            data.ids.forEach(id => {
+                this.reasons[id] = commonReason;
+            });
+        } else {
+            // Không có lý do
+            this.reasons = {};
+        }
+    }
+}
+
 class RoomMoveRequest {
     constructor(data, roleId) {
         this.roomSlotId = data.roomSlotId;
@@ -103,5 +127,5 @@ module.exports = {
     GetRoomRegistrationRequest, RejectRoomRegistrationRequest,
     CancelRoomRegistrationRequest, GetCancelRoomRequest,
     ApprovedCancelRoomRequest, RoomMoveRequest,
-    GetRoomMoveRequest, ApprovedMoveRoomRequest
+    GetRoomMoveRequest, ApprovedMoveRoomRequest, RejectCancelRoomRequest
 };

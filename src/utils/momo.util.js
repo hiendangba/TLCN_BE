@@ -1,5 +1,6 @@
 require('dotenv').config();
 const axios = require('axios');
+const crypto = require("crypto");
 
 const momoUtils = {
     getPaymentUrl: async (body, signature) => {
@@ -52,7 +53,7 @@ const momoUtils = {
 
     generateMomoRawSignatureRefund: (payment, oldPayment) => {
         const timestamp = Date.now();
-        const body = {
+        const bodyMoMo = {
             description: payment.content,
             orderId: `HP_${timestamp}`,
             partnerCode: "MOMO",
@@ -63,12 +64,12 @@ const momoUtils = {
 
         const rawSignature =
             "accessKey=" + process.env.ACCESS_KEY_MOMO +
-            "&amount=" + body.amount +
-            "&description=" + body.description +
-            "&orderId=" + body.orderId +
-            "&partnerCode=" + body.partnerCode +
-            "&requestId=" + body.requestId +
-            "&transId=" + body.transId;
+            "&amount=" + bodyMoMo.amount +
+            "&description=" + bodyMoMo.description +
+            "&orderId=" + bodyMoMo.orderId +
+            "&partnerCode=" + bodyMoMo.partnerCode +
+            "&requestId=" + bodyMoMo.requestId +
+            "&transId=" + bodyMoMo.transId;
 
         return {
             bodyMoMo,
