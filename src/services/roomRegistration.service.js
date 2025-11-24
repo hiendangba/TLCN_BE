@@ -1199,6 +1199,11 @@ const roomRegistrationServices = {
 
                         //Khi thiếu cần chuyển thêm
                         if (monthlyFeeDifference > 0) {
+                            // Tạo payment chuyển tiền thêm
+                            const paymentData = {
+                                
+                            }
+                            const payment = await paymentService.createPayment();
 
                         }
                         //Khi dư cần hoàn tiền
