@@ -5,7 +5,7 @@ const { PaymentRequestSchema } = require("../../validations/payment.validation")
 const paymentController = require("../../controllers/payment.controller");
 const paymentRoute = express.Router();
 
-paymentRoute.post("/getPayment", authMiddleware, validateRequest(PaymentRequestSchema), paymentController.getPayment);
+paymentRoute.post("/getPaymentUrl", authMiddleware, validateRequest(PaymentRequestSchema), paymentController.getPaymentUrl);
 paymentRoute.get("/checkPayment", paymentController.checkPayment);
 
 module.exports = paymentRoute;

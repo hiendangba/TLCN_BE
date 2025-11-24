@@ -6,7 +6,6 @@ const {
     User,
     Admin,
     CancellationInfo,
-    Payment
 } = require("../models");
 const RoomError = require("../errors/RoomError");
 const UserError = require("../errors/UserError");
@@ -17,28 +16,17 @@ const {
 const sendMail = require("../utils/mailer")
 const {
     Op,
-    NUMBER
 } = require("sequelize");
 const {
     sequelize
 } = require("../config/database");
 const paymentService = require("../services/payment.service");
 const {
-    content
 } = require("googleapis/build/src/apis/content");
 require('dotenv').config();
 const axios = require("axios");
 const PaymentError = require("../errors/PaymentError");
-const crypto = require("crypto")
-
-const generateMomoSignature = (rawSignature) => {
-    var signature = crypto.createHmac('sha256', process.env.SECRET_KEY_MOMO)
-        .update(rawSignature)
-        .digest('hex');
-
-    return signature;
-};
-
+const momoUtils = require("../utils/momo.util");
 
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
@@ -297,10 +285,6 @@ const roomRegistrationServices = {
                 const endDate = new Date(item.endDate);
                 const amount = roomFee * duration;
 
-                console.log(item.RoomSlot.Room.monthlyFee);
-                console.log(item.duration);
-                console.log(roomFee);
-                console.log(duration);
                 const content = `Thanh toan tien phong ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
 
                 return {
@@ -697,59 +681,28 @@ const roomRegistrationServices = {
                     }, {
                         transaction
                     });
-                    // Tạo một cái payment refund cho cái đơn hoàn này
+
+
+                    // -------------------------------------
+                    // 🔥 CREATE PAYMENT AND REFUND PAYMENT
+                    // ------------------------------------
+
                     const paymentData = {
                         content: `Hoàn tiền hủy phòng ngày ${registration.CancellationInfo.checkoutDate}`,
                         type: "REFUND_CANCEL",
                         amount: Number(registration.CancellationInfo.amount),
                     };
                     const payment = await paymentService.createPayment(paymentData);
-                    const paymentInstance = payment[0];
-
-                    // Hoàn lại cho sinh viên
-                    // Lấy payment gốc
                     const oldPayment = await paymentService.getPaymentByStudentId(registration.Student.id, "ROOM");
-                    const description = paymentInstance.content;
-                    const timestamp = Date.now();
-                    const orderId = `HP_${timestamp}`;
-                    const partnerCode = "MOMO";
-                    const requestId = `HP_${timestamp}`;
-                    const transId = oldPayment.transId;
-                    const amount = Number(paymentInstance.amount);
 
-                    const rawSignature =
-                        "accessKey=" + process.env.ACCESS_KEY_MOMO +
-                        "&amount=" + amount +
-                        "&description=" + description +
-                        "&orderId=" + orderId +
-                        "&partnerCode=" + partnerCode +
-                        "&requestId=" + requestId +
-                        "&transId=" + transId;
+                    const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
                     const signature = generateMomoSignature(rawSignature);
-                    const body = {
-                        partnerCode: partnerCode,
-                        orderId: orderId,
-                        requestId: requestId,
-                        amount: amount,
-                        transId: transId,
-                        description: description,
-                        signature: signature,
-                        lang: "vi"
-                    };
 
-                    const refundResponse = await axios.post(
-                        "https://test-payment.momo.vn/v2/gateway/api/refund",
-                        body, {
-                            headers: {
-                                "Content-Type": "application/json"
-                            }
-                        }
-                    );
+                    const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
 
                     if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== amount) {
                         throw PaymentError.InvalidAmount();
                     } else {
-                        console.log("123123")
                         paymentInstance.status = "SUCCESS";
                         paymentInstance.transId = refundResponse.data.transId;
                         await paymentInstance.save();
