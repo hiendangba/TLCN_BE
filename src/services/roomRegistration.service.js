@@ -21,8 +21,6 @@ const {
     sequelize
 } = require("../config/database");
 const paymentService = require("../services/payment.service");
-const {
-} = require("googleapis/build/src/apis/content");
 require('dotenv').config();
 const PaymentError = require("../errors/PaymentError");
 const momoUtils = require("../utils/momo.util");
@@ -288,7 +286,7 @@ const roomRegistrationServices = {
                 const endDate = new Date(item.endDate);
                 const amount = roomFee * duration;
 
-                const content = `Thanh toan tien phong ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
+                const content = `Thanh toán tiền phòng ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
 
                 return {
                     amount: amount,
@@ -921,9 +919,10 @@ const roomRegistrationServices = {
 
     getRoomMove: async (getRoomMoveRequest) => {
         try {
-            const { page, limit, keyword, status } = getRoomMoveRequest;
+            const { page = 1, limit = 10, keyword, status } = getRoomMoveRequest;
             const offset = (page - 1) * limit;
 
+            // ---------- SEARCH CONDITION ----------
             const searchCondition = keyword
                 ? {
                     [Op.or]: [
@@ -935,6 +934,7 @@ const roomRegistrationServices = {
                 }
                 : {};
 
+            // ---------- STATUS FILTER ----------
             let statusCondition = {};
             switch (status) {
                 case "Approved":
@@ -944,12 +944,12 @@ const roomRegistrationServices = {
                     statusCondition = { status: "MOVE_PENDING" };
                     break;
                 default:
-                    statusCondition = {
-                        status: { [Op.in]: ["MOVED", "MOVE_PENDING"] }
-                    };
+                    statusCondition = { status: { [Op.in]: ["MOVED", "MOVE_PENDING"] } };
                     break;
             }
 
+            // ---------- GET ORIGINAL REGISTRATIONS ----------
+            // NOTE: order đảm bảo bản MOVE_PENDING (nếu có) được đưa lên đầu, và theo createdAt DESC
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
                     ...statusCondition,
@@ -962,71 +962,102 @@ const roomRegistrationServices = {
                         include: [
                             {
                                 model: User,
-                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                                attributes: [
+                                    "id", "name", "identification", "dob", "gender",
+                                    "address", "avatar", "frontIdentificationImage"
+                                ],
                             },
                         ],
                     },
                     {
                         model: RoomSlot,
                         attributes: ["id", "slotNumber", "isOccupied"],
-                        include: [
-                            {
-                                model: Room,
-                                attributes: ["roomNumber", "monthlyFee"],
-                            },
-                        ],
+                        include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
                     }
                 ],
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal(`CASE WHEN "status" = 'MOVE_PENDING' THEN 0 ELSE 1 END`), 'ASC'],
+                    [sequelize.literal(`CASE WHEN "status" = 'MOVE_PENDING' THEN 0 ELSE 1 END`), "ASC"],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
             });
+
+            // Nếu không có original registrations thì trả empty ngay
+            if (!roomRegistration || !roomRegistration.rows || roomRegistration.rows.length === 0) {
+                return {
+                    totalItems: 0,
+                    response: []
+                };
+            }
+
+            // ---------- GET NEW REGISTRATIONS ----------
+            // Lấy tất cả new registrations cho các studentId trong page hiện tại, sắp xếp DESC để bản mới nhất đứng trước
+            const studentIds = Array.from(new Set(roomRegistration.rows.map(r => r.studentId).filter(Boolean)));
             const newRoomRegistration = await RoomRegistration.findAll({
                 where: {
                     status: { [Op.in]: ["PENDING", "CONFIRMED"] },
-                    studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) }
+                    studentId: { [Op.in]: studentIds }
                 },
                 include: [
                     {
                         model: RoomSlot,
                         attributes: ["id", "slotNumber", "isOccupied"],
-                        include: [
-                            {
-                                model: Room,
-                                attributes: ["roomNumber", "monthlyFee"],
-                            },
-                        ],
+                        include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
                     }
                 ],
+                order: [["createdAt", "DESC"], ["id", "ASC"]]
             });
+
+            // ---------- BUILD MAP (plain objects) ----------
+            // Chuyển originals thành plain object và đảm bảo RoomSlot luôn tồn tại dưới dạng object
             const registrationMap = {};
             roomRegistration.rows.forEach(reg => {
-                registrationMap[reg.studentId] = {
-                    original: reg,
+                const plain = (typeof reg.toJSON === "function") ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
+                // đảm bảo có cấu trúc RoomSlot / Room để FE an toàn
+                if (!plain.RoomSlot) plain.RoomSlot = {};
+                if (plain.RoomSlot && !plain.RoomSlot.Room) plain.RoomSlot.Room = {};
+                registrationMap[plain.studentId] = {
+                    original: plain,
                     new: null
                 };
             });
 
+            // Map new registrations: vì đã order DESC, bản đầu gặp là bản mới nhất => gán 1 lần
             newRoomRegistration.forEach(reg => {
-                if (registrationMap[reg.studentId]) {
-                    registrationMap[reg.studentId].new = reg;
+                const plain = (typeof reg.toJSON === "function") ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
+                if (!plain.RoomSlot) plain.RoomSlot = {};
+                if (plain.RoomSlot && !plain.RoomSlot.Room) plain.RoomSlot.Room = {};
+
+                const exist = registrationMap[plain.studentId];
+                if (!exist) return;
+
+                // Chỉ gán new khi original đang MOVE_PENDING
+                if (exist.original && exist.original.status === "MOVE_PENDING") {
+                    if (!exist.new) {
+                        exist.new = plain;
+                    }
                 }
             });
 
-            const combinedRegistrations = Object.values(registrationMap).map(item => ({
-                originalRegistration: item.original,
-                newRegistration: item.new,
-            }));
+            // ---------- BUILD RESPONSE (safe for FE) ----------
+            const combinedRegistrations = Object.values(registrationMap).map(item => {
+                // Nếu không có new -> trả object rỗng với RoomSlot: {} (để tránh crash FE khi truy cập .RoomSlot)
+                const safeNew = item.new ? item.new : { RoomSlot: {} };
+                return {
+                    originalRegistration: item.original,
+                    newRegistration: safeNew
+                };
+            });
 
             return {
                 totalItems: roomRegistration.count,
-                response: combinedRegistrations,
+                response: combinedRegistrations
             };
+
         } catch (err) {
+            // bạn có thể log err ở đây
             throw err;
         }
     },
@@ -1166,8 +1197,12 @@ const roomRegistrationServices = {
 
 
                         const monthDifference = getMonthsDifference(dayStr, registration.endDate);
+                        console.log("Giá mới ",newRegistration.RoomSlot.Room.monthlyFee);
+                        console.log("Gia cu ", registration.RoomSlot.Room.monthlyFee)
                         monthlyFeeDifference = (newRegistration.RoomSlot.Room.monthlyFee - registration.RoomSlot.Room.monthlyFee) * monthDifference;
+                        console.log("Gia chenh lech ", monthlyFeeDifference);
                         const dayFormatted = formatDateVN(dayStr);
+                        console.log("Thang chenh lech: ", monthDifference);
 
                         const user = registration.Student.User;
 
@@ -1197,16 +1232,49 @@ const roomRegistrationServices = {
                                 })
                             );
                         }
-                        approvedList.push(registration.id);
 
+                        console.log(monthlyFeeDifference);
                         //Khi thiếu cần chuyển thêm
                         if (monthlyFeeDifference > 0) {
+                            // Tạo payment chuyển tiền thêm
+                            const paymentData = {
+                                amout: Number(monthlyFeeDifference),
+                                type: "EXTRA_MOVE",
+                                content: `Thanh toán chi phí phát sinh do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`,
+                            }
+                            await paymentService.createPayment(paymentData);
 
                         }
                         //Khi dư cần hoàn tiền
                         else if (monthlyFeeDifference < 0) {
+                            // Tạo payment hoàn tiền nếu như dư
 
+                            console.log("1223344");
+                            const paymentData = { 
+                                amount: Number(Math.abs(monthlyFeeDifference)),
+                                type: "REFUND_MOVE",
+                                content: `Hoàn tiền do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`
+                            }
+                            const payment = await paymentService.createPayment(paymentData);
+                            const oldPayment = await paymentService.getPaymentByStudentId(user.id, "ROOM");
+
+                            const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment,oldPayment);
+                            const signature = momoUtils.generateMomoSignature(rawSignature);
+
+                            const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
+
+                            console.log("124");
+
+                            if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
+                                throw PaymentError.InvalidAmount();
+                            } else {
+                                payment.status = "SUCCESS";
+                                payment.transId = refundResponse.data.transId;
+                                await payment.save();
+                            }
                         }
+                        // xong hết rồi thì mới thêm vào approvedList
+                        approvedList.push(registration.id);
                     }
                 } catch (innerErr) {
                     skippedList.push({
@@ -1507,12 +1575,19 @@ const roomRegistrationServices = {
                                 })
                             );
                         }
-                        approvedList.push(registration.id);
 
                         //tạo payment khi thiếu
                         if (monthlyFeeDifference > 0) {
+                            const paymentData = { 
+                                content: `Thanh toán chi phí gia giạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
+                                type: "EXTEND_ROOM",
+                                amount: Number(monthlyFeeDifference)
+                            }
 
+                            await paymentService.createPayment(paymentData);
                         }
+
+                        approvedList.push(registration.id);
                     }
                 } catch (innerErr) {
                     skippedList.push({
@@ -1540,6 +1615,8 @@ const roomRegistrationServices = {
 function getMonthsDifference(checkoutDate, endDate) {
     const checkout = new Date(checkoutDate);
     const end = new Date(endDate);
+    console.log("Ngay ket thuc", end);
+    console.log("Ngay check out: ", checkout);
     const yearsDiff = end.getFullYear() - checkout.getFullYear();
     const monthsDiff = end.getMonth() - checkout.getMonth();
 
