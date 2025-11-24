@@ -68,6 +68,11 @@ class UserError extends AppError {
     static InvalidResetTokenPurpose() {
         return new AppError("Token không hợp lệ để đặt lại mật khẩu.", 401, "INVALID_RESET_TOKEN_PURPOSE");
     }
+
+    static NoFaceDetected() {
+        return new UserError("Không phát hiện được khuôn mặt trong ảnh.", 400, "NO_FACE_DETECTED");
+    }
+    
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }
