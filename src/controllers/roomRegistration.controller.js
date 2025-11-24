@@ -2,12 +2,15 @@ const asyncHandler = require('express-async-handler');
 const {
     ApprovedRoomRegistrationRequest, GetRoomRegistrationRequest,
     RejectRoomRegistrationRequest, CancelRoomRegistrationRequest,
-    GetCancelRoomRequest, ApprovedCancelRoomRequest
+    GetCancelRoomRequest, ApprovedCancelRoomRequest,
+    RoomMoveRequest, GetRoomMoveRequest,
+    ApprovedMoveRoomRequest
 } = require("../dto/request/roomRegistration.request")
 const ApiResponse = require("../dto/response/api.response");
-const { GetRoomRegistrationResponse, GetRoomCancelResponse } = require("../dto/response/roomRegistration.response")
+const { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse } = require("../dto/response/roomRegistration.response")
 const roomRegistrationService = require("../services/roomRegistration.service")
 const roomRegistrationController = {
+    
     getRoomRegistration: asyncHandler(async (req, res) => {
         const getRoomRegistrationRequest = new GetRoomRegistrationRequest(req.query)
         const { totalItems, response } = await roomRegistrationService.getRoomRegistration(getRoomRegistrationRequest);
@@ -60,14 +63,26 @@ const roomRegistrationController = {
         );
     }),
 
+    getRoomMove: asyncHandler(async (req, res) => {
+        const getRoomMoveRequest = new GetRoomMoveRequest(req.query);
+        const { totalItems, response } = await roomRegistrationService.getRoomMove(getRoomMoveRequest);
+        console.log(response);
+        const getRoomMoveResponses = response.map(item => new GetRoomMoveResponse(item));
+        return res.status(200).json(
+            new ApiResponse(getRoomMoveResponses,
+                { page: getRoomMoveRequest.page, limit: getRoomMoveRequest.limit, totalItems })
+        );
+    }),
+
     requestRoomMove: asyncHandler(async (req, res) => {
-        const requestRoomMoveRequest = new RequestRoomMoveRequest(req.body, req.roleId);
-        const response = await roomRegistrationService.requestRoomMove(requestRoomMoveRequest);
+        const roomMoveRequest = new RoomMoveRequest(req.body, req.roleId);
+        const response = await roomRegistrationService.requestRoomMove(roomMoveRequest);
         return res.status(200).json(new ApiResponse(response));
     }),
 
     approveRoomMove: asyncHandler(async (req, res) => {
-        const response = await roomRegistrationService.approveRoomMove(req.roleId);
+        const approvedMoveRoomRequest = new ApprovedMoveRoomRequest(req.body, req.roleId)
+        const response = await roomRegistrationService.approveRoomMove(approvedMoveRoomRequest);
         return res.status(200).json(new ApiResponse(response));
     }),
 };
