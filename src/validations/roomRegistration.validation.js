@@ -19,8 +19,6 @@ const approveRoomRegistrationSchema = Joi.object({
         }),
 });
 
-
-
 const rejectRoomRegistrationSchema = Joi.object({
     ids: Joi.array()
         .items(
@@ -169,7 +167,6 @@ const extendRoomRegistrationSchema = Joi.object({
         }),
 });
 
-
 const approvedExtendRoomSchema = Joi.object({
     ids: Joi.array()
         .items(
@@ -188,6 +185,7 @@ const approvedExtendRoomSchema = Joi.object({
             "any.required": "Thiếu trường 'ids' trong yêu cầu.",
         }),
 });
+
 module.exports = {
     approveRoomRegistrationSchema,
     rejectRoomRegistrationSchema,

@@ -909,6 +909,8 @@ const roomRegistrationServices = {
                 roomSlotId: roomMoveRequest.roomSlotId,
                 status: "PENDING",
                 registerDate: new Date(),
+                previousRegistrationId: roomRegistration.id,
+                duration: roomMoveRequest.duration
             });
             return roomRegistration;
 

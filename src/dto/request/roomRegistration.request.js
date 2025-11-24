@@ -101,6 +101,7 @@ class RejectCancelRoomRequest {
 class RoomMoveRequest {
     constructor(data, roleId) {
         this.roomSlotId = data.roomSlotId;
+        this.duration = data.duration;
         this.roleId = roleId;
     }
 }

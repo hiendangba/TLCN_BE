@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
             RoomRegistration.belongsTo(models.RoomSlot, { foreignKey: 'roomSlotId' });
             RoomRegistration.belongsTo(models.Admin, { foreignKey: 'adminId' });
             RoomRegistration.hasOne(models.CancellationInfo, { foreignKey: "roomRegistrationId" });
+            RoomRegistration.belongsTo(models.RoomRegistration, { foreignKey: 'previousRegistrationId' });
         }
     }
 
