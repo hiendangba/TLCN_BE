@@ -917,9 +917,10 @@ const roomRegistrationServices = {
 
     getRoomMove: async (getRoomMoveRequest) => {
         try {
-            const { page, limit, keyword, status } = getRoomMoveRequest;
+            const { page = 1, limit = 10, keyword, status } = getRoomMoveRequest;
             const offset = (page - 1) * limit;
 
+            // ---------- SEARCH CONDITION ----------
             const searchCondition = keyword
                 ? {
                     [Op.or]: [
@@ -931,6 +932,7 @@ const roomRegistrationServices = {
                 }
                 : {};
 
+            // ---------- STATUS FILTER ----------
             let statusCondition = {};
             switch (status) {
                 case "Approved":
@@ -940,12 +942,12 @@ const roomRegistrationServices = {
                     statusCondition = { status: "MOVE_PENDING" };
                     break;
                 default:
-                    statusCondition = {
-                        status: { [Op.in]: ["MOVED", "MOVE_PENDING"] }
-                    };
+                    statusCondition = { status: { [Op.in]: ["MOVED", "MOVE_PENDING"] } };
                     break;
             }
 
+            // ---------- GET ORIGINAL REGISTRATIONS ----------
+            // NOTE: order đảm bảo bản MOVE_PENDING (nếu có) được đưa lên đầu, và theo createdAt DESC
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
                     ...statusCondition,
@@ -958,71 +960,102 @@ const roomRegistrationServices = {
                         include: [
                             {
                                 model: User,
-                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                                attributes: [
+                                    "id", "name", "identification", "dob", "gender",
+                                    "address", "avatar", "frontIdentificationImage"
+                                ],
                             },
                         ],
                     },
                     {
                         model: RoomSlot,
                         attributes: ["id", "slotNumber", "isOccupied"],
-                        include: [
-                            {
-                                model: Room,
-                                attributes: ["roomNumber", "monthlyFee"],
-                            },
-                        ],
+                        include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
                     }
                 ],
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal(`CASE WHEN "status" = 'MOVE_PENDING' THEN 0 ELSE 1 END`), 'ASC'],
+                    [sequelize.literal(`CASE WHEN "status" = 'MOVE_PENDING' THEN 0 ELSE 1 END`), "ASC"],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
             });
+
+            // Nếu không có original registrations thì trả empty ngay
+            if (!roomRegistration || !roomRegistration.rows || roomRegistration.rows.length === 0) {
+                return {
+                    totalItems: 0,
+                    response: []
+                };
+            }
+
+            // ---------- GET NEW REGISTRATIONS ----------
+            // Lấy tất cả new registrations cho các studentId trong page hiện tại, sắp xếp DESC để bản mới nhất đứng trước
+            const studentIds = Array.from(new Set(roomRegistration.rows.map(r => r.studentId).filter(Boolean)));
             const newRoomRegistration = await RoomRegistration.findAll({
                 where: {
                     status: { [Op.in]: ["PENDING", "CONFIRMED"] },
-                    studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) }
+                    studentId: { [Op.in]: studentIds }
                 },
                 include: [
                     {
                         model: RoomSlot,
                         attributes: ["id", "slotNumber", "isOccupied"],
-                        include: [
-                            {
-                                model: Room,
-                                attributes: ["roomNumber", "monthlyFee"],
-                            },
-                        ],
+                        include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
                     }
                 ],
+                order: [["createdAt", "DESC"], ["id", "ASC"]]
             });
+
+            // ---------- BUILD MAP (plain objects) ----------
+            // Chuyển originals thành plain object và đảm bảo RoomSlot luôn tồn tại dưới dạng object
             const registrationMap = {};
             roomRegistration.rows.forEach(reg => {
-                registrationMap[reg.studentId] = {
-                    original: reg,
+                const plain = (typeof reg.toJSON === "function") ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
+                // đảm bảo có cấu trúc RoomSlot / Room để FE an toàn
+                if (!plain.RoomSlot) plain.RoomSlot = {};
+                if (plain.RoomSlot && !plain.RoomSlot.Room) plain.RoomSlot.Room = {};
+                registrationMap[plain.studentId] = {
+                    original: plain,
                     new: null
                 };
             });
 
+            // Map new registrations: vì đã order DESC, bản đầu gặp là bản mới nhất => gán 1 lần
             newRoomRegistration.forEach(reg => {
-                if (registrationMap[reg.studentId]) {
-                    registrationMap[reg.studentId].new = reg;
+                const plain = (typeof reg.toJSON === "function") ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
+                if (!plain.RoomSlot) plain.RoomSlot = {};
+                if (plain.RoomSlot && !plain.RoomSlot.Room) plain.RoomSlot.Room = {};
+
+                const exist = registrationMap[plain.studentId];
+                if (!exist) return;
+
+                // Chỉ gán new khi original đang MOVE_PENDING
+                if (exist.original && exist.original.status === "MOVE_PENDING") {
+                    if (!exist.new) {
+                        exist.new = plain;
+                    }
                 }
             });
 
-            const combinedRegistrations = Object.values(registrationMap).map(item => ({
-                originalRegistration: item.original,
-                newRegistration: item.new,
-            }));
+            // ---------- BUILD RESPONSE (safe for FE) ----------
+            const combinedRegistrations = Object.values(registrationMap).map(item => {
+                // Nếu không có new -> trả object rỗng với RoomSlot: {} (để tránh crash FE khi truy cập .RoomSlot)
+                const safeNew = item.new ? item.new : { RoomSlot: {} };
+                return {
+                    originalRegistration: item.original,
+                    newRegistration: safeNew
+                };
+            });
 
             return {
                 totalItems: roomRegistration.count,
-                response: combinedRegistrations,
+                response: combinedRegistrations
             };
+
         } catch (err) {
+            // bạn có thể log err ở đây
             throw err;
         }
     },
@@ -1580,6 +1613,8 @@ const roomRegistrationServices = {
 function getMonthsDifference(checkoutDate, endDate) {
     const checkout = new Date(checkoutDate);
     const end = new Date(endDate);
+    console.log("Ngay ket thuc", end);
+    console.log("Ngay check out: ", checkout);
     const yearsDiff = end.getFullYear() - checkout.getFullYear();
     const monthsDiff = end.getMonth() - checkout.getMonth();
 
