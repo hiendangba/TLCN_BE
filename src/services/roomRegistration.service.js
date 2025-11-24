@@ -44,9 +44,9 @@ const roomRegistrationServices = {
             if (roomSlot.isOccupied === true) {
                 throw RoomError.RoomSlotIsOccupied();
             }
-            await RoomRegistration.create(createRoomRegistrationRequest, {
-                transaction
-            })
+
+            await RoomRegistration.create(createRoomRegistrationRequest, { transaction })
+
         } catch (err) {
             throw err;
         }
@@ -61,45 +61,28 @@ const roomRegistrationServices = {
                 status
             } = getRoomRegistrationRequest;
             const offset = (page - 1) * limit;
-
-            const searchCondition = keyword ? {
-                [Op.or]: [{
-                        "$Student.User.name$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
-                    {
-                        "$Student.User.identification$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
-                    {
-                        "$Student.mssv$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
-                    {
-                        "$RoomSlot.Room.roomNumber$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
-                ],
-            } : {};
+            const searchCondition = keyword
+                ? {
+                    [Op.or]: [
+                        { "$Student.User.name$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.User.identification$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.mssv$": { [Op.like]: `%${keyword}%` } },
+                        { "$RoomSlot.Room.roomNumber$": { [Op.like]: `%${keyword}%` } },
+                    ],
+                }
+                : {};
 
             let statusCondition = {};
             switch (status) {
                 case "Approved":
-                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING"] } }; // Đã duyệt
+                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING", "EXTENDING"] } };
                     break;
                 case "Unapproved":
-                    statusCondition = {
-                        approvedDate: null,
-                        status: "BOOKED"
-                    }; // Chưa duyệt
+                    statusCondition = { approvedDate: null, status: "BOOKED" };
                     break;
                 case "All":
                 default:
-                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING"] } }
+                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING", "EXTENDING"] } }
                     break;
             }
 
@@ -194,6 +177,28 @@ const roomRegistrationServices = {
                         lock: transaction.LOCK.UPDATE,
                         transaction,
                     });
+
+
+                    const registrationRoom = await RoomRegistration.findOne({
+                        where: {
+                            roomSlotId: registration.roomSlotId,
+                            status: "CANCELED"
+                        },
+                        include: [
+                            { model: CancellationInfo }
+                        ],
+                        transaction
+                    });
+
+                    if (registrationRoom) {
+                        if (registrationRoom.CancellationInfo.checkoutDate <= new Date() && registrationRoom.CancellationInfo.refundStatus === 'APPROVED') {
+                            skippedList.push({
+                                registrationId: registration.id,
+                                reason: "Chỗ ở này đã có người đăng ký chưa chuyển đi",
+                            });
+                            continue;
+                        }
+                    }
 
                     if (!roomSlot) {
                         skippedList.push({
@@ -834,7 +839,6 @@ const roomRegistrationServices = {
 
                     approvedList.push(registration.id);
 
-
                 } catch (innerErr) {
                     skippedList.push({
                         registrationId: registration.id,
@@ -1066,6 +1070,10 @@ const roomRegistrationServices = {
             const skippedList = [];
             const emailTasks = [];
 
+            if (roomRegistrations.length === 0) {
+                throw RoomRegistrationError.RoomMoveNotFound();
+            }
+
             for (const registration of roomRegistrations) {
                 try {
                     let monthlyFeeDifference;
@@ -1218,6 +1226,313 @@ const roomRegistrationServices = {
             throw err;
         }
     },
+
+    requestRoomExtend: async (roomExtendRequest) => {
+        try {
+
+            const roomRegistration = await RoomRegistration.findOne({
+                where: {
+                    studentId: roomExtendRequest.roleId,
+                    status: "CONFIRMED"
+                },
+            });
+
+            if (!roomRegistration) {
+                const existing = await RoomRegistration.findOne({
+                    where: {
+                        studentId: roomExtendRequest.roleId,
+                        status: "EXTENDING",
+                    },
+                });
+
+                if (existing) {
+                    throw RoomRegistrationError.RoomExtendAlreadyRequested();
+                }
+
+                throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+
+            if (getTodayDateString(new Date()) > roomRegistration.endDate) {
+                throw RoomRegistrationError.ExtendTooLate();
+            }
+
+            if (roomRegistration.status !== "CONFIRMED") {
+                throw RoomRegistrationError.InvalidExtendRequest();
+            }
+
+            await roomRegistration.update({
+                status: "EXTENDING"
+            })
+
+            const newEndDate = new Date(roomRegistration.endDate);
+            newEndDate.setMonth(newEndDate.getMonth() + Number(roomExtendRequest.duration));
+            const newEndDateStr = getTodayDateString(newEndDate);
+
+            await RoomRegistration.create({
+                studentId: roomExtendRequest.roleId,
+                roomSlotId: roomRegistration.roomSlotId,
+                status: "PENDING_EXTENDED",
+                registerDate: new Date(),
+                approvedDate: roomRegistration.endDate,
+                endDate: newEndDateStr,
+                duration: roomExtendRequest.duration
+            });
+            return roomRegistration;
+
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getExtendRoom: async (getRoomExtendRequest) => {
+        try {
+            const { page, limit, keyword, status } = getRoomExtendRequest;
+            const offset = (page - 1) * limit;
+
+            const searchCondition = keyword
+                ? {
+                    [Op.or]: [
+                        { "$Student.User.name$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.User.identification$": { [Op.like]: `%${keyword}%` } },
+                        { "$Student.mssv$": { [Op.like]: `%${keyword}%` } },
+                        { "$RoomSlot.Room.roomNumber$": { [Op.like]: `%${keyword}%` } },
+                    ],
+                }
+                : {};
+
+            let statusCondition = {};
+            switch (status) {
+                case "Approved":
+                    statusCondition = { status: "EXTENDED" };
+                    break;
+                case "Unapproved":
+                    statusCondition = { status: "EXTENDING" };
+                    break;
+                default:
+                    statusCondition = {
+                        status: { [Op.in]: ["EXTENDING", "EXTENDED"] }
+                    };
+                    break;
+            }
+
+            const roomRegistration = await RoomRegistration.findAndCountAll({
+                where: {
+                    ...statusCondition,
+                    ...searchCondition,
+                },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["id", "mssv", "school", "userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                            },
+                        ],
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"],
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber", "monthlyFee"],
+                            },
+                        ],
+                    }
+                ],
+                offset,
+                limit,
+                order: [
+                    [sequelize.literal(`CASE WHEN "status" = 'EXTENDING' THEN 0 ELSE 1 END`), 'ASC'],
+                    ["createdAt", "DESC"],
+                    ["id", "ASC"]
+                ]
+            });
+            const newRoomRegistration = await RoomRegistration.findAll({
+                where: {
+                    status: { [Op.in]: ["PENDING_EXTENDED", "CONFIRMED"] },
+                    studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) }
+                }
+            });
+
+            const registrationMap = {};
+            roomRegistration.rows.forEach(reg => {
+                registrationMap[reg.studentId] = {
+                    original: reg,
+                    new: null
+                };
+            });
+
+            newRoomRegistration.forEach(reg => {
+                if (registrationMap[reg.studentId]) {
+                    registrationMap[reg.studentId].new = reg;
+                }
+            });
+
+            const combinedRegistrations = Object.values(registrationMap).map(item => ({
+                originalRegistration: item.original,
+                newRegistration: item.new,
+            }));
+
+            return {
+                totalItems: roomRegistration.count,
+                response: combinedRegistrations,
+            };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    approveRoomExtend: async (approvedExtendRoomRequest) => {
+        const transaction = await sequelize.transaction();
+        try {
+
+            const admin = await Admin.findOne({ where: { id: approvedExtendRoomRequest.adminId } });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: {
+                    id: approvedExtendRoomRequest.ids,
+                    status: "EXTENDING"
+                },
+                include: [
+                    {
+                        model: Student,
+                        as: "Student",
+                        attributes: ["id"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "email"],
+                            },
+                        ],
+                    },
+                    {
+                        model: RoomSlot,
+                        include: [
+                            {
+                                model: Room,
+                                attributes: ["roomNumber", "monthlyFee"],
+                            },
+                        ],
+                    }
+                ],
+                transaction,
+            });
+
+            const approvedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            if (roomRegistrations.length === 0) {
+                throw RoomRegistrationError.RoomExtendNotFound();
+            }
+
+            for (const registration of roomRegistrations) {
+                try {
+                    if (new Date() > new Date(registration.endDate)) {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            reason: "Thời gian hiện tại lớn hơn thời gian kết thúc hợp đồng",
+                        });
+                        continue;
+                    }
+                    if (registration.status !== "EXTENDING") {
+                        skippedList.push({
+                            registrationId: registration.id,
+                            reason: "Đơn gia hạn không ở trạng thái chờ duyệt",
+                        });
+                        continue;
+                    }
+
+                    const newRegistration = await RoomRegistration.findOne({
+                        where: {
+                            studentId: registration.studentId,
+                            status: "PENDING_EXTENDED"
+                        },
+                        transaction,
+                    });
+
+                    if (!newRegistration) {
+                        skippedList.push({
+                            registrationId: registration.id
+                        })
+                        continue;
+
+                    } else {
+
+                        await newRegistration.update(
+                            {
+                                status: "CONFIRMED",
+                                adminId: admin.id,
+                            },
+                            { transaction }
+                        );
+
+                        await registration.update(
+                            {
+                                status: "EXTENDED",
+                                adminId: admin.id,
+                            },
+                            { transaction }
+                        );
+
+                        let monthlyFeeDifference = registration.RoomSlot.Room.monthlyFee * Number(newRegistration.duration);
+
+                        const user = registration.Student.User;
+
+                        if (user) {
+
+                            const feeMessage = `<p>Vui lòng thanh toán thêm <b>${formatCurrencyVND(monthlyFeeDifference)}</b> để hoàn tất gia hạn.</p>`;
+
+                            emailTasks.push(
+                                sendMail({
+                                    to: user.email,
+                                    subject: "Yêu cầu gia hạn phòng đã được duyệt",
+                                    html: `
+                                        <h3>Xin chào ${user.name},</h3>
+
+                                        <p>Yêu cầu <b>gia hạn hợp đồng phòng</b> của bạn đã được <b>duyệt thành công</b>.</p>
+                                        <p><b>Phòng:</b> ${registration.RoomSlot.Room.roomNumber}, vị trí giường số ${registration.RoomSlot.slotNumber}</p>
+                                        <p><b>Ngày hết hạn cũ:</b> ${formatDateVN(registration.endDate)}</p>
+                                        <p><b>Ngày hết hạn mới:</b> ${formatDateVN(newRegistration.endDate)}</p>
+                                        <p><b>Số tháng gia hạn:</b> ${newRegistration.duration} tháng</p>
+                                        ${feeMessage}
+                                        <p>Cảm ơn bạn đã tiếp tục đồng hành cùng chúng tôi!</p>
+                                    `,
+                                })
+                            );
+                        }
+                        approvedList.push(registration.id);
+
+                        //tạo payment khi thiếu
+                        if (monthlyFeeDifference > 0) {
+
+                        }
+                    }
+                } catch (innerErr) {
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+            return {
+                approved: approvedList,
+                skipped: skippedList,
+            };
+
+        } catch (err) {
+            if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
+
 };
 
 

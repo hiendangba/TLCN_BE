@@ -171,11 +171,10 @@ const roomServices = {
 
     getRoomHistoryByUser: async (roleId) => {
         try {
-            console.log(roleId)
             const roomRegistrations = await RoomRegistration.findAll({
                 where: {
                     studentId: roleId,
-                    status: { [Op.in]: ["CANCELED", "MOVED"] },
+                    status: { [Op.in]: ["CANCELED", "MOVED" , "EXTENDED"] },
                     endDate: { [Op.lte]: new Date() }
                 },
                 include: [
