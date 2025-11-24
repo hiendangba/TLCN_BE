@@ -73,14 +73,14 @@ const roomRegistrationServices = {
             let statusCondition = {};
             switch (status) {
                 case "Approved":
-                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING", "EXTENDING"] } };
+                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } };
                     break;
                 case "Unapproved":
                     statusCondition = { approvedDate: null, status: "BOOKED" };
                     break;
                 case "All":
                 default:
-                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVED", "CANCELED", "MOVE_PENDING", "EXTENDING"] } }
+                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } }
                     break;
             }
 
@@ -90,26 +90,26 @@ const roomRegistrationServices = {
                     ...searchCondition,
                 },
                 include: [{
-                        model: Student,
-                        attributes: ["id", "mssv", "school", "userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
-                        }, ],
-                    },
-                    {
-                        model: RoomSlot,
-                        attributes: ["id", "slotNumber", "isOccupied"],
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber"],
-                        }, ],
-                    },
+                    model: Student,
+                    attributes: ["id", "mssv", "school", "userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                    },],
+                },
+                {
+                    model: RoomSlot,
+                    attributes: ["id", "slotNumber", "isOccupied"],
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber"],
+                    },],
+                },
                 ],
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal('CASE WHEN "approvedDate" IS NULL THEN 0 ELSE 1 END'), 'ASC'],
+                    [sequelize.literal('CASE WHEN `RoomRegistration`.`approvedDate` IS NULL THEN 0 ELSE 1 END'), 'ASC'],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ],
@@ -140,21 +140,21 @@ const roomRegistrationServices = {
                     id: approvedRoomRegistrationRequest.ids
                 },
                 include: [{
-                        model: Student,
-                        as: "Student",
-                        attributes: ["userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "email"],
-                        }, ],
-                    },
-                    {
-                        model: RoomSlot,
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber", "monthlyFee"],
-                        }, ],
-                    },
+                    model: Student,
+                    as: "Student",
+                    attributes: ["userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "email"],
+                    },],
+                },
+                {
+                    model: RoomSlot,
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber", "monthlyFee"],
+                    },],
+                },
                 ],
                 transaction,
             });
@@ -316,21 +316,21 @@ const roomRegistrationServices = {
                     id: rejectRoomRegistrationRequest.ids
                 },
                 include: [{
-                        model: Student,
-                        as: "Student",
-                        attributes: ["id", "userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "email"]
-                        }],
-                    },
-                    {
-                        model: RoomSlot,
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber"]
-                        }],
-                    },
+                    model: Student,
+                    as: "Student",
+                    attributes: ["id", "userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "email"]
+                    }],
+                },
+                {
+                    model: RoomSlot,
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber"]
+                    }],
+                },
                 ],
                 transaction,
             });
@@ -367,7 +367,7 @@ const roomRegistrationServices = {
 
                     if (user?.email) {
                         // Lấy lý do riêng cho đơn này, hoặc lý do chung
-                        const reason = rejectRoomRegistrationRequest.reasons?. [registration.id] || "";
+                        const reason = rejectRoomRegistrationRequest.reasons?.[registration.id] || "";
                         const reasonText = reason ?
                             `<p><strong>Lý do từ chối:</strong> ${reason}</p>` :
                             "";
@@ -426,20 +426,20 @@ const roomRegistrationServices = {
                     status: "CONFIRMED"
                 },
                 include: [{
-                        model: Student,
-                        attributes: ["userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["name", "identification"]
-                        }],
-                    },
-                    {
-                        model: RoomSlot,
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber", "monthlyFee"]
-                        }],
-                    },
+                    model: Student,
+                    attributes: ["userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["name", "identification"]
+                    }],
+                },
+                {
+                    model: RoomSlot,
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber", "monthlyFee"]
+                    }],
+                },
                 ],
             });
 
@@ -494,25 +494,25 @@ const roomRegistrationServices = {
 
             const searchCondition = keyword ? {
                 [Op.or]: [{
-                        "$Student.User.name$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
-                    {
-                        "$Student.User.identification$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
-                    {
-                        "$Student.mssv$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
-                    {
-                        "$RoomSlot.Room.roomNumber$": {
-                            [Op.like]: `%${keyword}%`
-                        }
-                    },
+                    "$Student.User.name$": {
+                        [Op.like]: `%${keyword}%`
+                    }
+                },
+                {
+                    "$Student.User.identification$": {
+                        [Op.like]: `%${keyword}%`
+                    }
+                },
+                {
+                    "$Student.mssv$": {
+                        [Op.like]: `%${keyword}%`
+                    }
+                },
+                {
+                    "$RoomSlot.Room.roomNumber$": {
+                        [Op.like]: `%${keyword}%`
+                    }
+                },
                 ],
             } : {};
 
@@ -549,25 +549,25 @@ const roomRegistrationServices = {
                     ...searchCondition,
                 },
                 include: [{
-                        model: Student,
-                        attributes: ["id", "mssv", "school", "userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
-                        }, ],
-                    },
-                    {
-                        model: RoomSlot,
-                        attributes: ["id", "slotNumber", "isOccupied"],
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber"],
-                        }, ],
-                    },
-                    {
-                        model: CancellationInfo,
-                        attributes: ["reason", "checkoutDate", "refundStatus", "amount"],
-                    }
+                    model: Student,
+                    attributes: ["id", "mssv", "school", "userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                    },],
+                },
+                {
+                    model: RoomSlot,
+                    attributes: ["id", "slotNumber", "isOccupied"],
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber"],
+                    },],
+                },
+                {
+                    model: CancellationInfo,
+                    attributes: ["reason", "checkoutDate", "refundStatus", "amount"],
+                }
                 ],
                 offset,
                 limit,
@@ -604,24 +604,24 @@ const roomRegistrationServices = {
                     status: "CANCELED"
                 },
                 include: [{
-                        model: Student,
-                        as: "Student",
-                        attributes: ["id","userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "email"],
-                        }, ],
-                    },
-                    {
-                        model: RoomSlot,
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber"],
-                        }, ],
-                    },
-                    {
-                        model: CancellationInfo,
-                    }
+                    model: Student,
+                    as: "Student",
+                    attributes: ["id", "userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "email"],
+                    },],
+                },
+                {
+                    model: RoomSlot,
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber"],
+                    },],
+                },
+                {
+                    model: CancellationInfo,
+                }
                 ],
                 transaction,
             });
@@ -753,31 +753,31 @@ const roomRegistrationServices = {
                     status: "CANCELED"
                 },
                 include: [{
-                        model: Student,
-                        as: "Student",
-                        attributes: ["id","userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "email"],
-                        }, ],
-                    },
-                    {
-                        model: RoomSlot,
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber"],
-                        }, ],
-                    },
-                    {
-                        model: CancellationInfo,
-                    }
+                    model: Student,
+                    as: "Student",
+                    attributes: ["id", "userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "email"],
+                    },],
+                },
+                {
+                    model: RoomSlot,
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber"],
+                    },],
+                },
+                {
+                    model: CancellationInfo,
+                }
                 ],
                 transaction,
             });
 
             const approvedList = [];
             const skippedList = [];
-            const emailTasks =  [];
+            const emailTasks = [];
 
             for (const registration of roomRegistrations) {
                 try {
@@ -828,10 +828,10 @@ const roomRegistrationServices = {
                     await registration.update({
                         adminId: admin.id,
                         status: "CONFIRMED"
-                    }, {transaction});
+                    }, { transaction });
 
                     // Xóa CancellationInfo của nó luôn
-                    if(registration.CancellationInfo){
+                    if (registration.CancellationInfo) {
                         await registration.CancellationInfo.destroy({ transaction });
                     }
 
@@ -901,8 +901,9 @@ const roomRegistrationServices = {
 
             await roomRegistration.update({
                 status: "MOVE_PENDING"
-            })
-            await RoomRegistration.create({
+            });
+
+            const newRoomRegistration = await RoomRegistration.create({
                 studentId: roomMoveRequest.roleId,
                 roomSlotId: roomMoveRequest.roomSlotId,
                 status: "PENDING",
@@ -910,7 +911,8 @@ const roomRegistrationServices = {
                 previousRegistrationId: roomRegistration.id,
                 duration: roomMoveRequest.duration
             });
-            return roomRegistration;
+
+            return newRoomRegistration;
 
         } catch (err) {
             throw err;
@@ -948,8 +950,6 @@ const roomRegistrationServices = {
                     break;
             }
 
-            // ---------- GET ORIGINAL REGISTRATIONS ----------
-            // NOTE: order đảm bảo bản MOVE_PENDING (nếu có) được đưa lên đầu, và theo createdAt DESC
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
                     ...statusCondition,
@@ -978,13 +978,12 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal(`CASE WHEN "status" = 'MOVE_PENDING' THEN 0 ELSE 1 END`), "ASC"],
+                    [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = \'MOVE_PENDING\' THEN 0 ELSE 1 END'), "ASC"],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
             });
 
-            // Nếu không có original registrations thì trả empty ngay
             if (!roomRegistration || !roomRegistration.rows || roomRegistration.rows.length === 0) {
                 return {
                     totalItems: 0,
@@ -992,72 +991,59 @@ const roomRegistrationServices = {
                 };
             }
 
-            // ---------- GET NEW REGISTRATIONS ----------
-            // Lấy tất cả new registrations cho các studentId trong page hiện tại, sắp xếp DESC để bản mới nhất đứng trước
-            const studentIds = Array.from(new Set(roomRegistration.rows.map(r => r.studentId).filter(Boolean)));
+            const originalIds = roomRegistration.rows.map(r => r.id);
             const newRoomRegistration = await RoomRegistration.findAll({
                 where: {
-                    status: { [Op.in]: ["PENDING", "CONFIRMED"] },
-                    studentId: { [Op.in]: studentIds }
+                    previousRegistrationId: { [Op.in]: originalIds },
+                    status: { [Op.in]: ["PENDING", "CONFIRMED", "MOVED", "MOVE_PENDING", "EXTENDED", "PENDING_EXTENDED"] },
                 },
                 include: [
                     {
                         model: RoomSlot,
                         attributes: ["id", "slotNumber", "isOccupied"],
                         include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
-                    }
+                    },
                 ],
-                order: [["createdAt", "DESC"], ["id", "ASC"]]
+                order: [["createdAt", "DESC"], ["id", "ASC"]],
             });
-
-            // ---------- BUILD MAP (plain objects) ----------
-            // Chuyển originals thành plain object và đảm bảo RoomSlot luôn tồn tại dưới dạng object
+            // ---------- BUILD MAP BY ORIGINAL ID ----------
             const registrationMap = {};
             roomRegistration.rows.forEach(reg => {
-                const plain = (typeof reg.toJSON === "function") ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
-                // đảm bảo có cấu trúc RoomSlot / Room để FE an toàn
-                if (!plain.RoomSlot) plain.RoomSlot = {};
-                if (plain.RoomSlot && !plain.RoomSlot.Room) plain.RoomSlot.Room = {};
-                registrationMap[plain.studentId] = {
-                    original: plain,
-                    new: null
-                };
+                const plain = reg.toJSON ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
+                registrationMap[plain.id] = { original: plain, new: null };
             });
 
-            // Map new registrations: vì đã order DESC, bản đầu gặp là bản mới nhất => gán 1 lần
+            // ---------- MAP NEW REGISTRATIONS BY previousRegistrationId ----------
             newRoomRegistration.forEach(reg => {
-                const plain = (typeof reg.toJSON === "function") ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
+                const plain = reg.toJSON ? reg.toJSON() : JSON.parse(JSON.stringify(reg));
                 if (!plain.RoomSlot) plain.RoomSlot = {};
                 if (plain.RoomSlot && !plain.RoomSlot.Room) plain.RoomSlot.Room = {};
 
-                const exist = registrationMap[plain.studentId];
+                const prevId = plain.previousRegistrationId;
+                if (prevId == null) return;
+
+                const exist = registrationMap[prevId];
                 if (!exist) return;
 
-                // Chỉ gán new khi original đang MOVE_PENDING
-                if (exist.original && exist.original.status === "MOVE_PENDING") {
-                    if (!exist.new) {
-                        exist.new = plain;
-                    }
+                // Chỉ gán new 1 lần (lấy bản mới nhất do order DESC)
+                if (!exist.new) {
+                    exist.new = plain;
                 }
             });
 
-            // ---------- BUILD RESPONSE (safe for FE) ----------
-            const combinedRegistrations = Object.values(registrationMap).map(item => {
-                // Nếu không có new -> trả object rỗng với RoomSlot: {} (để tránh crash FE khi truy cập .RoomSlot)
-                const safeNew = item.new ? item.new : { RoomSlot: {} };
-                return {
+            // ---------- BUILD RESPONSE ----------
+            const combinedRegistrations = Object.values(registrationMap)
+                .filter(item => item.new) // chỉ lấy những bản có newRegistration
+                .map(item => ({
                     originalRegistration: item.original,
-                    newRegistration: safeNew
-                };
-            });
+                    newRegistration: item.new,
+                }));
 
             return {
                 totalItems: roomRegistration.count,
-                response: combinedRegistrations
+                response: combinedRegistrations,
             };
-
         } catch (err) {
-            // bạn có thể log err ở đây
             throw err;
         }
     },
@@ -1109,6 +1095,7 @@ const roomRegistrationServices = {
 
             for (const registration of roomRegistrations) {
                 try {
+
                     let monthlyFeeDifference;
 
                     const roomSlot = await RoomSlot.findByPk(registration.roomSlotId, {
@@ -1116,16 +1103,15 @@ const roomRegistrationServices = {
                         lock: transaction.LOCK.UPDATE,
                         transaction,
                     });
+
                     const approveDate = new Date();
-                    const approvePlus2Months = new Date(approveDate);
-                    approvePlus2Months.setMonth(approveDate.getMonth() + 2);
+                    const fourteenDaysBeforeEnd = new Date(registration.endDate);
+                    fourteenDaysBeforeEnd.setDate(fourteenDaysBeforeEnd.getDate() - 14);
 
-                    const approvedDateStr = getTodayDateString(approvePlus2Months);
-
-                    if (registration.endDate < approvedDateStr) {
+                    if (approveDate > fourteenDaysBeforeEnd) {
                         skippedList.push({
                             registrationId: registration.id,
-                            reason: "Hợp đồng còn lại dưới 2 tháng",
+                            reason: "Hợp đồng không còn hiệu lực (dưới 14 ngày)",
                         });
                         continue;
                     }
@@ -1143,7 +1129,8 @@ const roomRegistrationServices = {
                     const fourteenDaysLater = new Date();
                     fourteenDaysLater.setDate(fourteenDaysLater.getDate() + 14);
                     const dayStr = getTodayDateString(fourteenDaysLater);
-                    const endDateRecord = registration.endDate;
+                    const endDateRecord = new Date(registration.endDate);
+                    const endDate = new Date(registration.endDate);
                     await registration.update(
                         {
                             status: "MOVED",
@@ -1175,11 +1162,11 @@ const roomRegistrationServices = {
 
                     } else {
 
+                        endDateRecord.setMonth(endDateRecord.getMonth() + Number(newRegistration.duration));
                         await newRegistration.update(
                             {
                                 status: "CONFIRMED",
                                 approvedDate: dayStr,
-                                duration: registration.duration,
                                 endDate: endDateRecord,
                                 adminId: admin.id,
                             },
@@ -1195,11 +1182,10 @@ const roomRegistrationServices = {
                             }
                         );
 
-
-                        const monthDifference = getMonthsDifference(dayStr, registration.endDate);
-                        console.log("Giá mới ",newRegistration.RoomSlot.Room.monthlyFee);
+                        const monthDifference = getMonthsDifference(dayStr, endDate);
+                        console.log("Giá mới ", newRegistration.RoomSlot.Room.monthlyFee);
                         console.log("Gia cu ", registration.RoomSlot.Room.monthlyFee)
-                        monthlyFeeDifference = (newRegistration.RoomSlot.Room.monthlyFee - registration.RoomSlot.Room.monthlyFee) * monthDifference;
+                        monthlyFeeDifference = (newRegistration.RoomSlot.Room.monthlyFee - registration.RoomSlot.Room.monthlyFee) * monthDifference + Number(newRegistration.duration) * newRegistration.RoomSlot.Room.monthlyFee;
                         console.log("Gia chenh lech ", monthlyFeeDifference);
                         const dayFormatted = formatDateVN(dayStr);
                         console.log("Thang chenh lech: ", monthDifference);
@@ -1233,24 +1219,19 @@ const roomRegistrationServices = {
                             );
                         }
 
-                        console.log(monthlyFeeDifference);
-                        //Khi thiếu cần chuyển thêm
                         if (monthlyFeeDifference > 0) {
-                            // Tạo payment chuyển tiền thêm
                             const paymentData = {
-                                amout: Number(monthlyFeeDifference),
+                                amount: Number(monthlyFeeDifference),
                                 type: "EXTRA_MOVE",
                                 content: `Thanh toán chi phí phát sinh do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`,
                             }
                             await paymentService.createPayment(paymentData);
-
                         }
                         //Khi dư cần hoàn tiền
                         else if (monthlyFeeDifference < 0) {
                             // Tạo payment hoàn tiền nếu như dư
-
                             console.log("1223344");
-                            const paymentData = { 
+                            const paymentData = {
                                 amount: Number(Math.abs(monthlyFeeDifference)),
                                 type: "REFUND_MOVE",
                                 content: `Hoàn tiền do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`
@@ -1258,7 +1239,7 @@ const roomRegistrationServices = {
                             const payment = await paymentService.createPayment(paymentData);
                             const oldPayment = await paymentService.getPaymentByStudentId(user.id, "ROOM");
 
-                            const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment,oldPayment);
+                            const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
                             const signature = momoUtils.generateMomoSignature(rawSignature);
 
                             const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
@@ -1283,14 +1264,12 @@ const roomRegistrationServices = {
                     });
                 }
             }
-
             await transaction.commit();
             await Promise.allSettled(emailTasks);
             return {
                 approved: approvedList,
                 skipped: skippedList,
             };
-
         } catch (err) {
             if (!transaction.finished) await transaction.rollback();
             throw err;
@@ -1578,7 +1557,7 @@ const roomRegistrationServices = {
 
                         //tạo payment khi thiếu
                         if (monthlyFeeDifference > 0) {
-                            const paymentData = { 
+                            const paymentData = {
                                 content: `Thanh toán chi phí gia giạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
                                 type: "EXTEND_ROOM",
                                 amount: Number(monthlyFeeDifference)
