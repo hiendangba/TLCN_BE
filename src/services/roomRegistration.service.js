@@ -21,11 +21,11 @@ const {
     sequelize
 } = require("../config/database");
 const paymentService = require("../services/payment.service");
-const {
-} = require("googleapis/build/src/apis/content");
+const { content } = require("googleapis/build/src/apis/content");
 require('dotenv').config();
 const PaymentError = require("../errors/PaymentError");
 const momoUtils = require("../utils/momo.util");
+const { patch } = require("../routes/client/roomRegistration.route");
 
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
@@ -288,7 +288,7 @@ const roomRegistrationServices = {
                 const endDate = new Date(item.endDate);
                 const amount = roomFee * duration;
 
-                const content = `Thanh toan tien phong ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
+                const content = `Thanh toán tiền phòng ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
 
                 return {
                     amount: amount,
@@ -1195,21 +1195,44 @@ const roomRegistrationServices = {
                                 })
                             );
                         }
-                        approvedList.push(registration.id);
 
                         //Khi thiếu cần chuyển thêm
                         if (monthlyFeeDifference > 0) {
                             // Tạo payment chuyển tiền thêm
                             const paymentData = {
-                                
+                                amout: Number(monthlyFeeDifference),
+                                type: "EXTRA_MOVE",
+                                content: `Thanh toán chi phí phát sinh do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`,
                             }
-                            const payment = await paymentService.createPayment();
+                            await paymentService.createPayment(paymentData);
 
                         }
                         //Khi dư cần hoàn tiền
                         else if (monthlyFeeDifference < 0) {
+                            // Tạo payment hoàn tiền nếu như dư
+                            const paymentData = { 
+                                amount: Number(Math.abs(monthlyFeeDifference)),
+                                type: "REFUND_MOVE",
+                                content: `Hoàn tiền do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`
+                            }
+                            const payment = await paymentService.createPayment(paymentData);
+                            const oldPayment = await paymentService.getPaymentByStudentId(user.id, "ROOM");
 
+                            const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment,oldPayment);
+                            const signature = momoUtils.generateMomoSignature(rawSignature);
+
+                            const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
+
+                            if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
+                                throw PaymentError.InvalidAmount();
+                            } else {
+                                payment.status = "SUCCESS";
+                                payment.transId = refundResponse.data.transId;
+                                await payment.save();
+                            }
                         }
+                        // xong hết rồi thì mới thêm vào approvedList
+                        approvedList.push(registration.id);
                     }
                 } catch (innerErr) {
                     skippedList.push({
@@ -1510,12 +1533,19 @@ const roomRegistrationServices = {
                                 })
                             );
                         }
-                        approvedList.push(registration.id);
 
                         //tạo payment khi thiếu
                         if (monthlyFeeDifference > 0) {
+                            const paymentData = { 
+                                content: `Thanh toán chi phí gia giạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
+                                type: "EXTEND_ROOM",
+                                amount: Number(monthlyFeeDifference)
+                            }
 
+                            await paymentService.createPayment(paymentData);
                         }
+
+                        approvedList.push(registration.id);
                     }
                 } catch (innerErr) {
                     skippedList.push({
