@@ -21,11 +21,9 @@ const {
     sequelize
 } = require("../config/database");
 const paymentService = require("../services/payment.service");
-const { content } = require("googleapis/build/src/apis/content");
 require('dotenv').config();
 const PaymentError = require("../errors/PaymentError");
 const momoUtils = require("../utils/momo.util");
-const { patch } = require("../routes/client/roomRegistration.route");
 
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
@@ -1164,8 +1162,12 @@ const roomRegistrationServices = {
 
 
                         const monthDifference = getMonthsDifference(dayStr, registration.endDate);
+                        console.log("Giá mới ",newRegistration.RoomSlot.Room.monthlyFee);
+                        console.log("Gia cu ", registration.RoomSlot.Room.monthlyFee)
                         monthlyFeeDifference = (newRegistration.RoomSlot.Room.monthlyFee - registration.RoomSlot.Room.monthlyFee) * monthDifference;
+                        console.log("Gia chenh lech ", monthlyFeeDifference);
                         const dayFormatted = formatDateVN(dayStr);
+                        console.log("Thang chenh lech: ", monthDifference);
 
                         const user = registration.Student.User;
 
@@ -1196,6 +1198,7 @@ const roomRegistrationServices = {
                             );
                         }
 
+                        console.log(monthlyFeeDifference);
                         //Khi thiếu cần chuyển thêm
                         if (monthlyFeeDifference > 0) {
                             // Tạo payment chuyển tiền thêm
@@ -1210,6 +1213,8 @@ const roomRegistrationServices = {
                         //Khi dư cần hoàn tiền
                         else if (monthlyFeeDifference < 0) {
                             // Tạo payment hoàn tiền nếu như dư
+
+                            console.log("1223344");
                             const paymentData = { 
                                 amount: Number(Math.abs(monthlyFeeDifference)),
                                 type: "REFUND_MOVE",
@@ -1222,6 +1227,8 @@ const roomRegistrationServices = {
                             const signature = momoUtils.generateMomoSignature(rawSignature);
 
                             const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
+
+                            console.log("124");
 
                             if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
                                 throw PaymentError.InvalidAmount();

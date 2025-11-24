@@ -9,7 +9,7 @@ const {
 } = require("../dto/request/roomRegistration.request")
 const ApiResponse = require("../dto/response/api.response");
 const { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse, GetRoomExtendResponse } = require("../dto/response/roomRegistration.response")
-const roomRegistrationService = require("../services/roomRegistration.service")
+const roomRegistrationService = require("../services/roomRegistration.service");
 const roomRegistrationController = {
 
     getRoomRegistration: asyncHandler(async (req, res) => {
