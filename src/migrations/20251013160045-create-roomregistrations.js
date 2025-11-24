@@ -33,7 +33,7 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       status: {
-        type: Sequelize.ENUM('PENDING', 'BOOKED', 'CONFIRMED', 'CANCELED', 'MOVE_PENDING', 'MOVED', 'EXTENDING'),
+        type: Sequelize.ENUM('PENDING', 'BOOKED', 'CONFIRMED', 'CANCELED', 'MOVE_PENDING', 'MOVED', 'EXTENDING', 'PENDING_EXTENDED', 'EXTENDED'),
         defaultValue: 'BOOKED',
         allowNull: false
       },

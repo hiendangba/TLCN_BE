@@ -96,6 +96,12 @@ const movedRoomRegistrationSchema = Joi.object({
             "any.required": "Không được bỏ trống roomSlotId.",
             "string.empty": "roomSlotId không được để trống."
         }),
+    duration: Joi.number().integer().min(1).required()
+        .messages({
+            "any.required": "Thiếu trường 'duration' trong yêu cầu.",
+            "number.base": "'duration' phải là số nguyên",
+            "number.min": "'duration' phải lớn hơn 0"
+        }),
 });
 
 const approvedMoveRoomSchema = Joi.object({
@@ -117,4 +123,41 @@ const approvedMoveRoomSchema = Joi.object({
         }),
 });
 
-module.exports = { approveRoomRegistrationSchema, rejectRoomRegistrationSchema, cancelRoomRegistrationSchema, approvedCancelRoomSchema, movedRoomRegistrationSchema, approvedMoveRoomSchema };
+const extendRoomRegistrationSchema = Joi.object({
+    duration: Joi.number().integer().min(1).required()
+        .messages({
+            "any.required": "Thiếu trường 'duration' trong yêu cầu.",
+            "number.base": "'duration' phải là số nguyên",
+            "number.min": "'duration' phải lớn hơn 0"
+        }),
+});
+
+
+const approvedExtendRoomSchema = Joi.object({
+    ids: Joi.array()
+        .items(
+            Joi.string()
+                .uuid()
+                .messages({
+                    "string.base": "Mỗi ID phải là chuỗi.",
+                    "string.guid": "ID không hợp lệ, vui lòng kiểm tra lại.",
+                })
+        )
+        .min(1)
+        .required()
+        .messages({
+            "array.base": "Trường 'ids' phải là một danh sách (array).",
+            "array.min": "Phải có ít nhất một ID để duyệt.",
+            "any.required": "Thiếu trường 'ids' trong yêu cầu.",
+        }),
+});
+module.exports = {
+    approveRoomRegistrationSchema,
+    rejectRoomRegistrationSchema,
+    cancelRoomRegistrationSchema,
+    approvedCancelRoomSchema,
+    movedRoomRegistrationSchema,
+    approvedMoveRoomSchema,
+    extendRoomRegistrationSchema,
+    approvedExtendRoomSchema
+};
