@@ -98,10 +98,39 @@ class ApprovedMoveRoomRequest {
         this.adminId = adminId
     }
 }
+
+class RoomExtendRequest {
+    constructor(data, roleId) {
+        this.duration = data.duration;
+        this.roleId = roleId;
+    }
+}
+
+class GetRoomExtendRequest {
+    constructor(data) {
+        const pageNum = parseInt(data.page);
+        const limitNum = parseInt(data.limit);
+        this.page = !isNaN(pageNum) && pageNum > 0 ? pageNum : 1;
+        this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
+        this.keyword = data.keyword ? data.keyword.trim() : "";
+        this.status = data.status || "All";
+    }
+}
+
+
+class ApprovedExtendRoomRequest {
+    constructor(data, adminId) {
+        this.ids = data.ids
+        this.adminId = adminId
+    }
+}
+
 module.exports = {
     CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest,
     GetRoomRegistrationRequest, RejectRoomRegistrationRequest,
     CancelRoomRegistrationRequest, GetCancelRoomRequest,
     ApprovedCancelRoomRequest, RoomMoveRequest,
-    GetRoomMoveRequest, ApprovedMoveRoomRequest
+    GetRoomMoveRequest, ApprovedMoveRoomRequest,
+    RoomExtendRequest, GetRoomExtendRequest,
+    ApprovedExtendRoomRequest
 };
