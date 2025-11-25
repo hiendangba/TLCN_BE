@@ -87,6 +87,79 @@ const approvedCancelRoomSchema = Joi.object({
         }),
 });
 
+const rejectRoomMoveSchema = Joi.object({
+    ids: Joi.array()
+        .items(
+            Joi.string()
+                .uuid()
+                .messages({
+                    "string.base": "Mỗi ID phải là chuỗi.",
+                    "string.guid": "ID không hợp lệ, vui lòng kiểm tra lại.",
+                })
+        )
+        .min(1)
+        .required()
+        .messages({
+            "array.base": "Trường 'ids' phải là một danh sách (array).",
+            "array.min": "Phải có ít nhất một ID để duyệt.",
+            "any.required": "Thiếu trường 'ids' trong yêu cầu.",
+        }),
+
+    reason: Joi.string()
+            .allow("")
+            .optional()
+            .messages({
+                "string.base": "Lý do từ chối phải là chuỗi.",
+            }),
+    
+    reasons: Joi.object()
+            .pattern(
+                Joi.string().uuid(),
+                Joi.string().allow("")
+            )
+            .optional()
+            .messages({
+                "object.base": "Danh sách lý do từ chối phải là object.",
+            })
+})
+
+
+const rejectExtendRoomSchema = Joi.object({
+    ids: Joi.array()
+        .items(
+            Joi.string()
+                .uuid()
+                .messages({
+                    "string.base": "Mỗi ID phải là chuỗi.",
+                    "string.guid": "ID không hợp lệ, vui lòng kiểm tra lại.",
+                })
+        )
+        .min(1)
+        .required()
+        .messages({
+            "array.base": "Trường 'ids' phải là một danh sách (array).",
+            "array.min": "Phải có ít nhất một ID để duyệt.",
+            "any.required": "Thiếu trường 'ids' trong yêu cầu.",
+        }),
+
+    reason: Joi.string()
+            .allow("")
+            .optional()
+            .messages({
+                "string.base": "Lý do từ chối phải là chuỗi.",
+            }),
+    
+    reasons: Joi.object()
+            .pattern(
+                Joi.string().uuid(),
+                Joi.string().allow("")
+            )
+            .optional()
+            .messages({
+                "object.base": "Danh sách lý do từ chối phải là object.",
+            })
+})
+
 const rejectCancelRoomSchema = Joi.object({
     ids: Joi.array()
         .items(
@@ -195,5 +268,7 @@ module.exports = {
     approvedMoveRoomSchema,
     extendRoomRegistrationSchema,
     approvedExtendRoomSchema,
-    rejectCancelRoomSchema
+    rejectCancelRoomSchema,
+    rejectRoomMoveSchema,
+    rejectExtendRoomSchema
 };

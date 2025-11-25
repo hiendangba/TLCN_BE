@@ -45,6 +45,10 @@ class RoomRegistrationError extends AppError {
         return new RoomRegistrationError("Không tìm thấy đơn chuyển phòng nào cần duyệt.", 404, "ROOM_MOVE_NOT_FOUND");
     }
 
+    static NewRegistrationNotFound() {
+        return new RoomRegistrationError("Yêu cầu chuyển phòng mới không tồn tại", 404, "NewRegistrationNotFound");
+    }
+
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }

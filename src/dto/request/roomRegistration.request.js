@@ -124,6 +124,27 @@ class ApprovedMoveRoomRequest {
     }
 }
 
+class RejectRoomMoveRequest {
+    constructor (adminId, data) {
+        this.ids = data.ids;
+        this.adminId = adminId;
+        // reasons có thể là:
+        // - string: lý do chung cho tất cả đơn
+        // - object: { [id]: reason } - lý do riêng cho từng đơn
+        if (typeof data.reasons === 'object' && !Array.isArray(data.reasons) && data.reasons !== null) {
+            // Nếu là object, map id -> reason
+            this.reasons = data.reasons;
+        } else {
+            // Nếu là string, tạo object với cùng lý do cho tất cả hoặc tạo lý do mặc định
+            const commonReason = data.reason && typeof data.reason === 'string' ? data.reason.trim() : "Không phù hợp";
+            this.reasons = {};
+            data.ids.forEach(id => {
+                this.reasons[id] = commonReason;
+            });
+        }
+    }
+}
+
 class RoomExtendRequest {
     constructor(data, roleId) {
         this.duration = data.duration;
@@ -150,6 +171,27 @@ class ApprovedExtendRoomRequest {
     }
 }
 
+class RejectExtendRoomRequest {
+    constructor (adminId, data) {
+        this.ids = data.ids;
+        this.adminId = adminId;
+        // reasons có thể là:
+        // - string: lý do chung cho tất cả đơn
+        // - object: { [id]: reason } - lý do riêng cho từng đơn
+        if (typeof data.reasons === 'object' && !Array.isArray(data.reasons) && data.reasons !== null) {
+            // Nếu là object, map id -> reason
+            this.reasons = data.reasons;
+        } else {
+            // Nếu là string, tạo object với cùng lý do cho tất cả hoặc tạo lý do mặc định
+            const commonReason = data.reason && typeof data.reason === 'string' ? data.reason.trim() : "Không phù hợp";
+            this.reasons = {};
+            data.ids.forEach(id => {
+                this.reasons[id] = commonReason;
+            });
+        }
+    }
+}
+
 module.exports = {
     CreateRoomRegistrationRequest, ApprovedRoomRegistrationRequest,
     GetRoomRegistrationRequest, RejectRoomRegistrationRequest,
@@ -157,5 +199,5 @@ module.exports = {
     ApprovedCancelRoomRequest, RoomMoveRequest,
     GetRoomMoveRequest, ApprovedMoveRoomRequest,
     RoomExtendRequest, GetRoomExtendRequest,
-    ApprovedExtendRoomRequest, RejectCancelRoomRequest
+    ApprovedExtendRoomRequest, RejectCancelRoomRequest, RejectRoomMoveRequest, RejectExtendRoomRequest
 };

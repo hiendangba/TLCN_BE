@@ -12,7 +12,9 @@ const {
     movedRoomRegistrationSchema,
     approvedMoveRoomSchema,
     extendRoomRegistrationSchema,
-    approvedExtendRoomSchema
+    approvedExtendRoomSchema,
+    rejectRoomMoveSchema,
+    rejectExtendRoomSchema
 } = require("../../validations/roomRegistration.validation")
 
 roomRegistrationRouter.get("/", authMiddleware, isAdmin, roomRegistrationController.getRoomRegistration);
@@ -27,8 +29,11 @@ roomRegistrationRouter.patch("/cancel-requests/reject", authMiddleware, isAdmin,
 roomRegistrationRouter.get("/move-requests", authMiddleware, isAdmin, roomRegistrationController.getRoomMove);
 roomRegistrationRouter.patch("/request-move", authMiddleware, validateRequest(movedRoomRegistrationSchema), roomRegistrationController.requestRoomMove);
 roomRegistrationRouter.patch("/approve-move", authMiddleware, isAdmin, validateRequest(approvedMoveRoomSchema), roomRegistrationController.approveRoomMove);
+roomRegistrationRouter.patch("/reject-move", authMiddleware, isAdmin, validateRequest(rejectRoomMoveSchema), roomRegistrationController.rejectRoomMove);
 
 roomRegistrationRouter.get("/extend-requests", authMiddleware, isAdmin, roomRegistrationController.getExtendRoom);
 roomRegistrationRouter.patch("/request-extend", authMiddleware, validateRequest(extendRoomRegistrationSchema), roomRegistrationController.requestRoomExtend);
 roomRegistrationRouter.patch("/approve-extend", authMiddleware, isAdmin, validateRequest(approvedExtendRoomSchema), roomRegistrationController.approveRoomExtend);
+roomRegistrationRouter.patch("/reject-extend", authMiddleware, isAdmin, validateRequest(rejectExtendRoomSchema), roomRegistrationController.rejectRoomExtend);
+
 module.exports = roomRegistrationRouter;
