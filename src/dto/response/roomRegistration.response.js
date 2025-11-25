@@ -6,7 +6,8 @@ class GetRoomRegistrationResponse {
         this.endDate = data.endDate;
         this.duration = data.duration;
         this.studentId = data.studentId;
-        this.userId = data.Student.userId
+        this.userId = data.Student.userId;
+        this.status = data.originalRegistration.status;
         this.mssv = data.Student.mssv;
         this.school = data.Student.school;
         this.identification = data.Student.User.identification
@@ -30,6 +31,7 @@ class GetRoomCancelResponse {
         this.duration = data.duration;
         this.studentId = data.studentId;
         this.userId = data.Student.userId
+        this.status = data.originalRegistration.status;
         this.mssv = data.Student.mssv;
         this.school = data.Student.school;
         this.identification = data.Student.User.identification
@@ -63,6 +65,7 @@ class GetRoomMoveResponse {
         this.identification = data.originalRegistration.Student.User.identification
         this.name = data.originalRegistration.Student.User.name;
         this.dob = data.originalRegistration.Student.User.dob;
+        this.status = data.originalRegistration.status;
         this.gender = data.originalRegistration.Student.User.gender;
         this.address = data.originalRegistration.Student.User.address;
         this.avatar = data.originalRegistration.Student.User.avatar;
@@ -93,6 +96,7 @@ class GetRoomExtendResponse {
         this.name = data.originalRegistration.Student.User.name;
         this.dob = data.originalRegistration.Student.User.dob;
         this.gender = data.originalRegistration.Student.User.gender;
+        this.status = data.originalRegistration.status;
         this.address = data.originalRegistration.Student.User.address;
         this.avatar = data.originalRegistration.Student.User.avatar;
         this.frontIdentificationImage = data.originalRegistration.Student.User.frontIdentificationImage;
