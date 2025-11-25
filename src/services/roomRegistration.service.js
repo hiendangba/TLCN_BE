@@ -1221,7 +1221,7 @@ const roomRegistrationServices = {
                         if (monthlyFeeDifference > 0) {
                             const paymentData = {
                                 amount: Number(monthlyFeeDifference),
-                                type: "EXTRA_MOVE",
+                                type: "ROOM",
                                 content: `Thanh toán chi phí phát sinh do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`,
                             }
                             await paymentService.createPayment(paymentData);
@@ -1235,8 +1235,7 @@ const roomRegistrationServices = {
                                 content: `Hoàn tiền do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`
                             }
                             const payment = await paymentService.createPayment(paymentData);
-                            const oldPayment = await paymentService.getPaymentByStudentId(user.id, "ROOM");
-
+                            const oldPayment = await paymentService.getPaymentByStudentId(registration.Student.id, "ROOM");
                             const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
                             const signature = momoUtils.generateMomoSignature(rawSignature);
 
@@ -1684,7 +1683,7 @@ const roomRegistrationServices = {
                         if (monthlyFeeDifference > 0) {
                             const paymentData = {
                                 content: `Thanh toán chi phí gia giạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
-                                type: "EXTEND_ROOM",
+                                type: "ROOM",
                                 amount: Number(monthlyFeeDifference)
                             }
 
