@@ -172,13 +172,6 @@ class ApprovedExtendRoomRequest {
 }
 
 class RejectExtendRoomRequest {
-    /**
-     * @param {string} adminId - ID admin thực hiện từ chối
-     * @param {Object} data - Dữ liệu từ request
-     *        data.ids: array of string UUID (bắt buộc)
-     *        data.reason: string chung cho tất cả (optional)
-     *        data.reasons: object { [id]: reason } (optional)
-     */
     constructor(adminId, data) {
         // đảm bảo ids là mảng, tránh undefined
         this.ids = Array.isArray(data.ids) ? data.ids : [];
