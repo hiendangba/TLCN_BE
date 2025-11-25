@@ -124,7 +124,7 @@ const roomRegistrationController = {
     }),
 
     rejectRoomExtend: asyncHandler(async (req, res) => {
-        const rejectExtendRoomRequest = new RejectExtendRoomRequest(req.body, req.roleId);
+        const rejectExtendRoomRequest = new RejectExtendRoomRequest(req.roleId, req.body);
         const response = await roomRegistrationService.rejectRoomExtend(rejectExtendRoomRequest);
         return res.status(200).json(new ApiResponse(response));
     }),
