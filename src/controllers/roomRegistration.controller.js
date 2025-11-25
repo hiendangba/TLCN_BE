@@ -5,11 +5,12 @@ const {
     GetCancelRoomRequest, ApprovedCancelRoomRequest,
     RoomMoveRequest, GetRoomMoveRequest,
     ApprovedMoveRoomRequest, RoomExtendRequest,
-    GetRoomExtendRequest, ApprovedExtendRoomRequest, RejectCancelRoomRequest
+    GetRoomExtendRequest, ApprovedExtendRoomRequest, RejectCancelRoomRequest, RejectRoomMoveRequest, RejectExtendRoomRequest
 } = require("../dto/request/roomRegistration.request")
 const ApiResponse = require("../dto/response/api.response");
 const { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse, GetRoomExtendResponse } = require("../dto/response/roomRegistration.response")
 const roomRegistrationService = require("../services/roomRegistration.service");
+const { response } = require('express');
 const roomRegistrationController = {
 
     getRoomRegistration: asyncHandler(async (req, res) => {
@@ -89,8 +90,14 @@ const roomRegistrationController = {
     }),
 
     approveRoomMove: asyncHandler(async (req, res) => {
-        const approvedMoveRoomRequest = new ApprovedMoveRoomRequest(req.body, req.roleId)
+        const approvedMoveRoomRequest = new ApprovedMoveRoomRequest(req.body, req.roleId);
         const response = await roomRegistrationService.approveRoomMove(approvedMoveRoomRequest);
+        return res.status(200).json(new ApiResponse(response));
+    }),
+
+    rejectRoomMove: asyncHandler(async (req, res) => {
+        const rejectRoomMoveRequest = new RejectRoomMoveRequest(req.roleId, req.body);
+        const response = await roomRegistrationService.rejectRoomMove(rejectRoomMoveRequest);
         return res.status(200).json(new ApiResponse(response));
     }),
 
@@ -113,6 +120,12 @@ const roomRegistrationController = {
     approveRoomExtend: asyncHandler(async (req, res) => {
         const approvedExtendRoomRequest = new ApprovedExtendRoomRequest(req.body, req.roleId)
         const response = await roomRegistrationService.approveRoomExtend(approvedExtendRoomRequest);
+        return res.status(200).json(new ApiResponse(response));
+    }),
+
+    rejectRoomExtend: asyncHandler(async (req, res) => {
+        const rejectExtendRoomRequest = new RejectExtendRoomRequest(req.body, req.roleId);
+        const response = await roomRegistrationService.rejectRoomExtend(rejectExtendRoomRequest);
         return res.status(200).json(new ApiResponse(response));
     }),
 };

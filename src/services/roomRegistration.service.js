@@ -1189,7 +1189,6 @@ const roomRegistrationServices = {
                         console.log("Gia chenh lech ", monthlyFeeDifference);
                         const dayFormatted = formatDateVN(dayStr);
                         console.log("Thang chenh lech: ", monthDifference);
-
                         const user = registration.Student.User;
 
                         if (user) {
@@ -1230,7 +1229,6 @@ const roomRegistrationServices = {
                         //Khi dư cần hoàn tiền
                         else if (monthlyFeeDifference < 0) {
                             // Tạo payment hoàn tiền nếu như dư
-                            console.log("1223344");
                             const paymentData = {
                                 amount: Number(Math.abs(monthlyFeeDifference)),
                                 type: "REFUND_MOVE",
@@ -1271,6 +1269,133 @@ const roomRegistrationServices = {
                 skipped: skippedList,
             };
         } catch (err) {
+            if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
+
+    rejectRoomMove: async (rejectRoomMoveRequest) => {
+        const { adminId, ids, reasons } = rejectRoomMoveRequest;
+        const transaction = await sequelize.transaction();
+
+        try{
+            const admin = await Admin.findOne({
+                where: {
+                    id: adminId,
+                },
+                transaction
+            });
+
+            if (!admin) throw UserError.AdminNotFound ();
+
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: {
+                    id: ids,
+                    status: "MOVE_PENDING"
+                },
+                include: [{
+                        model: Student, // lay student de gui email
+                        as: "Student",
+                        attributes: ["id", "userId"],
+                        include: [{
+                            model: User,
+                            attributes: ["id", "name", "email"],
+                        },],
+                    },
+                    {
+                        model: RoomSlot, // lay roomSlot de lam content cho email
+                        include: [{
+                            model: Room,
+                            attributes: ["roomNumber"],
+                        },],
+                    },
+                ],
+                transaction,
+            });
+
+            if (roomRegistrations.length === 0){
+                throw RoomRegistrationError.RoomMoveNotFound();
+            }
+
+            const rejectedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const registration of roomRegistrations) {
+                try {
+                    // lấy ra đơn chuyển phòng tạo mới
+                    const newRegistration = await RoomRegistration.findOne({
+                        where: {
+                            previousRegistrationId: registration.id,
+                            status: "PENDING" 
+                        },
+                        include: [
+                            {
+                                model: RoomSlot,
+                                include: [{
+                                    model: Room,
+                                    attributes: ["roomNumber"]
+                                }]
+                            }
+                        ],
+                        transaction
+                    });
+
+                    if (!newRegistration) {
+                        throw RoomRegistrationError.RoomMoveNotFound();
+                    }
+
+                    // cập nhật lại trạng thái cho cái gốc là confirmed
+                    await registration.update({
+                        adminId: adminId,
+                        status: "CONFIRMED"
+                    }, { transaction } );
+
+                    const newRoom = newRegistration.RoomSlot.Room.roomNumber;
+                    const newRoomSlot = newRegistration.RoomSlot.slotNumber;
+
+                    // Xóa luôn đơn của cái con
+                    await newRegistration.destroy({ transaction });
+
+                    // soạn mail gửi cho sinh viên
+                    const user = registration.Student.User;
+                    const reasonText = reasons[registration.id] || "Yêu cầu không phù hợp";
+
+                    if (user) {
+                        emailTasks.push(
+                            sendMail({
+                                to: user.email,
+                                subject: "Yêu cầu chuyển phòng của bạn đã bị từ chối",
+                                html: `
+                                    <h3>Xin chào ${user.name},</h3>
+                                    <p>Yêu cầu chuyển từ phòng <strong>${registration.RoomSlot.Room.roomNumber}</strong> (giường số <strong>${registration.RoomSlot.slotNumber}</strong>) sang phòng <strong>${newRoom}</strong> (giường số <strong>${newRoomSlot}</strong>) đã bị từ chối.</p>
+                                    <p><strong>Lý do:</strong> ${reasonText}</p>
+                                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                                `,
+                            })
+                        );
+                    }
+
+                    rejectedList.push(registration.id);
+
+                } catch (innerErr) {
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+
+
+            return {
+                rejected: rejectedList,
+                skipped: skippedList,
+            };
+        }
+        catch(err) {
             if (!transaction.finished) await transaction.rollback();
             throw err;
         }
@@ -1324,7 +1449,7 @@ const roomRegistrationServices = {
                 registerDate: new Date(),
                 approvedDate: roomRegistration.endDate,
                 endDate: newEndDateStr,
-                duration: roomExtendRequest.duration
+                duration: roomExtendRequest.duration,
             });
             return roomRegistration;
 
@@ -1585,6 +1710,135 @@ const roomRegistrationServices = {
 
         } catch (err) {
             if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
+
+    rejectRoomExtend: async (rejectExtendRoomRequest) => {
+        const { ids, adminId, reasons } = rejectExtendRoomRequest;
+        const transaction = await sequelize.transaction();
+
+        try{
+            const admin = await Admin.findOne({
+                where: {
+                    id: adminId,
+                },
+                transaction
+            })
+
+            if (!admin){
+                throw UserError.AdminNotFound();
+            }
+
+            const roomRegistrations = await RoomRegistration.findAll({
+                where: {
+                    id: ids,
+                    status: "EXTENDING"
+                },
+                include: [{
+                        model: Student, // lay student de gui email
+                        as: "Student",
+                        attributes: ["id", "userId"],
+                        include: [{
+                            model: User,
+                            attributes: ["id", "name", "email"],
+                        },],
+                    },
+                    {
+                        model: RoomSlot, // lay roomSlot de lam content cho email
+                        include: [{
+                            model: Room,
+                            attributes: ["roomNumber"],
+                        },],
+                    },
+                ],
+                transaction,
+            })
+
+            if (roomRegistrations.length === 0) {
+                throw RoomRegistrationError.RoomExtendNotFound();
+            }
+
+            const rejectedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const registration of roomRegistrations){
+                try{
+                    // lấy ra đơn chuyển phòng tạo mới
+                    const newRegistration = await RoomRegistration.findOne({
+                        where: {
+                            studentId: registration.studentId,
+                            status: "PENDING_EXTENDED"
+                        },
+                        include: [
+                            {
+                                model: RoomSlot,
+                                include: [{
+                                    model: Room,
+                                    attributes: ["roomNumber"]
+                                }]
+                            }
+                        ],
+                        transaction
+                    });
+
+                    if (!newRegistration) {
+                        throw new RoomRegistrationError.RoomExtendNotFound();
+                    }
+
+                    // cập nhật lại trạng thái cho cái gốc là confirmed
+                    await registration.update({
+                        adminId: adminId,
+                        status: "CONFIRMED"
+                    }, { transaction } );
+
+                    // Xóa cái đơn con được tạo
+                    await newRegistration.destroy( { transaction } );
+
+                    // soạn mail gửi cho sinh viên
+                    const user = registration.Student.User;
+                    const reasonText = reasons[registration.id] || "Yêu cầu không phù hợp";
+
+                    if (user) {
+                        emailTasks.push(
+                            sendMail({
+                                to: user.email,
+                                subject: "Yêu cầu gia hạn phòng của bạn đã bị từ chối",
+                                html: `
+                                    <h3>Xin chào ${user.name},</h3>
+                                    <p>Yêu cầu gia hạn phòng <strong>${registration.RoomSlot.Room.roomNumber}</strong> (giường số <strong>${registration.RoomSlot.slotNumber}</strong>) của bạn đã bị từ chối.</p>
+                                    <p><strong>Lý do:</strong> ${reasonText}</p>
+                                    <p>Phòng của bạn sẽ hết hạn vào ngày: <strong> ${formatDateVN(registration.endDate)} </strong></p>
+                                    <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!</p>
+                                `,
+                            })
+                        );
+                    }
+
+                    rejectedList.push(registration.id);
+                }
+
+                catch (innerErr) {
+                    skippedList.push({
+                        registrationId: registration.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+
+            await transaction.commit();
+            await Promise.allSettled(emailTasks);
+
+            return {
+                rejectedList,
+                skippedList
+            };
+        }
+        catch(err){
+            if ( !transaction.finished ) {
+                await transaction.rollback();
+            }
             throw err;
         }
     },

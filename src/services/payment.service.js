@@ -103,7 +103,8 @@ const paymentService = {
         const payment = await Payment.findOne({
             where: {
                 studentId: studentId,
-                type: type
+                type: type,
+                status: "success"
             },
             order: [
                 ['paidAt', 'DESC']
