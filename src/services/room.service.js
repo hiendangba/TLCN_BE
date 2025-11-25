@@ -122,7 +122,7 @@ const roomServices = {
             const roomRegistration = await RoomRegistration.findOne({
                 where: {
                     studentId: roleId,
-                    status: "CONFIRMED",
+                    status: ["CONFIRMED", "MOVE_PENDING", "EXTENDING","CANCELED"],
                     endDate: {
                         [Op.gt]: new Date()
                     }
@@ -138,7 +138,8 @@ const roomServices = {
                             }
                         ]
                     }
-                ]
+                ],
+                order: [["createdAt", "DESC"]]
             });
             if (!roomRegistration) {
                 throw RoomRegistrationError.RoomRegistrationNotFound();
@@ -154,9 +155,6 @@ const roomServices = {
                         model: RoomType,
                         attributes: ['type', 'amenities']
                     }
-                ],
-                order: [
-                    [RoomSlot, 'slotNumber', 'ASC']
                 ]
             });
             return {
@@ -174,7 +172,7 @@ const roomServices = {
             const roomRegistrations = await RoomRegistration.findAll({
                 where: {
                     studentId: roleId,
-                    status: { [Op.in]: ["CANCELED", "MOVED" , "EXTENDED"] },
+                    status: { [Op.in]: ["CANCELED", "MOVED", "EXTENDED"] },
                     endDate: { [Op.lte]: new Date() }
                 },
                 include: [

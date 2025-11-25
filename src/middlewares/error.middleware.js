@@ -29,10 +29,12 @@ const errorMiddleware = (err, req, res, next) => {
         });
     }
     // Trường hợp lỗi không xác định
-    return res.status(500).json({
-        success: false,
-        message: err.message || "Lỗi máy chủ nội bộ",
-    });
+    return res.status(500).json(
+        console.log(err),
+        {
+            success: false,
+            message: err.message || "Lỗi máy chủ nội bộ",
+        });
 };
 
 module.exports = errorMiddleware;

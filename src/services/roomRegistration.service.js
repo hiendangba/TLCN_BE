@@ -625,7 +625,6 @@ const roomRegistrationServices = {
                 ],
                 transaction,
             });
-
             const approvedList = [];
             const skippedList = [];
             const emailTasks = [];
@@ -712,6 +711,7 @@ const roomRegistrationServices = {
                     }
 
                 } catch (innerErr) {
+                    console.log(innerErr);
                     skippedList.push({
                         registrationId: registration.id,
                         reason: innerErr.message || "Lỗi không xác định",
@@ -995,7 +995,7 @@ const roomRegistrationServices = {
             const newRoomRegistration = await RoomRegistration.findAll({
                 where: {
                     previousRegistrationId: { [Op.in]: originalIds },
-                    status: { [Op.in]: ["PENDING", "CONFIRMED", "MOVED", "MOVE_PENDING", "EXTENDED", "PENDING_EXTENDED"] },
+                    status: { [Op.in]: ["PENDING", "CONFIRMED", "MOVED", "MOVE_PENDING", "EXTENDED", "PENDING_EXTENDED", "CANCELED"] },
                 },
                 include: [
                     {
@@ -1529,7 +1529,6 @@ const roomRegistrationServices = {
                     studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) }
                 }
             });
-
             const registrationMap = {};
             roomRegistration.rows.forEach(reg => {
                 registrationMap[reg.studentId] = {
@@ -1543,7 +1542,6 @@ const roomRegistrationServices = {
                     registrationMap[reg.studentId].new = reg;
                 }
             });
-
             const combinedRegistrations = Object.values(registrationMap).map(item => ({
                 originalRegistration: item.original,
                 newRegistration: item.new,
