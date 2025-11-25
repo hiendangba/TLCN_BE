@@ -7,7 +7,6 @@ class GetRoomRegistrationResponse {
         this.duration = data.duration;
         this.studentId = data.studentId;
         this.userId = data.Student.userId;
-        this.status = data.originalRegistration.status;
         this.mssv = data.Student.mssv;
         this.school = data.Student.school;
         this.identification = data.Student.User.identification
@@ -31,7 +30,7 @@ class GetRoomCancelResponse {
         this.duration = data.duration;
         this.studentId = data.studentId;
         this.userId = data.Student.userId
-        this.status = data.originalRegistration.status;
+        this.status = data.status;
         this.mssv = data.Student.mssv;
         this.school = data.Student.school;
         this.identification = data.Student.User.identification
@@ -103,8 +102,6 @@ class GetRoomExtendResponse {
         this.slotNumber = data.originalRegistration.RoomSlot.slotNumber;
         this.roomNumber = data.originalRegistration.RoomSlot.Room.roomNumber;
         this.monthlyFee = data.originalRegistration.RoomSlot.Room.monthlyFee;
-        this.newDuration = data.newRegistration.duration;
-        this.newEndDate = data.newRegistration.endDate;
     }
 }
 module.exports = { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse, GetRoomExtendResponse };
