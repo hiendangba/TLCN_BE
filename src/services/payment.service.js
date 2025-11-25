@@ -16,12 +16,13 @@ const paymentService = {
             const { page, limit, keyword, userId, type } = getPaymentRequest;
             const offset = (page -1) * limit;
 
-            const student = await Student.findByPk(userId);
-            if (!student) throw UserError.InvalidUser();
+            let searchCondition = {};
 
-            let searchCondition = {
-                studentId: userId   
-            };
+            if (userId) {
+                const student = await Student.findByPk(userId);
+                if (!student) throw UserError.InvalidUser();
+                searchCondition.studentId = userId;
+            }
 
             if (keyword) {
                 searchCondition[Op.or] = [

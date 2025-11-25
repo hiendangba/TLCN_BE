@@ -13,16 +13,13 @@ const PaymentRequestSchema = Joi.object({
 const GetPaymentSchema = Joi.object({
     userId: Joi.string()
         .uuid({ version: ['uuidv4'] })
-        .required()
         .messages({
             "string.guid": "userId phải là UUID hợp lệ.",
-            "any.required": "Không được bỏ trống userId.",
         }),
 
     type: Joi.string()
-        .required()
         .messages({
-            "any.required": "Không được bỏ trống type."
+            "string.base": "type phải là chuỗi.",
         }),
 
     page: Joi.number()
