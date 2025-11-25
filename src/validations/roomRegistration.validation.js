@@ -142,23 +142,25 @@ const rejectExtendRoomSchema = Joi.object({
             "any.required": "Thiếu trường 'ids' trong yêu cầu.",
         }),
 
+    // reason: optional, có thể rỗng nhưng không null
     reason: Joi.string()
-            .allow("")
-            .optional()
-            .messages({
-                "string.base": "Lý do từ chối phải là chuỗi.",
-            }),
-    
+        .allow("")
+        .optional()
+        .messages({
+            "string.base": "Lý do từ chối phải là chuỗi.",
+        }),
+
+    // reasons: optional, object {id: reason}, value có thể rỗng nhưng không null
     reasons: Joi.object()
-            .pattern(
-                Joi.string().uuid(),
-                Joi.string().allow("")
-            )
-            .optional()
-            .messages({
-                "object.base": "Danh sách lý do từ chối phải là object.",
-            })
-})
+        .pattern(
+            Joi.string().uuid(),
+            Joi.string().allow("")
+        )
+        .optional()
+        .messages({
+            "object.base": "Danh sách lý do từ chối phải là object.",
+        })
+});
 
 const rejectCancelRoomSchema = Joi.object({
     ids: Joi.array()

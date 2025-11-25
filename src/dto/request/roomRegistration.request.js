@@ -172,20 +172,30 @@ class ApprovedExtendRoomRequest {
 }
 
 class RejectExtendRoomRequest {
-    constructor (adminId, data) {
-        this.ids = data.ids;
+    /**
+     * @param {string} adminId - ID admin thực hiện từ chối
+     * @param {Object} data - Dữ liệu từ request
+     *        data.ids: array of string UUID (bắt buộc)
+     *        data.reason: string chung cho tất cả (optional)
+     *        data.reasons: object { [id]: reason } (optional)
+     */
+    constructor(adminId, data) {
+        // đảm bảo ids là mảng, tránh undefined
+        this.ids = Array.isArray(data.ids) ? data.ids : [];
         this.adminId = adminId;
-        // reasons có thể là:
-        // - string: lý do chung cho tất cả đơn
-        // - object: { [id]: reason } - lý do riêng cho từng đơn
+
+        // Xử lý reasons
         if (typeof data.reasons === 'object' && !Array.isArray(data.reasons) && data.reasons !== null) {
-            // Nếu là object, map id -> reason
+            // nếu là object, map id -> reason
             this.reasons = data.reasons;
         } else {
-            // Nếu là string, tạo object với cùng lý do cho tất cả hoặc tạo lý do mặc định
-            const commonReason = data.reason && typeof data.reason === 'string' ? data.reason.trim() : "Không phù hợp";
+            // nếu là string, tạo object với cùng lý do cho tất cả ids
+            const commonReason = typeof data.reason === 'string' && data.reason.trim() !== ''
+                ? data.reason.trim()
+                : "Không phù hợp";
+
             this.reasons = {};
-            data.ids.forEach(id => {
+            this.ids.forEach(id => {
                 this.reasons[id] = commonReason;
             });
         }
@@ -199,5 +209,5 @@ module.exports = {
     ApprovedCancelRoomRequest, RoomMoveRequest,
     GetRoomMoveRequest, ApprovedMoveRoomRequest,
     RoomExtendRequest, GetRoomExtendRequest,
-    ApprovedExtendRoomRequest, RejectCancelRoomRequest, RejectRoomMoveRequest, RejectExtendRoomRequest
+    ApprovedExtendRoomRequest, RejectCancelRoomRequest, RejectRoomMoveRequest, RejectExtendRoomRequest  
 };
