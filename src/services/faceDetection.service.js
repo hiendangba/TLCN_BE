@@ -28,8 +28,6 @@ async function detectFace(imagePath, threshold = 0.8) {
     const feeds = { input: tensor };
     const results = await session.run(feeds);
 
-    console.log(Object.keys(results));
-
     const bbox = results['bbox_32'].data; // [x, y, w, h]
     const obj = results['obj_32'].data;   // score object
     const cls = results['cls_32'].data;   // score class

@@ -572,7 +572,7 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal(`CASE WHEN "CancellationInfo"."refundStatus" = 'PENDING' THEN 0 ELSE 1 END`), 'ASC'],
+                    [sequelize.literal('CASE WHEN `CancellationInfo`.`refundStatus` = "PENDING" THEN 0 ELSE 1 END'), 'ASC'],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
@@ -1277,7 +1277,7 @@ const roomRegistrationServices = {
         const { adminId, ids, reasons } = rejectRoomMoveRequest;
         const transaction = await sequelize.transaction();
 
-        try{
+        try {
             const admin = await Admin.findOne({
                 where: {
                     id: adminId,
@@ -1285,7 +1285,7 @@ const roomRegistrationServices = {
                 transaction
             });
 
-            if (!admin) throw UserError.AdminNotFound ();
+            if (!admin) throw UserError.AdminNotFound();
 
             const roomRegistrations = await RoomRegistration.findAll({
                 where: {
@@ -1293,26 +1293,26 @@ const roomRegistrationServices = {
                     status: "MOVE_PENDING"
                 },
                 include: [{
-                        model: Student, // lay student de gui email
-                        as: "Student",
-                        attributes: ["id", "userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "email"],
-                        },],
-                    },
-                    {
-                        model: RoomSlot, // lay roomSlot de lam content cho email
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber"],
-                        },],
-                    },
+                    model: Student, // lay student de gui email
+                    as: "Student",
+                    attributes: ["id", "userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "email"],
+                    },],
+                },
+                {
+                    model: RoomSlot, // lay roomSlot de lam content cho email
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber"],
+                    },],
+                },
                 ],
                 transaction,
             });
 
-            if (roomRegistrations.length === 0){
+            if (roomRegistrations.length === 0) {
                 throw RoomRegistrationError.RoomMoveNotFound();
             }
 
@@ -1326,7 +1326,7 @@ const roomRegistrationServices = {
                     const newRegistration = await RoomRegistration.findOne({
                         where: {
                             previousRegistrationId: registration.id,
-                            status: "PENDING" 
+                            status: "PENDING"
                         },
                         include: [
                             {
@@ -1348,7 +1348,7 @@ const roomRegistrationServices = {
                     await registration.update({
                         adminId: adminId,
                         status: "CONFIRMED"
-                    }, { transaction } );
+                    }, { transaction });
 
                     const newRoom = newRegistration.RoomSlot.Room.roomNumber;
                     const newRoomSlot = newRegistration.RoomSlot.slotNumber;
@@ -1394,7 +1394,7 @@ const roomRegistrationServices = {
                 skipped: skippedList,
             };
         }
-        catch(err) {
+        catch (err) {
             if (!transaction.finished) await transaction.rollback();
             throw err;
         }
@@ -1518,7 +1518,7 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal(`CASE WHEN "status" = 'EXTENDING' THEN 0 ELSE 1 END`), 'ASC'],
+                    [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = "EXTENDING" THEN 0 ELSE 1 END'), 'ASC'],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
@@ -1717,7 +1717,8 @@ const roomRegistrationServices = {
         const { ids, adminId, reasons } = rejectExtendRoomRequest;
         const transaction = await sequelize.transaction();
 
-        try{
+        try {
+
             const admin = await Admin.findOne({
                 where: {
                     id: adminId,
@@ -1725,7 +1726,7 @@ const roomRegistrationServices = {
                 transaction
             })
 
-            if (!admin){
+            if (!admin) {
                 throw UserError.AdminNotFound();
             }
 
@@ -1735,21 +1736,21 @@ const roomRegistrationServices = {
                     status: "EXTENDING"
                 },
                 include: [{
-                        model: Student, // lay student de gui email
-                        as: "Student",
-                        attributes: ["id", "userId"],
-                        include: [{
-                            model: User,
-                            attributes: ["id", "name", "email"],
-                        },],
-                    },
-                    {
-                        model: RoomSlot, // lay roomSlot de lam content cho email
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber"],
-                        },],
-                    },
+                    model: Student, // lay student de gui email
+                    as: "Student",
+                    attributes: ["id", "userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["id", "name", "email"],
+                    },],
+                },
+                {
+                    model: RoomSlot, // lay roomSlot de lam content cho email
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber"],
+                    },],
+                },
                 ],
                 transaction,
             })
@@ -1762,8 +1763,8 @@ const roomRegistrationServices = {
             const skippedList = [];
             const emailTasks = [];
 
-            for (const registration of roomRegistrations){
-                try{
+            for (const registration of roomRegistrations) {
+                try {
                     // lấy ra đơn chuyển phòng tạo mới
                     const newRegistration = await RoomRegistration.findOne({
                         where: {
@@ -1790,10 +1791,10 @@ const roomRegistrationServices = {
                     await registration.update({
                         adminId: adminId,
                         status: "CONFIRMED"
-                    }, { transaction } );
+                    }, { transaction });
 
                     // Xóa cái đơn con được tạo
-                    await newRegistration.destroy( { transaction } );
+                    await newRegistration.destroy({ transaction });
 
                     // soạn mail gửi cho sinh viên
                     const user = registration.Student.User;
@@ -1834,8 +1835,8 @@ const roomRegistrationServices = {
                 skippedList
             };
         }
-        catch(err){
-            if ( !transaction.finished ) {
+        catch (err) {
+            if (!transaction.finished) {
                 await transaction.rollback();
             }
             throw err;
@@ -1847,8 +1848,6 @@ const roomRegistrationServices = {
 function getMonthsDifference(checkoutDate, endDate) {
     const checkout = new Date(checkoutDate);
     const end = new Date(endDate);
-    console.log("Ngay ket thuc", end);
-    console.log("Ngay check out: ", checkout);
     const yearsDiff = end.getFullYear() - checkout.getFullYear();
     const monthsDiff = end.getMonth() - checkout.getMonth();
 

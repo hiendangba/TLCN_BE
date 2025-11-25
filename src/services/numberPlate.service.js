@@ -64,7 +64,7 @@ const numberPlateServices = {
                 limit,
                 order: [
                     // Ưu tiên đơn chờ duyệt (pending) lên trên
-                    [sequelize.literal('CASE WHEN "NumberPlate"."status" = \'pending\' THEN 0 WHEN "NumberPlate"."status" = \'rejected\' THEN 1 ELSE 2 END'), 'ASC'],
+                    [sequelize.literal('CASE WHEN `NumberPlate`.`status` = \'pending\' THEN 0 WHEN `NumberPlate`.`status` = \'rejected\' THEN 1 ELSE 2 END'), 'ASC'],
                     ["createdAt", "DESC"]
                 ],
             });
@@ -257,10 +257,10 @@ const numberPlateServices = {
                     if (user?.email) {
                         // Lấy lý do riêng cho đơn này, hoặc lý do chung
                         const reason = rejectNumberPlateRequest.reasons?.[numberPlate.id] || "";
-                        const reasonText = reason 
-                            ? `<p><strong>Lý do từ chối:</strong> ${reason}</p>` 
+                        const reasonText = reason
+                            ? `<p><strong>Lý do từ chối:</strong> ${reason}</p>`
                             : "";
-                        
+
                         emailTasks.push(
                             sendMail({
                                 to: user.email,
