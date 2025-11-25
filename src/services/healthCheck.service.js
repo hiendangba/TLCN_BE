@@ -12,7 +12,7 @@ const UserError = require("../errors/UserError");
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/database");
 const paymentService = require("../services/payment.service");
-const { content } = require("googleapis/build/src/apis/content");
+
 
 
 const formatDate = (date) => {

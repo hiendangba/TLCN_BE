@@ -7,8 +7,61 @@ const {
 } = require("../models");
 require('dotenv').config();
 const momoUtils = require("../utils/momo.util");
+const { Op } = require("sequelize");
 
 const paymentService = {
+
+    getPayment: async (getPaymentRequest) => {
+        try{
+            const { page, limit, keyword, userId, type } = getPaymentRequest;
+            const offset = (page -1) * limit;
+
+            let searchCondition = {};
+
+            if (userId) {
+                const student = await Student.findByPk(userId);
+                if (!student) throw UserError.InvalidUser();
+                searchCondition.studentId = userId;
+            }
+
+            if (keyword) {
+                searchCondition[Op.or] = [
+                    {
+                        content: {
+                            [Op.like]: `%${keyword}%`
+                        }
+                    },
+                    {
+                        status: {
+                            [Op.like]: `%${keyword}%`
+                        }
+                    }
+                ];
+            }
+
+            if (type) {
+                searchCondition.type = type;
+            }
+
+            const payments = await Payment.findAndCountAll({
+                where: searchCondition,
+                offset,
+                limit,
+                order: [
+                    ["createdAt", "DESC"]
+                ]
+            })
+
+            return {
+                totalItems: payments.count,
+                response: payments.rows,
+            };
+        }
+        catch(err){
+            console.log(err);
+            throw(err);
+        }
+    },
 
     getPaymentUrl: async (userId, paymentRequest) => {
         try {
@@ -99,12 +152,26 @@ const paymentService = {
         }
     },
 
+    isPaid: async (studentId) => {
+        const payment = await Payment.findOne({
+            where: {
+                studentId: studentId,
+                type: "ROOM",
+                status: "SUCCESS"
+            },
+            order: [
+                ['paidAt', 'DESC']
+            ]
+        });
+        return payment !== null;
+    },
+
     getPaymentByStudentId: async (studentId, type) => {
         const payment = await Payment.findOne({
             where: {
                 studentId: studentId,
                 type: type,
-                status: "success"
+                status: "SUCCESS"
             },
             order: [
                 ['paidAt', 'DESC']

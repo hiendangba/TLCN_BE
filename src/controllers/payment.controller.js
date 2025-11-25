@@ -1,10 +1,27 @@
 const asyncHandler = require('express-async-handler');
-const { PaymentRequest } = require("../dto/request/payment.request");
+const { PaymentRequest, GetPaymentByUserId } = require("../dto/request/payment.request");
 const { GetPaymentReponse, PaymentReponse  } = require("../dto/response/payment.reponse");
 const paymentService = require("../services/payment.service")
 const ApiResponse = require("../dto/response/api.response");
+const { stackTraceLimit } = require('../errors/AppError');
 
 const paymentController = {
+    getPayment: asyncHandler(async (req, res) => {
+        const getPaymentRequest = new GetPaymentByUserId(req.query);
+        const { totalItems , response } = await paymentService.getPayment(getPaymentRequest);
+        const listPaymentResponse = response.map( item => new PaymentReponse(item) );
+        return res.status(200).json(
+            new ApiResponse(
+                listPaymentResponse,
+                {
+                    page: getPaymentRequest.page,
+                    limit: getPaymentRequest.limit,
+                    totalItems
+                }
+            )
+        )
+    }),
+
     getPaymentUrl: asyncHandler(async(req, res) => {
         const userId = req.userId;
         const paymentRequest = new PaymentRequest(req.body);
