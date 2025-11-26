@@ -295,7 +295,6 @@ const roomServices = {
             });
             if (!existingRoom) throw RoomError.InvalidDeleteRoom();
 
-            // Kiểm tra phòng đang có sinh viên ở hay không, nếu có không cho chỉnh sửa
             const roomSlots = await RoomSlot.findAll({
                 where: {
                     roomId: roomId
@@ -304,17 +303,14 @@ const roomServices = {
                 lock: transaction.LOCK.UPDATE
             })
 
-            // Nếu có slot đang bị chiếm thì không cho chỉnh nữa
             if (roomSlots.some(slot => Number(slot.isOccupied) === 1)) throw RoomError.RoomOccupied();
 
-            // Đặt lại hết tất cả roomSlot thành bị chiếm để không cho ai đăng ký vào nữa
             await Promise.all(roomSlots.map(slot => slot.update({
                 isOccupied: 1
             }, {
                 transaction
             })));
 
-            // Hủy tất các các đơn đang đăng ký vào phòng này, không cho các admin khác duyệt
             const registrationIds = await RoomRegistration.findAll({
                 where: {
                     roomSlotId: roomSlots.map(s => s.id),
@@ -375,7 +371,6 @@ const roomServices = {
                     [RoomSlot, 'slotNumber', 'ASC']
                 ]
             });
-            // Lọc các phòng có ít nhất một slot trống
             const availableRooms = rooms.filter(room =>
                 room.RoomSlots.some(slot => !slot.isOccupied)
             );
@@ -494,28 +489,47 @@ const roomServices = {
                 page,
                 limit,
                 floorId,
+                buildingId,
+                floorNumber,
                 status
             } = getRoomForAdminRequest;
             const offset = (page - 1) * limit;
-            const floorCondition = floorId === "All" ? {} : {
+            const floorCondition = (floorId && floorId !== "All") ? {
                 floorId
+            } : {};
+            
+            // Build Floor include condition - only add where clause if we have valid filter conditions
+            const floorInclude = {
+                model: Floor,
+                attributes: ["number"]
             };
+            
+            const hasBuildingFilter = buildingId && buildingId !== "All";
+            const hasFloorNumberFilter = floorNumber !== null && floorNumber !== undefined;
+            
+            if (hasBuildingFilter || hasFloorNumberFilter) {
+                floorInclude.where = {};
+                if (hasBuildingFilter) {
+                    floorInclude.where.buildingId = buildingId;
+                }
+                if (hasFloorNumberFilter) {
+                    floorInclude.where.number = floorNumber;
+                }
+            }
+            
             const rooms = await Room.findAll({
                 where: {
                     ...floorCondition,
                 },
                 include: [{
-                    model: RoomType,
-                    attributes: ['type', 'amenities']
-                },
-                {
-                    model: RoomSlot,
-                    attributes: ["id", "slotNumber", "isOccupied"]
-                },
-                {
-                    model: Floor,
-                    attributes: ["number"]
-                }
+                        model: RoomType,
+                        attributes: ['type', 'amenities']
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"]
+                    },
+                    floorInclude
                 ],
                 order: [
                     ['roomNumber', 'ASC'],
@@ -527,15 +541,14 @@ const roomServices = {
 
             if (status === "Available") {
                 filteredRooms = rooms.filter(room =>
-                    room.RoomSlots.some(slot => slot.isOccupied === false)
+                    room.RoomSlots && room.RoomSlots.length > 0 && room.RoomSlots.some(slot => slot.isOccupied === false)
                 );
             } else if (status === "Full") {
                 filteredRooms = rooms.filter(room =>
-                    room.RoomSlots.every(slot => slot.isOccupied === true)
+                    room.RoomSlots && room.RoomSlots.length > 0 && room.RoomSlots.every(slot => slot.isOccupied === true)
                 );
             }
 
-            // Case "All" => Không lọc gì -> giữ nguyên filteredRooms = rooms
             const totalItems = filteredRooms.length;
             const pagedRooms = filteredRooms.slice(offset, offset + limit);
             return {
