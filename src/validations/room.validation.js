@@ -68,4 +68,42 @@ const createRoomSchema = Joi.object({
 
 });
 
-module.exports = { createRoomTypeSchema, createRoomSchema };
+
+const roomUpdateSchema = Joi.object({
+  roomNumber: Joi.string()
+    .trim()
+    .max(100)          
+    .optional()
+    .messages({
+      'string.base': 'roomNumber phải là chuỗi',
+      'string.max': 'roomNumber tối đa 100 ký tự'
+    }),
+
+  roomTypeId: Joi.string()
+    .guid({ version: ['uuidv4'] })
+    .optional()
+    .messages({
+      'string.guid': 'roomTypeId phải là UUID v4'
+    }),
+
+  capacity: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'capacity phải là số',
+      'number.integer': 'capacity phải là số nguyên',
+      'number.min': 'capacity không được nhỏ hơn 0'
+    }),
+
+  price: Joi.number()
+    .precision(2)    
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'price phải là số',
+      'number.min': 'price không được nhỏ hơn 0'
+    })
+})
+
+module.exports = { createRoomTypeSchema, createRoomSchema, roomUpdateSchema };

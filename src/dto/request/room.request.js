@@ -39,4 +39,11 @@ class GetRoomTypeForAdminRequest {
     }
 }
 
-module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest };
+class RoomUpdateRequest {
+    constructor(data, roomId) {
+        this.roomId = roomId;
+        this.roomNumber = data.roomNumber;
+    }
+}
+
+module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest };
