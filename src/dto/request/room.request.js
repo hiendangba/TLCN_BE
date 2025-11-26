@@ -36,6 +36,14 @@ class GetRoomForAdminRequest {
         this.page = !isNaN(pageNum) && pageNum > 0 ? pageNum : 1;
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.floorId = data.floorId;
+        this.buildingId = data.buildingId;
+        // Handle floorNumber: if "All" or invalid, set to null
+        if (data.floorNumber && data.floorNumber !== "All") {
+            const floorNum = parseInt(data.floorNumber);
+            this.floorNumber = !isNaN(floorNum) ? floorNum : null;
+        } else {
+            this.floorNumber = null;
+        }
         this.status = data.status
     }
 }
