@@ -1684,7 +1684,7 @@ const roomRegistrationServices = {
                         //tạo payment khi thiếu
                         if (monthlyFeeDifference > 0) {
                             const paymentData = {
-                                content: `Thanh toán chi phí gia giạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
+                                content: `Thanh toán chi phí gia hạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
                                 type: "ROOM",
                                 amount: Number(monthlyFeeDifference)
                             }
