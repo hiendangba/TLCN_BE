@@ -62,7 +62,10 @@ class GetRoomByUserResponse {
         this.registerDate = data.registerDate;
         this.endDate = data.endDate;
         this.duration = data.duration;
-        this.status = data.status;
+        this.status =
+            data.CancellationInfo?.refundStatus === "PENDING"
+                ? "CANCEL_PENDING"
+                : data.status;
         this.name = data.Student.User.name;
         this.identification = data.Student.User.identification;
         this.mySlotNumber = data.slotNumber;
