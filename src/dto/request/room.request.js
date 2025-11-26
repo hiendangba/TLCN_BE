@@ -43,6 +43,9 @@ class RoomUpdateRequest {
     constructor(data, roomId) {
         this.roomId = roomId;
         this.roomNumber = data.roomNumber;
+        this.roomTypeId = data.roomTypeId;
+        this.capacity = data.capacity;
+        this.price = data.price;
     }
 }
 

@@ -1,8 +1,9 @@
 const asyncHandler = require('express-async-handler');
 const roomServices = require("../services/room.service")
 const ApiResponse = require("../dto/response/api.response");
-const { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest } = require("../dto/request/room.request")
-const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse } = require("../dto/response/room.response")
+const { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest } = require("../dto/request/room.request")
+const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse  } = require("../dto/response/room.response");
+
 const roomController = {
     createRoomType: asyncHandler(async (req, res) => {
         const createRoomTypeRequest = new CreateRoomTypeRequest(req.body);
@@ -37,6 +38,27 @@ const roomController = {
         return res.status(201).json(
             new ApiResponse(createRoomResponse)
         );
+    }),
+
+    updateRoom: asyncHandler(async (req, res) => {
+        const { id: roomId } = req.params;
+        const adminId = req.roleId;
+        const roomUpdateRequest = new RoomUpdateRequest(req.body, roomId);
+        const response = await roomServices.updateRoom(roomUpdateRequest, adminId);
+        const createRoomResponse = new CreateRoomResponse(response);
+        return res.status(200).json(
+            new ApiResponse(createRoomResponse) 
+        ); 
+    }),
+
+    deleteRoom: asyncHandler( async(req, res) => {
+        const id = req.params.id;
+        const adminId = req.roleId;
+        const response = await roomServices.deleteRoom(id, adminId);
+        const deleteRoomResponse = new DeleteRoomResponse(response);
+        return res.status(200).json(
+            new ApiResponse(deleteRoomResponse) 
+        ); 
     }),
 
     getRoom: asyncHandler(async (req, res) => {
