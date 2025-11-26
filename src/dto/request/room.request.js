@@ -15,6 +15,13 @@ class CreateRoomRequest {
     }
 }
 
+class UpdateRoomTypeRequest {
+    constructor(data) {
+        this.type = data.type;
+        this.amenities = data.amenities;
+    }
+}
+
 class GetRoomRequest {
     constructor(data) {
         this.buildingId = data.buildingId;
@@ -39,4 +46,14 @@ class GetRoomTypeForAdminRequest {
     }
 }
 
-module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest };
+class RoomUpdateRequest {
+    constructor(data, roomId) {
+        this.roomId = roomId;
+        this.roomNumber = data.roomNumber;
+        this.roomTypeId = data.roomTypeId;
+        this.capacity = data.capacity;
+        this.price = data.price;
+    }
+}
+
+module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest, UpdateRoomTypeRequest };

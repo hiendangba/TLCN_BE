@@ -22,6 +22,28 @@ const createRoomTypeSchema = Joi.object({
 
 });
 
+const updateRoomTypeSchema = Joi.object({
+    type: Joi.string()
+        .min(2)
+        .max(50)
+        .required()
+        .messages({
+            "string.empty": "Tên loại phòng không được để trống.",
+            "string.min": "Tên loại phòng phải có ít nhất 2 ký tự.",
+            "string.max": "Tên loại phòng không được quá 50 ký tự.",
+        }),
+
+    amenities: Joi.array()
+        .items(Joi.string().min(1).max(50))
+        .required()
+        .messages({
+            "array.base": "Tiện nghi phải là một mảng.",
+            "string.min": "Tên tiện nghi phải có ít nhất 1 ký tự.",
+            "string.max": "Tên tiện nghi không được quá 50 ký tự.",
+        }),
+
+});
+
 const createRoomSchema = Joi.object({
     roomNumber: Joi.string()
         .min(1)
@@ -68,4 +90,42 @@ const createRoomSchema = Joi.object({
 
 });
 
-module.exports = { createRoomTypeSchema, createRoomSchema };
+
+const roomUpdateSchema = Joi.object({
+  roomNumber: Joi.string()
+    .trim()
+    .max(100)          
+    .optional()
+    .messages({
+      'string.base': 'roomNumber phải là chuỗi',
+      'string.max': 'roomNumber tối đa 100 ký tự'
+    }),
+
+  roomTypeId: Joi.string()
+    .guid({ version: ['uuidv4'] })
+    .optional()
+    .messages({
+      'string.guid': 'roomTypeId phải là UUID v4'
+    }),
+
+  capacity: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'capacity phải là số',
+      'number.integer': 'capacity phải là số nguyên',
+      'number.min': 'capacity không được nhỏ hơn 0'
+    }),
+
+  price: Joi.number()
+    .precision(2)    
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'price phải là số',
+      'number.min': 'price không được nhỏ hơn 0'
+    })
+})
+
+module.exports = { createRoomTypeSchema, createRoomSchema, roomUpdateSchema, updateRoomTypeSchema };

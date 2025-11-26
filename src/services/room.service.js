@@ -3,7 +3,15 @@ const floorServices = require("./floor.service");
 const RoomError = require("../errors/RoomError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError")
 const FloorError = require("../errors/FloorError");
-const { Op } = require("sequelize");
+const UserError = require("../errors/UserError")
+const {
+    Op,
+    where
+} = require("sequelize");
+const {
+    RejectRoomRegistrationRequest
+} = require("../dto/request/roomRegistration.request");
+const roomRegistrationService = require("../services/roomRegistration.service");
 
 const roomServices = {
     createRoomType: async (createRoomTypeRequest) => {
@@ -24,15 +32,80 @@ const roomServices = {
         }
     },
 
+    deleteRoomType: async (roomTypeId, adminId) => {
+        const transaction = await sequelize.transaction();
+        try{ 
+            const admin = await Admin.findByPk(adminId, { transaction });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomType = await RoomType.findByPk(roomTypeId, { 
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+            if (!roomType) throw RoomError.RoomTypeNotFound();
+
+            const roomsCount = await Room.count({
+                where: { roomTypeId },
+                transaction,
+            });
+
+            if (roomsCount > 0) throw RoomError.CannotDeleteRoomType();
+
+            await RoomType.destroy({
+                where: { id: roomTypeId },
+                transaction
+            });
+
+            await transaction.commit();
+            return roomType;
+        }
+        catch(err){
+            console.log(err);
+            if (!transaction.finished) {
+                await transaction.rollback();
+            }
+            throw err;
+        }
+    },
+
+    updateRoomType: async (data, adminId, roomTypeId) => {
+        const transaction = await sequelize.transaction();
+        try{
+            const { type, amenities } = data;
+
+            const admin = await Admin.findByPk(adminId, { transaction });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomType = await RoomType.findByPk(roomTypeId, { 
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+            if (!roomType) throw RoomError.RoomTypeNotFound();
+
+            await roomType.update(
+                { type, amenities },
+                { transaction }
+            );
+
+            await transaction.commit();
+            return roomType;
+
+        }catch(err){
+            console.log(err);
+            if (!transaction.finished) {
+                await transaction.rollback();
+            }
+            throw err;
+        }
+    },
+
     getRoomTypeForAdmin: async (getRoomTypeForAdminRequest) => {
         try {
             const building = await Building.findByPk(getRoomTypeForAdminRequest.buildingId, {
-                include: [
-                    {
-                        model: RoomType,
-                        attributes: ["id", "type", "amenities"]
-                    }
-                ]
+                include: [{
+                    model: RoomType,
+                    attributes: ["id", "type", "amenities"]
+                }]
             });
 
             if (!building) {
@@ -69,10 +142,206 @@ const roomServices = {
             }
             const room = await Room.create(createRoomRequest);
             for (i = 1; i <= room.capacity; i++) {
-                await RoomSlot.create({ roomId: room.id, slotNumber: i, isOccupied: false });
+                await RoomSlot.create({
+                    roomId: room.id,
+                    slotNumber: i,
+                    isOccupied: false
+                });
             }
             return room;
         } catch (err) {
+            throw err;
+        }
+    },
+
+    updateRoom: async (roomUpdateRequest, adminId) => {
+        const transaction = await sequelize.transaction();
+        try {
+            const {
+                roomId,
+                roomNumber,
+                roomTypeId,
+                capacity,
+                price
+            } = roomUpdateRequest;
+
+            // Kiểm tra admin trước 
+            const admin = await Admin.findByPk(adminId, {
+                transaction
+            });
+            if (!admin) throw UserError.AdminNotFound();
+
+            // Kiểm tra phòng định sửa có tồn tại không
+            const existingRoom = await Room.findByPk(roomId, {
+                include: [{
+                    model: Floor,
+                    include: [{
+                        model: Building,
+                        include: [{
+                            model: RoomType
+                        }]
+                    }]
+                }],
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+            if (!existingRoom) throw RoomError.InvalidUpdateRoom();
+
+            // Kiểm tra roomType có tồn tại hay không
+            if (roomTypeId){
+                const newRoomType = await RoomType.findByPk(roomTypeId, {
+                    transaction
+                });
+                if (!newRoomType) throw RoomError.RoomTypeNotFound();
+                const buildingRoomTypes = existingRoom.Floor.Building.RoomTypes;
+                const isValid = buildingRoomTypes.some(rt => rt.id === roomTypeId);
+                if (!isValid) throw RoomError.InvalidRoomType();
+            }
+
+            // Kiểm tra phòng đang có sinh viên ở hay không, nếu có không cho chỉnh sửa
+            const roomSlots = await RoomSlot.findAll({
+                where: {
+                    roomId: roomId
+                },
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            })
+
+            // Nếu có slot đang bị chiếm thì không cho chỉnh nữa
+            if (roomSlots.some(slot => Number(slot.isOccupied) === 1)) throw RoomError.RoomOccupied();
+
+            // Đặt lại hết tất cả roomSlot thành bị chiếm để không cho ai đăng ký vào nữa
+            await Promise.all(roomSlots.map(slot => slot.update({
+                isOccupied: 1
+            }, {
+                transaction
+            })));
+
+            // Hủy tất các các đơn đang đăng ký vào phòng này, không cho các admin khác duyệt
+            const registrationIds = await RoomRegistration.findAll({
+                where: {
+                    roomSlotId: roomSlots.map(s => s.id),
+                    status: "BOOKED"
+                },
+                transaction,
+            }).then(list => list.map(r => r.id));
+
+
+            console.log("OMG", registrationIds);
+
+            if (registrationIds?.length) {
+                const response = await roomRegistrationService.rejectRoomRegistration(
+                    new RejectRoomRegistrationRequest({
+                        ids: registrationIds,
+                        reason: "Hiện tại phòng đang được chỉnh sửa"
+                     })
+                );
+                console.log("Data trả về khi xóa", response);
+            }
+
+            if (roomNumber) existingRoom.roomNumber = roomNumber;
+            if (price) existingRoom.monthlyFee = price;
+            if (roomTypeId) existingRoom.roomTypeId = roomTypeId;
+
+            if (capacity && capacity !== roomSlots.length) {
+
+                await RoomSlot.destroy({ where: { roomId }, transaction });
+                existingRoom.capacity = capacity
+                const newSlots = [];
+                for (let i = 1; i <= capacity; i++) {
+                    newSlots.push({ roomId, slotNumber: i, isOccupied: 0 });
+                }
+                await RoomSlot.bulkCreate(newSlots, { transaction });
+            }
+            else{
+                // Trả lại trạng thái phòng bằng 0 như ban đầu
+                await RoomSlot.update(
+                    { isOccupied: 0 },
+                    { where: { roomId }, transaction }
+                );
+            }
+
+            // Lưu Room lại
+            const response = await existingRoom.save({ transaction });
+            await transaction.commit();
+            return response;
+
+        } catch (err) {
+            console.log(err);
+            await transaction.rollback();
+            throw err;
+        }
+    },
+
+
+    deleteRoom: async( roomId, adminId ) => {
+        const transaction = await sequelize.transaction();
+        try {
+            // Kiểm tra admin trước 
+            const admin = await Admin.findByPk(adminId, {
+                transaction
+            });
+            if (!admin) throw UserError.AdminNotFound();
+
+            // Kiểm tra phòng định sửa có tồn tại không
+            const existingRoom = await Room.findByPk(roomId, {
+                include: [{
+                    model: Floor,
+                },
+                {
+                    model: RoomType
+                }],
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+            if (!existingRoom) throw RoomError.InvalidDeleteRoom();
+
+            // Kiểm tra phòng đang có sinh viên ở hay không, nếu có không cho chỉnh sửa
+            const roomSlots = await RoomSlot.findAll({
+                where: {
+                    roomId: roomId
+                },
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            })
+
+            // Nếu có slot đang bị chiếm thì không cho chỉnh nữa
+            if (roomSlots.some(slot => Number(slot.isOccupied) === 1)) throw RoomError.RoomOccupied();
+
+            // Đặt lại hết tất cả roomSlot thành bị chiếm để không cho ai đăng ký vào nữa
+            await Promise.all(roomSlots.map(slot => slot.update({
+                isOccupied: 1
+            }, {
+                transaction
+            }))); 
+
+            // Hủy tất các các đơn đang đăng ký vào phòng này, không cho các admin khác duyệt
+            const registrationIds = await RoomRegistration.findAll({
+                where: {
+                    roomSlotId: roomSlots.map(s => s.id),
+                    status: "BOOKED"
+                },
+                transaction,
+            }).then(list => list.map(r => r.id));
+
+            if (registrationIds?.length) {
+                const response = await roomRegistrationService.rejectRoomRegistration(
+                    new RejectRoomRegistrationRequest({
+                        ids: registrationIds,
+                        reason: "Hiện tại phòng đang không còn hoạt động"
+                     })
+                );
+                console.log("Data trả về khi xóa", response);
+            }
+
+        
+            await existingRoom.destroy({transaction});
+            await transaction.commit();
+            return existingRoom;
+        }
+        catch(err){
+            console.log(err);
+            await transaction.rollback();
             throw err;
         }
     },
@@ -82,15 +351,16 @@ const roomServices = {
             const floors = await floorServices.getFloor(getRoomRequest);
             const floorIds = floors.map(floor => floor.id);
             const rooms = await Room.findAll({
-                include: [
-                    {
+                include: [{
                         model: RoomType,
-                        where: { id: getRoomRequest.roomTypeId },
+                        where: {
+                            id: getRoomRequest.roomTypeId
+                        },
                         attributes: ['type', 'amenities']
                     },
                     {
                         model: Floor,
-                        attributes: ['number',]
+                        attributes: ['number', ]
                     },
                     {
                         model: RoomSlot,
@@ -150,8 +420,7 @@ const roomServices = {
             }
             const roomSlot = await RoomSlot.findByPk(roomRegistration.roomSlotId)
             const room = await Room.findByPk(roomSlot.roomId, {
-                include: [
-                    {
+                include: [{
                         model: RoomSlot,
                         attributes: ['slotNumber', 'isOccupied'],
                     },
@@ -176,35 +445,32 @@ const roomServices = {
             const roomRegistrations = await RoomRegistration.findAll({
                 where: {
                     studentId: roleId,
-                    status: { [Op.in]: ["CANCELED", "MOVED", "EXTENDED"] },
-                    endDate: { [Op.lte]: new Date() }
+                    status: {
+                        [Op.in]: ["CANCELED", "MOVED", "EXTENDED"]
+                    },
+                    endDate: {
+                        [Op.lte]: new Date()
+                    }
                 },
-                include: [
-                    {
+                include: [{
                         model: Student,
                         attributes: ["userId"],
-                        include: [
-                            {
-                                model: User,
-                                attributes: ["name", "identification"]
-                            }
-                        ]
+                        include: [{
+                            model: User,
+                            attributes: ["name", "identification"]
+                        }]
                     },
                     {
                         model: RoomSlot,
                         attributes: ["slotNumber", "isOccupied"],
-                        include: [
-                            {
-                                model: Room,
-                                attributes: ["roomNumber", "capacity", "monthlyFee"],
-                                include: [
-                                    {
-                                        model: RoomType,
-                                        attributes: ["type", "amenities"]
-                                    }
-                                ]
-                            }
-                        ]
+                        include: [{
+                            model: Room,
+                            attributes: ["roomNumber", "capacity", "monthlyFee"],
+                            include: [{
+                                model: RoomType,
+                                attributes: ["type", "amenities"]
+                            }]
+                        }]
                     }
                 ],
                 order: [
@@ -225,15 +491,21 @@ const roomServices = {
 
     getRoomForAdmin: async (getRoomForAdminRequest) => {
         try {
-            const { page, limit, floorId, status } = getRoomForAdminRequest;
+            const {
+                page,
+                limit,
+                floorId,
+                status
+            } = getRoomForAdminRequest;
             const offset = (page - 1) * limit;
-            const floorCondition = floorId === "All" ? {} : { floorId };
+            const floorCondition = floorId === "All" ? {} : {
+                floorId
+            };
             const rooms = await Room.findAll({
                 where: {
                     ...floorCondition,
                 },
-                include: [
-                    {
+                include: [{
                         model: RoomType,
                         attributes: ['type', 'amenities']
                     },
@@ -258,9 +530,7 @@ const roomServices = {
                 filteredRooms = rooms.filter(room =>
                     room.RoomSlots.some(slot => slot.isOccupied === false)
                 );
-            }
-
-            else if (status === "Full") {
+            } else if (status === "Full") {
                 filteredRooms = rooms.filter(room =>
                     room.RoomSlots.every(slot => slot.isOccupied === true)
                 );
@@ -269,7 +539,10 @@ const roomServices = {
             // Case "All" => Không lọc gì -> giữ nguyên filteredRooms = rooms
             const totalItems = filteredRooms.length;
             const pagedRooms = filteredRooms.slice(offset, offset + limit);
-            return { totalItems, response: pagedRooms };
+            return {
+                totalItems,
+                response: pagedRooms
+            };
 
         } catch (err) {
             throw err;

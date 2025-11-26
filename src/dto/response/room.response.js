@@ -5,6 +5,14 @@ class CreateRoomTypeResponse {
     }
 }
 
+class DeleteRoomTypeResonse {
+    constructor(data){
+        this.id = data.id;
+        this.type = data.type;
+        this.amenities = data.amenities;
+    }
+}
+
 class GetRoomTypeResponse {
     constructor(data) {
         this.id = data.id;
@@ -36,6 +44,19 @@ class GetRoomResponse {
     }
 }
 
+class DeleteRoomResponse {
+    constructor(data) {
+        this.id = data.id;
+        this.roomNumber = data.roomNumber;
+        this.capacity = data.capacity;
+        this.monthlyFee = data.monthlyFee;
+        this.floor_number = data.Floor.number;
+        this.roomType_type = data.RoomType.type;
+        this.roomType_amenities = data.RoomType.amenities;
+        this.roomSlots = data.RoomSlots;
+    }
+}
+
 class GetRoomByUserResponse {
     constructor(data) {
         this.registerDate = data.registerDate;
@@ -55,5 +76,5 @@ class GetRoomByUserResponse {
         this.roomType = data.RoomType
     }
 }
-module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse };
+module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse, DeleteRoomTypeResonse };
 

@@ -303,6 +303,7 @@ const roomRegistrationServices = {
 
     rejectRoomRegistration: async (rejectRoomRegistrationRequest) => {
         const transaction = await sequelize.transaction();
+        console.log("IDs trước khi query:", rejectRoomRegistrationRequest.ids);
         try {
             const roomRegistrations = await RoomRegistration.findAll({
                 where: {
@@ -1691,7 +1692,7 @@ const roomRegistrationServices = {
 
                         if (monthlyFeeDifference > 0) {
                             const paymentData = {
-                                content: `Thanh toán chi phí gia giạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
+                                content: `Thanh toán chi phí gia hạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
                                 type: "ROOM",
                                 amount: Number(monthlyFeeDifference)
                             }

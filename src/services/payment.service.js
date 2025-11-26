@@ -40,7 +40,9 @@ const paymentService = {
             }
 
             if (type) {
-                searchCondition.type = type;
+                searchCondition.type = {
+                    [Op.like]: `%${type}%`
+                };
             }
 
             const payments = await Payment.findAndCountAll({
