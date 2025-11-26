@@ -413,17 +413,21 @@ const roomServices = {
                 throw RoomRegistrationError.RoomRegistrationNotFound();
             }
             const roomSlot = await RoomSlot.findByPk(roomRegistration.roomSlotId)
+
             const room = await Room.findByPk(roomSlot.roomId, {
-                include: [{
-                    model: RoomSlot,
-                    attributes: ['slotNumber', 'isOccupied'],
-                },
-                {
-                    model: RoomType,
-                    attributes: ['type', 'amenities']
-                }
-                ]
+                include: [
+                    {
+                        model: RoomSlot,
+                        attributes: ['slotNumber', 'isOccupied']
+                    },
+                    {
+                        model: RoomType,
+                        attributes: ['type', 'amenities']
+                    }
+                ],
+                order: [[RoomSlot, 'slotNumber', 'ASC']]
             });
+
             return {
                 ...roomRegistration.toJSON(),
                 ...roomSlot.toJSON(),
@@ -497,16 +501,16 @@ const roomServices = {
             const floorCondition = (floorId && floorId !== "All") ? {
                 floorId
             } : {};
-            
+
             // Build Floor include condition - only add where clause if we have valid filter conditions
             const floorInclude = {
                 model: Floor,
                 attributes: ["number"]
             };
-            
+
             const hasBuildingFilter = buildingId && buildingId !== "All";
             const hasFloorNumberFilter = floorNumber !== null && floorNumber !== undefined;
-            
+
             if (hasBuildingFilter || hasFloorNumberFilter) {
                 floorInclude.where = {};
                 if (hasBuildingFilter) {
@@ -516,19 +520,19 @@ const roomServices = {
                     floorInclude.where.number = floorNumber;
                 }
             }
-            
+
             const rooms = await Room.findAll({
                 where: {
                     ...floorCondition,
                 },
                 include: [{
-                        model: RoomType,
-                        attributes: ['type', 'amenities']
-                    },
-                    {
-                        model: RoomSlot,
-                        attributes: ["id", "slotNumber", "isOccupied"]
-                    },
+                    model: RoomType,
+                    attributes: ['type', 'amenities']
+                },
+                {
+                    model: RoomSlot,
+                    attributes: ["id", "slotNumber", "isOccupied"]
+                },
                     floorInclude
                 ],
                 order: [
