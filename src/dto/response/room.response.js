@@ -5,7 +5,7 @@ class CreateRoomTypeResponse {
     }
 }
 
-class DeleteRoomTypeResonse {
+class DeleteRoomTypeResponse {
     constructor(data){
         this.id = data.id;
         this.type = data.type;
@@ -76,5 +76,5 @@ class GetRoomByUserResponse {
         this.roomType = data.RoomType
     }
 }
-module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse, DeleteRoomTypeResonse };
+module.exports = { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse, DeleteRoomTypeResponse };
 

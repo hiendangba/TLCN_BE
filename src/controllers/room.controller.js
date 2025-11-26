@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const roomServices = require("../services/room.service")
 const ApiResponse = require("../dto/response/api.response");
 const { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest, UpdateRoomTypeRequest } = require("../dto/request/room.request")
-const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse, DeleteRoomTypeResonse  } = require("../dto/response/room.response");
+const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse, DeleteRoomTypeResponse } = require("../dto/response/room.response");
 
 const roomController = {
     createRoomType: asyncHandler(async (req, res) => {
@@ -26,14 +26,14 @@ const roomController = {
         const adminId = req.roleId;
         const roomTypeId = req.params.id;
         const response = await roomServices.deleteRoomType(roomTypeId, adminId);
-        const deleteRoomResponse = new DeleteRoomTypeResonse (response);
+        const deleteRoomResponse = new DeleteRoomTypeResponse(response);
         res.status(200).json(
             new ApiResponse(deleteRoomResponse)
         )
     }),
 
     updateRoomType: asyncHandler(async (req, res) => {
-        const data = new UpdateRoomTypeRequest (req.body);
+        const data = new UpdateRoomTypeRequest(req.body);
         const adminId = req.roleId;
         const { id: roomTypeId } = req.params;
         const response = await roomServices.updateRoomType(data, adminId, roomTypeId);
@@ -68,18 +68,18 @@ const roomController = {
         const response = await roomServices.updateRoom(roomUpdateRequest, adminId);
         const createRoomResponse = new CreateRoomResponse(response);
         return res.status(200).json(
-            new ApiResponse(createRoomResponse) 
-        ); 
+            new ApiResponse(createRoomResponse)
+        );
     }),
 
-    deleteRoom: asyncHandler( async(req, res) => {
+    deleteRoom: asyncHandler(async (req, res) => {
         const id = req.params.id;
         const adminId = req.roleId;
         const response = await roomServices.deleteRoom(id, adminId);
         const deleteRoomResponse = new DeleteRoomResponse(response);
         return res.status(200).json(
-            new ApiResponse(deleteRoomResponse) 
-        ); 
+            new ApiResponse(deleteRoomResponse)
+        );
     }),
 
     getRoom: asyncHandler(async (req, res) => {
