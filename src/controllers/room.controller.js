@@ -27,7 +27,7 @@ const roomController = {
         const roomTypeId = req.params.id;
         const response = await roomServices.deleteRoomType(roomTypeId, adminId);
         const deleteRoomResponse = new DeleteRoomTypeResonse (response);
-        res.statusCode(200).json(
+        res.status(200).json(
             new ApiResponse(deleteRoomResponse)
         )
     }),
@@ -38,7 +38,7 @@ const roomController = {
         const { id: roomTypeId } = req.params;
         const response = await roomServices.updateRoomType(data, adminId, roomTypeId);
         const updateRoomReponse = new GetRoomTypeResponse(response);
-        res.statusCode(200).json(
+        res.status(200).json(
             new ApiResponse(updateRoomReponse)
         )
     }),
