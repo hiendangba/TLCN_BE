@@ -459,7 +459,7 @@ const roomRegistrationServices = {
                 throw RoomRegistrationError.RoomRegistrationNotFound();
             }
 
-            if (paymentService.isPaid(roomRegistration.Student.id) === false) {
+            if (paymentService.isPaid(roomRegistration.studentId) === false) {
                 throw PaymentError.isPaid();
             }
 
@@ -903,6 +903,10 @@ const roomRegistrationServices = {
                 throw RoomRegistrationError.RoomRegistrationNotFound();
             }
 
+            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+                throw PaymentError.isPaid();
+            }
+
             if (roomRegistration.status !== "CONFIRMED") {
                 throw RoomRegistrationError.InvalidMoveRequest();
             }
@@ -1191,12 +1195,8 @@ const roomRegistrationServices = {
                         );
 
                         const monthDifference = getMonthsDifference(dayStr, endDate);
-                        console.log("Giá mới ", newRegistration.RoomSlot.Room.monthlyFee);
-                        console.log("Gia cu ", registration.RoomSlot.Room.monthlyFee)
                         monthlyFeeDifference = (newRegistration.RoomSlot.Room.monthlyFee - registration.RoomSlot.Room.monthlyFee) * monthDifference + Number(newRegistration.duration) * newRegistration.RoomSlot.Room.monthlyFee;
-                        console.log("Gia chenh lech ", monthlyFeeDifference);
                         const dayFormatted = formatDateVN(dayStr);
-                        console.log("Thang chenh lech: ", monthDifference);
                         const user = registration.Student.User;
 
                         if (user) {
@@ -1248,8 +1248,6 @@ const roomRegistrationServices = {
                             const signature = momoUtils.generateMomoSignature(rawSignature);
 
                             const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
-
-                            console.log("124");
 
                             if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
                                 throw PaymentError.InvalidAmount();
@@ -1442,6 +1440,9 @@ const roomRegistrationServices = {
                 throw RoomRegistrationError.InvalidExtendRequest();
             }
 
+            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+                throw PaymentError.isPaid();
+            }
             await roomRegistration.update({
                 status: "EXTENDING"
             })
