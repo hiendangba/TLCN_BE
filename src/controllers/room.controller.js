@@ -1,8 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const roomServices = require("../services/room.service")
 const ApiResponse = require("../dto/response/api.response");
-const { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest } = require("../dto/request/room.request")
-const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse  } = require("../dto/response/room.response");
+const { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest, UpdateRoomTypeRequest } = require("../dto/request/room.request")
+const { CreateRoomTypeResponse, GetRoomTypeResponse, CreateRoomResponse, GetRoomResponse, GetRoomByUserResponse, DeleteRoomResponse, DeleteRoomTypeResonse  } = require("../dto/response/room.response");
 
 const roomController = {
     createRoomType: asyncHandler(async (req, res) => {
@@ -20,6 +20,27 @@ const roomController = {
         return res.status(200).json(
             new ApiResponse(getRoomTypeResponses)
         );
+    }),
+
+    deleteRoomType: asyncHandler(async (req, res) => {
+        const adminId = req.roleId;
+        const roomTypeId = req.params.id;
+        const response = await roomServices.deleteRoomType(roomTypeId, adminId);
+        const deleteRoomResponse = new DeleteRoomTypeResonse (response);
+        res.statusCode(200).json(
+            new ApiResponse(deleteRoomResponse)
+        )
+    }),
+
+    updateRoomType: asyncHandler(async (req, res) => {
+        const data = new UpdateRoomTypeRequest (req.body);
+        const adminId = req.roleId;
+        const { id: roomTypeId } = req.params;
+        const response = await roomServices.updateRoomType(data, adminId, roomTypeId);
+        const updateRoomReponse = new GetRoomTypeResponse(response);
+        res.statusCode(200).json(
+            new ApiResponse(updateRoomReponse)
+        )
     }),
 
     getRoomTypeForAdmin: asyncHandler(async (req, res) => {

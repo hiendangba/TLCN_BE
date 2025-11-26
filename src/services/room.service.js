@@ -16,7 +16,8 @@ const RoomRegistrationError = require("../errors/RoomRegistrationError")
 const FloorError = require("../errors/FloorError");
 const UserError = require("../errors/UserError")
 const {
-    Op
+    Op,
+    where
 } = require("sequelize");
 const {
     RejectRoomRegistrationRequest
@@ -38,6 +39,73 @@ const roomServices = {
             const roomTypes = await RoomType.findAll();
             return roomTypes;
         } catch (err) {
+            throw err;
+        }
+    },
+
+    deleteRoomType: async (roomTypeId, adminId) => {
+        const transaction = await sequelize.transaction();
+        try{ 
+            const admin = await Admin.findByPk(adminId, { transaction });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomType = await RoomType.findByPk(roomTypeId, { 
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+            if (!roomType) throw RoomError.RoomTypeNotFound();
+
+            const roomsCount = await Room.count({
+                where: { roomTypeId },
+                transaction,
+            });
+
+            if (roomsCount > 0) throw RoomError.CannotDeleteRoomType();
+
+            await RoomType.destroy({
+                where: { id: roomTypeId },
+                transaction
+            });
+
+            await transaction.commit();
+            return roomType;
+        }
+        catch(err){
+            console.log(err);
+            if (!transaction.finished) {
+                await transaction.rollback();
+            }
+            throw err;
+        }
+    },
+
+    updateRoomType: async (data, adminId, roomTypeId) => {
+        const transaction = await sequelize.transaction();
+        try{
+            const { type, amenities } = data;
+
+            const admin = await Admin.findByPk(adminId, { transaction });
+            if (!admin) throw UserError.AdminNotFound();
+
+            const roomType = await RoomType.findByPk(roomTypeId, { 
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+            if (!roomType) throw RoomError.RoomTypeNotFound();
+
+            await roomType.update(
+                { type, amenities },
+                { transaction }
+            );
+
+            await transaction.commit();
+            return roomType;
+
+        }catch(err){
+            console.log(err);
+            if (!transaction.finished) {
+                await transaction.rollback();
+            }
             throw err;
         }
     },
