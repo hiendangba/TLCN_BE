@@ -8,6 +8,13 @@ class CreateNumberPlateRequest {
     }
 }
 
+class RecognizeNumberPlateRequest {
+    constructor(path, studentId) {
+        this.image = path
+        this.studentId = studentId
+    }
+}
+
 class GetNumberPlateRequest {
     constructor(data) {
         const pageNum = parseInt(data.page);
@@ -49,4 +56,4 @@ class RejectNumberPlateRequest {
     }
 }
 
-module.exports = { CreateNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest };
+module.exports = { CreateNumberPlateRequest, RecognizeNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest };

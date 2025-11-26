@@ -29,8 +29,14 @@ const numberPlateStorage = new CloudinaryStorage({
     },
 });
 
+const uploadRecognizeNumberPlate = multer({ storage: multer.memoryStorage() });
 const uploadCCCD = multer({ storage: cccdStorage });
 const uploadAvatar = multer({ storage: avatarStorage });
 const uploadNumberPlate = multer({ storage: numberPlateStorage });
 
-module.exports = { uploadCCCD, uploadAvatar, uploadNumberPlate };
+module.exports = {
+    uploadCCCD,
+    uploadAvatar,
+    uploadNumberPlate,
+    uploadRecognizeNumberPlate
+};
