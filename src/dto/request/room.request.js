@@ -15,6 +15,13 @@ class CreateRoomRequest {
     }
 }
 
+class UpdateRoomTypeRequest {
+    constructor(data) {
+        this.type = data.type;
+        this.amenities = data.amenities;
+    }
+}
+
 class GetRoomRequest {
     constructor(data) {
         this.buildingId = data.buildingId;
@@ -49,4 +56,4 @@ class RoomUpdateRequest {
     }
 }
 
-module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest };
+module.exports = { CreateRoomTypeRequest, CreateRoomRequest, GetRoomRequest, GetRoomForAdminRequest, GetRoomTypeForAdminRequest, RoomUpdateRequest, UpdateRoomTypeRequest };

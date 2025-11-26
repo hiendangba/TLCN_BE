@@ -44,6 +44,13 @@ class RoomError extends AppError {
             "InvalidRoomType"
         );
     }
+    static CannotDeleteRoomType() {
+        return new RoomError(
+            "Không thể xóa loại phòng vì đang có phòng áp dụng loại này.",
+            409, // 409 Conflict
+            "CannotDeleteRoomType"
+        );
+    }
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }
