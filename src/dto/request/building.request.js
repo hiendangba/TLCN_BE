@@ -7,6 +7,28 @@ class CreateBuildingRequest {
   }
 }
 
+class UpdateBuildingRequest {
+  constructor(data) {
+    this.id = data.id;
+    if (data.name !== undefined) {
+      this.name = data.name;
+    }
+
+    if (data.genderRestriction !== undefined) {
+      this.genderRestriction = data.genderRestriction;
+    }
+
+    if (data.roomTypeIds !== undefined) {
+      this.roomTypeIds = data.roomTypeIds;
+    }
+
+    if (data.numberFloor !== undefined) {
+      this.numberFloor = data.numberFloor;
+    }
+  }
+}
+
+
 class DeleteBuildingRequest {
   constructor(data) {
     this.id = data.id;
@@ -20,4 +42,4 @@ class GetBuildingRequest {
   }
 }
 
-module.exports = { CreateBuildingRequest, GetBuildingRequest, DeleteBuildingRequest };
+module.exports = { CreateBuildingRequest, UpdateBuildingRequest, GetBuildingRequest, DeleteBuildingRequest };

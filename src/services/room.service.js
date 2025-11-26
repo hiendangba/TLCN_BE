@@ -1,15 +1,4 @@
-const {
-    Room,
-    RoomRegistration,
-    RoomSlot,
-    RoomType,
-    Floor,
-    Building,
-    Student,
-    User,
-    sequelize,
-    Admin
-} = require("../models");
+const { Room, RoomRegistration, RoomSlot, RoomType, Floor, Building, Student, User, CancellationInfo } = require("../models");
 const floorServices = require("./floor.service");
 const RoomError = require("../errors/RoomError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError")
@@ -408,17 +397,23 @@ const roomServices = {
                         [Op.gt]: new Date()
                     }
                 },
-                include: [{
-                    model: Student,
-                    attributes: ["userId"],
-                    include: [{
-                        model: User,
-                        attributes: ['name', 'identification']
-                    }]
-                }],
-                order: [
-                    ["createdAt", "DESC"]
-                ]
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ['name', 'identification']
+                            }
+                        ],
+                    },
+                    {
+                        model: CancellationInfo,
+                    }
+
+                ],
+                order: [["createdAt", "DESC"]]
             });
             if (!roomRegistration) {
                 throw RoomRegistrationError.RoomRegistrationNotFound();
