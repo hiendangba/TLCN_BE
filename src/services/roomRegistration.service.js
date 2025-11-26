@@ -310,6 +310,7 @@ const roomRegistrationServices = {
 
     rejectRoomRegistration: async (rejectRoomRegistrationRequest) => {
         const transaction = await sequelize.transaction();
+        console.log("IDs trước khi query:", rejectRoomRegistrationRequest.ids);
         try {
             const roomRegistrations = await RoomRegistration.findAll({
                 where: {
