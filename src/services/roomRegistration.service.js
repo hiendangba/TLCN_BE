@@ -713,6 +713,7 @@ const roomRegistrationServices = {
                         payment.status = "SUCCESS";
                         payment.transId = refundResponse.data.transId;
                         payment.studentId = registration.Student.id;
+                        payment.paidAt = new Date();
                         await payment.save();
                         approvedList.push(registration.id);
 
@@ -1255,6 +1256,7 @@ const roomRegistrationServices = {
                                 payment.status = "SUCCESS";
                                 payment.transId = refundResponse.data.transId;
                                 payment.studentId = registration.Student.id;
+                                payment.paidAt = new Date();
                                 await payment.save();
                             }
                         }
