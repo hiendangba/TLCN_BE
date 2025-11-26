@@ -1,5 +1,5 @@
 const BuildingError = require("../errors/BuildingError");
-const { Building, RoomType, Floor } = require("../models");
+const { Building, RoomType, Floor, Room, RoomSlot } = require("../models");
 const FloorError = require("../errors/FloorError");
 const { CreateFloorRequest } = require("../dto/request/floor.request")
 const floorServices = require("./floor.service")
@@ -40,12 +40,37 @@ const buildingServices = {
 
     deleteBuilding: async (deleteBuildingRequest) => {
         try {
-            const building = await Building.findByPk(deleteBuildingRequest.id);
+            const building = await Building.findByPk(deleteBuildingRequest.id, {
+                include: [{
+                    model: Floor,
+                    include: [{ model: Room, include: [RoomSlot] }]
+                }],
+            });
             if (!building) {
                 throw FloorError.BuildingNotFound()
             }
-            const result = await Building.destroy({ where: { id: deleteBuildingRequest.id } });
-            return result
+
+            let hasOccupiedSlot = false;
+
+            for (const floor of building.Floors) {
+                for (const room of floor.Rooms) {
+                    for (const slot of room.RoomSlots) {
+                        if (slot.isOccupied === true) {
+                            hasOccupiedSlot = true;
+                            break;
+                        }
+                    }
+                    if (hasOccupiedSlot) break;
+                }
+                if (hasOccupiedSlot) break;
+            }
+
+            if (hasOccupiedSlot) {
+                throw BuildingError.BuildingHasOccupiedSlots();
+            }
+
+            building.destroy();
+            return "Xóa tòa nhà thành công.";
         } catch (err) {
             throw err;
         }
@@ -97,5 +122,68 @@ const buildingServices = {
             throw err;
         }
     },
+
+    updateBuilding: async (updateBuildingRequest) => {
+        try {
+            const building = await Building.findByPk(updateBuildingRequest.id, {
+                include: [{
+                    model: Floor,
+                    include: [{ model: Room }]
+                }],
+            });
+
+            if (!building) {
+                throw BuildingError.NotFound();
+            }
+            let hasRoom = false;
+
+            for (const floor of building.Floors) {
+                if (floor.Rooms.length > 0) {
+                    hasRoom = true;
+                    break;
+                }
+            }
+
+            if (hasRoom) {
+                throw BuildingError.BuildingHasRooms();
+            }
+
+            await building.update(updateBuildingRequest);
+            if (updateBuildingRequest.numberFloor && updateBuildingRequest.numberFloor !== building.Floors.length) {
+                const currentFloorCount = building.Floors.length;
+                const newFloorCount = updateBuildingRequest.numberFloor;
+
+                if (newFloorCount > currentFloorCount) {
+                    const floorsToAdd = newFloorCount - currentFloorCount;
+                    for (let i = 0; i < floorsToAdd; i++) {
+                        await Floor.create({
+                            buildingId: building.id,
+                            number: currentFloorCount + i + 1
+                        });
+                    }
+                } else {
+                    const floorsToDelete = building.Floors
+                        .filter(floor => floor.number > newFloorCount);
+
+                    // vì bạn đã check hasRoom = false nên chắc chắn không có Room
+                    for (const floor of floorsToDelete) {
+                        await floor.destroy();
+                    }
+                }
+            }
+            if (updateBuildingRequest.roomTypeIds) {
+                const roomTypes = await RoomType.findAll({
+                    where: { id: updateBuildingRequest.roomTypeIds }
+                });
+                if (roomTypes.length !== updateBuildingRequest.roomTypeIds.length) {
+                    throw BuildingError.RoomTypeNotFound();
+                }
+                await building.setRoomTypes(roomTypes);
+            }
+            return building;
+        } catch (err) {
+            throw err;
+        }
+    }
 };
 module.exports = buildingServices;

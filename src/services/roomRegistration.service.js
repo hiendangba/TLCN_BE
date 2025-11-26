@@ -712,7 +712,7 @@ const roomRegistrationServices = {
                     } else {
                         payment.status = "SUCCESS";
                         payment.transId = refundResponse.data.transId;
-                        payment.studentId = registration.Student.id;
+                        payment.studentId = registration.studentId;
                         payment.paidAt = new Date();
                         await payment.save();
                         approvedList.push(registration.id);
@@ -1255,12 +1255,11 @@ const roomRegistrationServices = {
                             } else {
                                 payment.status = "SUCCESS";
                                 payment.transId = refundResponse.data.transId;
-                                payment.studentId = registration.Student.id;
+                                payment.studentId = registration.studentId;;
                                 payment.paidAt = new Date();
                                 await payment.save();
                             }
                         }
-                        // xong hết rồi thì mới thêm vào approvedList
                         approvedList.push(registration.id);
                     }
                 } catch (innerErr) {
