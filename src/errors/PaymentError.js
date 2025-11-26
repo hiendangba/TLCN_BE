@@ -16,7 +16,9 @@ class PaymentError extends AppError {
     static InvalidAmount() {
         return new PaymentError("Số tiền hoàn lại không hợp lệ!.", 401, "InvalidAmount");
     };
-
+    static isPaid() {
+        return new PaymentError("Vui lòng thanh toán hóa đơn tiền phòng trước.", 402, "UNPAID_ROOM_REGISTRATION");
+    }
     static PaymentFailed() {
         return new PaymentError(
             "Thanh toán thất bại",

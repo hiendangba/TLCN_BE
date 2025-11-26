@@ -10,21 +10,14 @@ const {
 const RoomError = require("../errors/RoomError");
 const UserError = require("../errors/UserError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError");
-const {
-    StudentStatus
-} = require("../dto/request/auth.request")
+const { StudentStatus } = require("../dto/request/auth.request")
 const sendMail = require("../utils/mailer")
-const {
-    Op,
-} = require("sequelize");
-const {
-    sequelize
-} = require("../config/database");
+const { Op } = require("sequelize");
+const { sequelize } = require("../config/database");
 const paymentService = require("../services/payment.service");
 require('dotenv').config();
 const PaymentError = require("../errors/PaymentError");
 const momoUtils = require("../utils/momo.util");
-
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
         try {
@@ -427,7 +420,7 @@ const roomRegistrationServices = {
                 },
                 include: [{
                     model: Student,
-                    attributes: ["userId"],
+                    attributes: ["id", "userId"],
                     include: [{
                         model: User,
                         attributes: ["name", "identification"]
@@ -447,14 +440,27 @@ const roomRegistrationServices = {
                 const existing = await RoomRegistration.findOne({
                     where: {
                         studentId: cancelRoomRegistrationRequest.roleId,
-                        status: "CANCELED"
+                        status: "CANCELED",
                     },
+                    include: [{
+                        model: CancellationInfo,
+                    }]
                 });
+
                 if (existing) {
-                    throw RoomRegistrationError.RoomRegistrationAlreadyCanceled();
+                    if (existing.CancellationInfo.refundStatus === 'PENDING') {
+                        throw RoomRegistrationError.RoomRegistrationAlreadyCanceled();
+                    }
+                    else if (existing.CancellationInfo.refundStatus === 'APPROVED') {
+                        throw RoomRegistrationError.RoomRegistrationAlreadyApproved();
+                    }
                 }
 
                 throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+
+            if (paymentService.isPaid(roomRegistration.Student.id) === false) {
+                throw PaymentError.isPaid();
             }
 
             if (new Date(cancelRoomRegistrationRequest.checkoutDate) > roomRegistration.endDate) {
@@ -464,7 +470,6 @@ const roomRegistrationServices = {
             await roomRegistration.update({
                 status: "CANCELED"
             })
-
 
             const refund = monthDifferences * roomRegistration.RoomSlot.Room.monthlyFee;
 
@@ -572,7 +577,8 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal('CASE WHEN `CancellationInfo`.`refundStatus` = "PENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    // [sequelize.literal('CASE WHEN `CancellationInfo`.`refundStatus` = "PENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    [sequelize.literal(`CASE WHEN CancellationInfo.refundStatus = 'PENDING' THEN 0 ELSE 1 END`), 'ASC'],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
@@ -620,11 +626,12 @@ const roomRegistrationServices = {
                     },],
                 },
                 {
-                    model: CancellationInfo,
+                    model: CancellationInfo
                 }
                 ],
                 transaction,
             });
+
             const approvedList = [];
             const skippedList = [];
             const emailTasks = [];
@@ -1518,7 +1525,8 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = "EXTENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    // [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = "EXTENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    [sequelize.literal("CASE WHEN `RoomRegistration`.`status` = 'EXTENDING' THEN 0 ELSE 1 END"), 'ASC'],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
@@ -1677,7 +1685,6 @@ const roomRegistrationServices = {
                             );
                         }
 
-                        //tạo payment khi thiếu
                         if (monthlyFeeDifference > 0) {
                             const paymentData = {
                                 content: `Thanh toán chi phí gia giạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,

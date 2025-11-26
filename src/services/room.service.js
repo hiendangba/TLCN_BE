@@ -1,4 +1,4 @@
-const { Room, RoomRegistration, RoomSlot, RoomType, Floor, Building, Student, User } = require("../models");
+const { Room, RoomRegistration, RoomSlot, RoomType, Floor, Building, Student, User, CancellationInfo } = require("../models");
 const floorServices = require("./floor.service");
 const RoomError = require("../errors/RoomError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError")
@@ -122,7 +122,7 @@ const roomServices = {
             const roomRegistration = await RoomRegistration.findOne({
                 where: {
                     studentId: roleId,
-                    status: ["CONFIRMED", "MOVE_PENDING", "EXTENDING","CANCELED"],
+                    status: ["CONFIRMED", "MOVE_PENDING", "EXTENDING", "CANCELED"],
                     endDate: {
                         [Op.gt]: new Date()
                     }
@@ -136,8 +136,12 @@ const roomServices = {
                                 model: User,
                                 attributes: ['name', 'identification']
                             }
-                        ]
+                        ],
+                    },
+                    {
+                        model: CancellationInfo,
                     }
+
                 ],
                 order: [["createdAt", "DESC"]]
             });
