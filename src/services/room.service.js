@@ -34,11 +34,11 @@ const roomServices = {
 
     deleteRoomType: async (roomTypeId, adminId) => {
         const transaction = await sequelize.transaction();
-        try{ 
+        try {
             const admin = await Admin.findByPk(adminId, { transaction });
             if (!admin) throw UserError.AdminNotFound();
 
-            const roomType = await RoomType.findByPk(roomTypeId, { 
+            const roomType = await RoomType.findByPk(roomTypeId, {
                 transaction,
                 lock: transaction.LOCK.UPDATE
             });
@@ -59,8 +59,7 @@ const roomServices = {
             await transaction.commit();
             return roomType;
         }
-        catch(err){
-            console.log(err);
+        catch (err) {
             if (!transaction.finished) {
                 await transaction.rollback();
             }
@@ -70,13 +69,13 @@ const roomServices = {
 
     updateRoomType: async (data, adminId, roomTypeId) => {
         const transaction = await sequelize.transaction();
-        try{
+        try {
             const { type, amenities } = data;
 
             const admin = await Admin.findByPk(adminId, { transaction });
             if (!admin) throw UserError.AdminNotFound();
 
-            const roomType = await RoomType.findByPk(roomTypeId, { 
+            const roomType = await RoomType.findByPk(roomTypeId, {
                 transaction,
                 lock: transaction.LOCK.UPDATE
             });
@@ -90,7 +89,7 @@ const roomServices = {
             await transaction.commit();
             return roomType;
 
-        }catch(err){
+        } catch (err) {
             console.log(err);
             if (!transaction.finished) {
                 await transaction.rollback();
@@ -188,7 +187,7 @@ const roomServices = {
             if (!existingRoom) throw RoomError.InvalidUpdateRoom();
 
             // Kiểm tra roomType có tồn tại hay không
-            if (roomTypeId){
+            if (roomTypeId) {
                 const newRoomType = await RoomType.findByPk(roomTypeId, {
                     transaction
                 });
@@ -234,7 +233,7 @@ const roomServices = {
                     new RejectRoomRegistrationRequest({
                         ids: registrationIds,
                         reason: "Hiện tại phòng đang được chỉnh sửa"
-                     })
+                    })
                 );
                 console.log("Data trả về khi xóa", response);
             }
@@ -253,7 +252,7 @@ const roomServices = {
                 }
                 await RoomSlot.bulkCreate(newSlots, { transaction });
             }
-            else{
+            else {
                 // Trả lại trạng thái phòng bằng 0 như ban đầu
                 await RoomSlot.update(
                     { isOccupied: 0 },
@@ -274,7 +273,7 @@ const roomServices = {
     },
 
 
-    deleteRoom: async( roomId, adminId ) => {
+    deleteRoom: async (roomId, adminId) => {
         const transaction = await sequelize.transaction();
         try {
             // Kiểm tra admin trước 
@@ -313,7 +312,7 @@ const roomServices = {
                 isOccupied: 1
             }, {
                 transaction
-            }))); 
+            })));
 
             // Hủy tất các các đơn đang đăng ký vào phòng này, không cho các admin khác duyệt
             const registrationIds = await RoomRegistration.findAll({
@@ -329,17 +328,17 @@ const roomServices = {
                     new RejectRoomRegistrationRequest({
                         ids: registrationIds,
                         reason: "Hiện tại phòng đang không còn hoạt động"
-                     })
+                    })
                 );
                 console.log("Data trả về khi xóa", response);
             }
 
-        
-            await existingRoom.destroy({transaction});
+
+            await existingRoom.destroy({ transaction });
             await transaction.commit();
             return existingRoom;
         }
-        catch(err){
+        catch (err) {
             console.log(err);
             await transaction.rollback();
             throw err;
@@ -352,20 +351,20 @@ const roomServices = {
             const floorIds = floors.map(floor => floor.id);
             const rooms = await Room.findAll({
                 include: [{
-                        model: RoomType,
-                        where: {
-                            id: getRoomRequest.roomTypeId
-                        },
-                        attributes: ['type', 'amenities']
+                    model: RoomType,
+                    where: {
+                        id: getRoomRequest.roomTypeId
                     },
-                    {
-                        model: Floor,
-                        attributes: ['number', ]
-                    },
-                    {
-                        model: RoomSlot,
-                        attributes: ["id", 'slotNumber', 'isOccupied']
-                    }
+                    attributes: ['type', 'amenities']
+                },
+                {
+                    model: Floor,
+                    attributes: ['number',]
+                },
+                {
+                    model: RoomSlot,
+                    attributes: ["id", 'slotNumber', 'isOccupied']
+                }
                 ],
                 where: {
                     floorId: floorIds,
@@ -421,13 +420,13 @@ const roomServices = {
             const roomSlot = await RoomSlot.findByPk(roomRegistration.roomSlotId)
             const room = await Room.findByPk(roomSlot.roomId, {
                 include: [{
-                        model: RoomSlot,
-                        attributes: ['slotNumber', 'isOccupied'],
-                    },
-                    {
-                        model: RoomType,
-                        attributes: ['type', 'amenities']
-                    }
+                    model: RoomSlot,
+                    attributes: ['slotNumber', 'isOccupied'],
+                },
+                {
+                    model: RoomType,
+                    attributes: ['type', 'amenities']
+                }
                 ]
             });
             return {
@@ -453,25 +452,25 @@ const roomServices = {
                     }
                 },
                 include: [{
-                        model: Student,
-                        attributes: ["userId"],
+                    model: Student,
+                    attributes: ["userId"],
+                    include: [{
+                        model: User,
+                        attributes: ["name", "identification"]
+                    }]
+                },
+                {
+                    model: RoomSlot,
+                    attributes: ["slotNumber", "isOccupied"],
+                    include: [{
+                        model: Room,
+                        attributes: ["roomNumber", "capacity", "monthlyFee"],
                         include: [{
-                            model: User,
-                            attributes: ["name", "identification"]
+                            model: RoomType,
+                            attributes: ["type", "amenities"]
                         }]
-                    },
-                    {
-                        model: RoomSlot,
-                        attributes: ["slotNumber", "isOccupied"],
-                        include: [{
-                            model: Room,
-                            attributes: ["roomNumber", "capacity", "monthlyFee"],
-                            include: [{
-                                model: RoomType,
-                                attributes: ["type", "amenities"]
-                            }]
-                        }]
-                    }
+                    }]
+                }
                 ],
                 order: [
                     ["endDate", "DESC"],
@@ -506,17 +505,17 @@ const roomServices = {
                     ...floorCondition,
                 },
                 include: [{
-                        model: RoomType,
-                        attributes: ['type', 'amenities']
-                    },
-                    {
-                        model: RoomSlot,
-                        attributes: ["id", "slotNumber", "isOccupied"]
-                    },
-                    {
-                        model: Floor,
-                        attributes: ["number"]
-                    }
+                    model: RoomType,
+                    attributes: ['type', 'amenities']
+                },
+                {
+                    model: RoomSlot,
+                    attributes: ["id", "slotNumber", "isOccupied"]
+                },
+                {
+                    model: Floor,
+                    attributes: ["number"]
+                }
                 ],
                 order: [
                     ['roomNumber', 'ASC'],

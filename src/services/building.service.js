@@ -70,7 +70,7 @@ const buildingServices = {
             }
 
             building.destroy();
-            return "Xóa tòa nhà thành công.";
+            return { message: "Xóa tòa nhà thành công." };
         } catch (err) {
             throw err;
         }
@@ -98,25 +98,25 @@ const buildingServices = {
 
     getBuilding: async () => {
         try {
+            // 1. Lấy tất cả building + số tầng
             const buildings = await Building.findAll({
-                order: [['name', 'ASC']],
                 attributes: {
                     include: [
-                        [
-                            sequelize.fn("COUNT", sequelize.col("Floors.id")),
-                            "numberFloor"
-                        ]
+                        [sequelize.fn("COUNT", sequelize.col("Floors.id")), "numberFloor"]
                     ]
                 },
-                include: [
-                    {
-                        model: Floor,
-                        attributes: [],
-                    }
-                ],
-                group: ["Building.id"],
-                raw: true
+                include: [{ model: Floor, attributes: [] }],
+                group: ['Building.id'],
+                order: [['name', 'ASC']],
+                raw: false
             });
+
+            // 2. Lấy RoomTypes cho từng building
+            for (const b of buildings) {
+                const roomTypes = await b.getRoomTypes({ attributes: ['id', 'type', 'amenities'] });
+                b.dataValues.roomTypes = roomTypes;
+            }
+
             return buildings;
         } catch (err) {
             throw err;
@@ -180,7 +180,7 @@ const buildingServices = {
                 }
                 await building.setRoomTypes(roomTypes);
             }
-            return building;
+            return { message: "Sửa tòa nhà thành công." };
         } catch (err) {
             throw err;
         }
