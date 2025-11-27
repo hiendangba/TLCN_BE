@@ -1,3 +1,4 @@
+const { content } = require("googleapis/build/src/apis/content");
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
 const {
@@ -7,18 +8,32 @@ const {
 } = require("../models");
 require('dotenv').config();
 const momoUtils = require("../utils/momo.util");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 
 const paymentService = {
 
-    getPayment: async (getPaymentRequest) => {
+    getPayment: async (getPaymentRequest, roleId, role) => {
         try{
             const { page, limit, keyword, userId, type } = getPaymentRequest;
             const offset = (page -1) * limit;
 
             let searchCondition = {};
 
-            if (userId) {
+            console.log(userId);
+            console.log("role", role);
+            console.log(roleId);
+
+
+            if (role === "student") {
+                if (!userId || userId === "") {
+                    throw PaymentError.InvoiceListNotBelongToYou();
+                }
+                if (roleId !== userId) {
+                    throw PaymentError.InvoiceListNotBelongToYou();
+                }
+            }
+
+            if (userId){
                 const student = await Student.findByPk(userId);
                 if (!student) throw UserError.InvalidUser();
                 searchCondition.studentId = userId;
@@ -35,7 +50,14 @@ const paymentService = {
                         status: {
                             [Op.like]: `%${keyword}%`
                         }
-                    }
+                    },
+                    // Tìm theo ngày paidAt
+                    sequelize.where(
+                        sequelize.fn("DATE_FORMAT", sequelize.col("paidAt"), "%d/%m/%Y"),
+                        {
+                            [Op.like]: `%${keyword}%`
+                        }
+                    )
                 ];
             }
 
@@ -47,6 +69,11 @@ const paymentService = {
 
             const payments = await Payment.findAndCountAll({
                 where: searchCondition,
+                include:[
+                    {
+                        model: Student,
+                    }
+                ],
                 offset,
                 limit,
                 order: [
@@ -65,7 +92,7 @@ const paymentService = {
         }
     },
 
-    getPaymentUrl: async (userId, paymentRequest) => {
+    getPaymentUrl: async (userId,  paymentRequest) => {
         try {
             const {
                 paymentId
@@ -121,31 +148,45 @@ const paymentService = {
                 amount
             } = momoResponse;
             const paymentId = orderId.split("_")[0];
-            const studentId = orderId.split("_")[2];
 
             // Tìm payment có trong DB
             const payment = await Payment.findByPk(paymentId);
             if (!payment) {
+                // Có thể gọi hàm hoàn tiền ở đây
                 throw PaymentError.PaymentNotFound();
-            }
-
-            // Kiểm tra studentId
-            const student = await Student.findByPk(studentId);
-            if (!student) {
-                throw UserError.InvalidUser();
             }
 
             if (String(resultCode) !== "0" || Number(amount) !== Number(payment.amount)){
                 payment.status = "FAILED";
                 await payment.save();
+                // Có thể gọi hàm hoàn tiền ở đây
                 throw PaymentError.PaymentFailed();
             }
 
             payment.paidAt = new Date(Number(responseTime));
             payment.status = "SUCCESS";
-            payment.studentId = studentId;
             payment.transId = momoResponse.transId;
             await payment.save();
+
+            // Nếu như trạng thái ở đây là electricity or water thì phải lọc để cập nhật lại à
+           if (payment.type === "ELECTRICITY" || payment.type === "WATER") {
+
+                await Payment.update(
+                    {
+                        paidAt: new Date(Number(responseTime)),
+                        status: "SUCCESS",
+                        transId: momoResponse.transId,
+                    },
+                    {
+                        where: {
+                            content: payment.content,
+                            type: payment.type,
+                            status: "PENDING"
+                        }
+                    }
+                );
+            }
+
             return payment;
 
         } catch (err) {
@@ -198,6 +239,7 @@ const paymentService = {
                         currency: "VND",
                         transactionRef: null,
                         paidAt: null,
+                        ...(p.studentId ? { studentId: p.studentId } : {}),
                         status: "PENDING",
                     }, {
                         transaction: t

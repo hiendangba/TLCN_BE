@@ -14,6 +14,7 @@ class PaymentReponse {
         this.currency = data.currency;
         this.paidAt = data.paidAt;
         this.status = data.status;
+        this.studentName = data.Student.name;
     }
 }
 
