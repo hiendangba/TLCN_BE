@@ -302,12 +302,20 @@ const numberPlateServices = {
         }
     },
 
-
     recognizeNumberPlate: async (recognizeNumberPlateRequest, file) => {
         try {
             const recognizedNumber = await recognizePlate(file.buffer);
+            console.log(recognizedNumber);
             const numberPlate = await NumberPlate.findOne({
-                where: { studentId: recognizeNumberPlateRequest.studentId, number: recognizedNumber, status: 'approved' },
+                where: {
+                    status: 'approved',
+                    [Op.and]: [
+                        sequelize.where(
+                            sequelize.fn("LOWER", sequelize.col("number")),
+                            sequelize.fn("LOWER", recognizedNumber)
+                        )
+                    ]
+                },
                 include: [
                     {
                         model: Student,
@@ -326,12 +334,14 @@ const numberPlateServices = {
                 throw NumberPlateError.RecognizeNotMatch();
             }
 
+            console.log(numberPlate.toJSON());
             return numberPlate;
 
         } catch (err) {
             throw err;
         }
     },
+
 
 };
 module.exports = numberPlateServices;

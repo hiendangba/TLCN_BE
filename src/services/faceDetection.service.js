@@ -18,7 +18,6 @@ const MODELS_PATH = path.join(__dirname, '../model_AI/face-api-models');
 
 let modelsLoaded = false;
 
-// Load các model face-api
 export async function loadModels() {
     if (modelsLoaded) return; // nếu đã load rồi thì bỏ qua
     await Promise.all([
@@ -29,7 +28,6 @@ export async function loadModels() {
     modelsLoaded = true; // đánh dấu đã load xong
 }
 
-// Load ảnh từ URL
 async function loadImageUrl(imageUrl) {
     const res = await fetch(imageUrl);
     const buffer = Buffer.from(await res.arrayBuffer());
@@ -48,7 +46,6 @@ export async function createLabeledDescriptors(users) {
     }));
 }
 
-// Nhận diện user từ ảnh mới
 export async function recognizeFace(imageUrl, labeledDescriptors, threshold = 0.6) {
     const img = await bufferToImage(imageUrl);
 
@@ -67,7 +64,6 @@ export async function recognizeFace(imageUrl, labeledDescriptors, threshold = 0.
     });
 }
 
-// Kiểm tra có khuôn mặt không
 export async function hasFace(imageUrl) {
     const img = await loadImageUrl(imageUrl);
     const detections = await faceApi
