@@ -1,4 +1,4 @@
-const { Room, RoomRegistration, RoomSlot, RoomType, Floor, Building, Student, User, CancellationInfo } = require("../models");
+const { Room, RoomRegistration, RoomSlot, RoomType, Floor, Building, Student, User, CancellationInfo, Admin } = require("../models");
 const floorServices = require("./floor.service");
 const RoomError = require("../errors/RoomError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError")
@@ -6,8 +6,9 @@ const FloorError = require("../errors/FloorError");
 const UserError = require("../errors/UserError")
 const {
     Op,
-    where
 } = require("sequelize");
+const { sequelize } = require("../config/database");
+
 const {
     RejectRoomRegistrationRequest
 } = require("../dto/request/roomRegistration.request");

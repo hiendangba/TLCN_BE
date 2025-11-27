@@ -150,32 +150,32 @@ module.exports = {
       },
     ];
 
-    // // 20 sinh viên mẫu
-    // const studentNames = [
-    //   'Nguyễn Thị Thu Hà', 'Lê Văn Long', 'Phạm Thị Kim Ngân', 'Vũ Quốc Huy', 'Trần Anh Dũng',
-    //   'Ngô Minh Hào', 'Bùi Ngọc Trâm', 'Phạm Văn Hoàng', 'Nguyễn Tấn Phát', 'Trương Mỹ Duyên',
-    //   'Lâm Quốc Bảo', 'Lê Hoàng Anh', 'Nguyễn Đức Minh', 'Phan Thị Ngọc Bích', 'Võ Thành Nhân',
-    //   'Đặng Quang Huy', 'Trịnh Hồng Nhung', 'Nguyễn Quốc Khánh', 'Phạm Văn Tuấn', 'Lưu Thị Lan'
-    // ];
+    // 20 sinh viên mẫu
+    const studentNames = [
+      'Nguyễn Thị Thu Hà', 'Lê Văn Long', 'Phạm Thị Kim Ngân', 'Vũ Quốc Huy', 'Trần Anh Dũng',
+      'Ngô Minh Hào', 'Bùi Ngọc Trâm', 'Phạm Văn Hoàng', 'Nguyễn Tấn Phát', 'Trương Mỹ Duyên',
+      'Lâm Quốc Bảo', 'Lê Hoàng Anh', 'Nguyễn Đức Minh', 'Phan Thị Ngọc Bích', 'Võ Thành Nhân',
+      'Đặng Quang Huy', 'Trịnh Hồng Nhung', 'Nguyễn Quốc Khánh', 'Phạm Văn Tuấn', 'Lưu Thị Lan'
+    ];
 
-    // studentNames.forEach((name, index) => {
-    //   users.push({
-    //     id: uuidv4(),
-    //     name,
-    //     identification: `079203015${(100 + index).toString().padStart(3, '0')}`,
-    //     gender: index % 2 === 0 ? 'female' : 'male',
-    //     email: `student${index + 1}@student.hcmute.edu.vn`,
-    //     phone: `090${(1000000 + index).toString().slice(0, 7)}`,
-    //     dob: new Date(`200${3 + (index % 5)}-${(index % 12) + 1}-15`),
-    //     nation: 'Việt Nam',
-    //     region: 'Không',
-    //     address: `Khu phố ${index + 1}, TP. Thủ Đức, TP.HCM`,
-    //     password: passwordHash,
-    //     status: 'REGISTERED',
-    //     createdAt: new Date(),
-    //     updatedAt: new Date(),
-    //   });
-    // });
+    studentNames.forEach((name, index) => {
+      users.push({
+        id: uuidv4(),
+        name,
+        identification: `079203015${(100 + index).toString().padStart(3, '0')}`,
+        gender: index % 2 === 0 ? 'female' : 'male',
+        email: `student${index + 1}@student.hcmute.edu.vn`,
+        phone: `090${(1000000 + index).toString().slice(0, 7)}`,
+        dob: new Date(`200${3 + (index % 5)}-${(index % 12) + 1}-15`),
+        nation: 'Việt Nam',
+        region: 'Không',
+        address: `Khu phố ${index + 1}, TP. Thủ Đức, TP.HCM`,
+        password: passwordHash,
+        status: 'REGISTERED',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    });
 
     // 🧩 Thêm toàn bộ user
     try {
@@ -199,23 +199,22 @@ module.exports = {
       console.error('❌ Error inserting Admin:', error);
     }
 
-    // 🎓 Students: còn lại từ users[1]
-    // try {
-    //   const students = users.slice(1).map((user, index) => ({
-    //     id: uuidv4(),
-    //     userId: user.id,
-    //     mssv: `22110${320 + index}`,
-    //     school: 'Đại học Sư phạm Kỹ thuật TP.HCM',
-    //     createdAt: new Date(),
-    //     updatedAt: new Date(),
-    //   }));
+    try {
+      const students = users.slice(1).map((user, index) => ({
+        id: uuidv4(),
+        userId: user.id,
+        mssv: `22110${320 + index}`,
+        school: 'Đại học Sư phạm Kỹ thuật TP.HCM',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
 
-    //   await queryInterface.bulkInsert('Students', students);
-    //   console.log('✅ Students inserted successfully');
-    // } catch (error) {
-    //   console.error('❌ Error inserting Students:', error);
-    // }
-
+      await queryInterface.bulkInsert('Students', students);
+      console.log('✅ Students inserted successfully');
+    } catch (error) {
+      console.error('❌ Error inserting Students:', error);
+    }
+    
 
     // try {
     //   Lấy lại tất cả roomSlots sau khi đã insert
@@ -244,16 +243,15 @@ module.exports = {
 
 
   async down(queryInterface, Sequelize) {
-    // await queryInterface.bulkDelete('Rooms', null, {});
-    // await queryInterface.bulkDelete('Floors', null, {});
-    // await queryInterface.bulkDelete('BuildingRoomTypes', null, {});
-    // await queryInterface.bulkDelete('Buildings', null, {});
-    // await queryInterface.bulkDelete('RoomTypes', null, {});
-    // await queryInterface.bulkDelete('RoomSlots', null, {});
-    // await queryInterface.bulkDelete('Students');
+    await queryInterface.bulkDelete('Rooms', null, {});
+    await queryInterface.bulkDelete('Floors', null, {});
+    await queryInterface.bulkDelete('BuildingRoomTypes', null, {});
+    await queryInterface.bulkDelete('Buildings', null, {});
+    await queryInterface.bulkDelete('RoomTypes', null, {});
+    await queryInterface.bulkDelete('RoomSlots', null, {});
+    await queryInterface.bulkDelete('Students');
     await queryInterface.bulkDelete('Users');
     await queryInterface.bulkDelete('Admins');
-
-    // await queryInterface.bulkDelete('RoomRegistrations')
+    await queryInterface.bulkDelete('RoomRegistrations')
   }
 };
