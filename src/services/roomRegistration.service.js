@@ -279,7 +279,7 @@ const roomRegistrationServices = {
                 const endDate = new Date(item.endDate);
                 const amount = roomFee * duration;
 
-                const content = `Thanh toán tiền phòng ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
+                const content = `Thanh toán tiền phòng ${item.RoomSlot.Room.roomNumber} từ ${startDate.toLocaleDateString("vi-VN")} đến ${endDate.toLocaleDateString("vi-VN")}`;
 
                 return {
                     amount: amount,
@@ -697,7 +697,7 @@ const roomRegistrationServices = {
                     // ------------------------------------
 
                     const paymentData = {
-                        content: `Hoàn tiền hủy phòng ngày ${registration.CancellationInfo.checkoutDate}`,
+                        content: `Hoàn tiền hủy phòng ${registration.RoomSlot.Room.roomNumber} ngày ${registration.CancellationInfo.checkoutDate}`,
                         type: "REFUND_CANCEL",
                         amount: Number(registration.CancellationInfo.amount),
                     };
@@ -1694,7 +1694,7 @@ const roomRegistrationServices = {
 
                         if (monthlyFeeDifference > 0) {
                             const paymentData = {
-                                content: `Thanh toán chi phí gia hạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
+                                content: `Thanh toán chi phí gia hạn phòng ${registration.RoomSlot.Room.roomNumber} từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
                                 type: "ROOM",
                                 amount: Number(monthlyFeeDifference),
                                 studentId: registration.Student.id
