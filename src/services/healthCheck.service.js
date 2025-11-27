@@ -292,6 +292,7 @@ const healthCheckService = {
                     content: `${existingHealthCheck.title}` ,
                     type: "HEALTHCHECK",
                     amount: Number(existingHealthCheck.price),
+                    studentId: student.id 
                 };
                 await paymentService.createPayment(payment);
             }

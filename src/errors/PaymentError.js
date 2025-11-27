@@ -17,6 +17,14 @@ class PaymentError extends AppError {
         return new PaymentError("Số tiền hoàn lại không hợp lệ!.", 401, "InvalidAmount");
     };
 
+    static InvoiceListNotBelongToYou() {
+        return new PaymentError(
+            "Bạn không có quyền xem danh sách hóa đơn này!",
+            403,
+            "InvoiceListNotBelongToYou"
+        );
+    };
+
     static PaymentFailed() {
         return new PaymentError(
             "Thanh toán thất bại",

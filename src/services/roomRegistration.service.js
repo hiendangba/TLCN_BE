@@ -142,7 +142,7 @@ const roomRegistrationServices = {
                 include: [{
                     model: Student,
                     as: "Student",
-                    attributes: ["userId"],
+                    attributes: ["userId", "id"],
                     include: [{
                         model: User,
                         attributes: ["id", "name", "email"],
@@ -291,7 +291,8 @@ const roomRegistrationServices = {
                 return {
                     amount: amount,
                     type: "ROOM",
-                    content: content
+                    content: content,
+                    studentId: item.Student.id
                 }
             })
 
@@ -1226,6 +1227,7 @@ const roomRegistrationServices = {
                                 amount: Number(monthlyFeeDifference),
                                 type: "ROOM",
                                 content: `Thanh toán chi phí phát sinh do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`,
+                                studentId: registration.Student.id
                             }
                             await paymentService.createPayment(paymentData);
                         }
@@ -1687,7 +1689,8 @@ const roomRegistrationServices = {
                             const paymentData = {
                                 content: `Thanh toán chi phí gia hạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,
                                 type: "ROOM",
-                                amount: Number(monthlyFeeDifference)
+                                amount: Number(monthlyFeeDifference),
+                                studentId: registration.Student.id
                             }
 
                             await paymentService.createPayment(paymentData);
