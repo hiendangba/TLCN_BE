@@ -11,8 +11,9 @@ const { sequelize } = require('../config/database');
 const generateOTP = require("../utils/generateOTP")
 const { nanoid } = require('nanoid');
 const sendMail = require('../utils/mailer')
+const { Op } = require("sequelize");
+const { recognizeFace, createLabeledDescriptors } = require('./faceDetection.service');
 let transaction;
-
 const authServices = {
 
     register: async (registerAccountRequest) => {
@@ -170,6 +171,83 @@ const authServices = {
                 7 * 24 * 60 * 60 // 7 ngày
             );
             return { id: user.id, access_token, refresh_token };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    loginFace: async (file) => {
+        try {
+            const users = await User.findAll({
+                where: {
+                    avatar: { [Op.ne]: null },
+                    status: { [Op.in]: [StudentStatus.APPROVED_CHANGED, StudentStatus.APPROVED_NOT_CHANGED] },
+                },
+                attributes: ['id', 'avatar']
+            });
+            
+            const labeledDescriptors = await createLabeledDescriptors(users);
+            console.log(4567)
+            if (!labeledDescriptors.length) {
+                throw AuthError.NoDataRecognizeFace();
+            }
+            console.log(789)
+            const faceMatches = await recognizeFace(file.buffer, labeledDescriptors);
+            console.log(101112)
+            const firstFace = faceMatches?.[0];
+            if (!firstFace || !firstFace.userId) {
+                throw AuthError.FaceNotRecognized();
+            }
+
+            const userId = firstFace.userId;
+
+            const isStudent = await Student.findOne({
+                where: { userId: userId },
+            });
+
+            const isAdmin = await Admin.findOne({
+                where: { userId: userId },
+            });
+
+
+            let role, roleId;
+            if (isStudent) {
+                role = "student";
+                roleId = isStudent.id;
+            }
+
+            if (isAdmin) {
+                role = "admin";
+                roleId = isAdmin.id;
+            }
+
+            const access_token = jwt.sign(
+                {
+                    id: userId,
+                    role: role,
+                    roleId: roleId
+                },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES }
+            );
+
+            const refresh_token = jwt.sign(
+                {
+                    id: userId,
+                    role: role,
+                    roleId: roleId
+                },
+                process.env.JWT_REFRESH_SECRET,
+                { expiresIn: process.env.JWT_REFRESH_EXPIRES }
+            );
+
+            await redisClient.set(
+                `refresh:${userId}`,
+                refresh_token,
+                "EX",
+                7 * 24 * 60 * 60 // 7 ngày
+            );
+            return { id: userId, access_token, refresh_token };
         } catch (err) {
             throw err;
         }

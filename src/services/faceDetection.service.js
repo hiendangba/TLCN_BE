@@ -1,58 +1,76 @@
-const path = require('path');
-const ort = require('onnxruntime-node');
-const { createCanvas, loadImage } = require('canvas');
+import * as faceApi from 'face-api.js';
+import canvas from 'canvas';
+import fetch from 'node-fetch';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const MODEL_PATH = path.join(__dirname, '../model_AI/face_detection_yunet_2023mar.onnx');
+const { Canvas, Image, ImageData, loadImage } = canvas;
 
-async function detectFace(imagePath, threshold = 0.8) {
-    const session = await ort.InferenceSession.create(MODEL_PATH);
-    const img = await loadImage(imagePath);
-
-    const WIDTH = 640;
-    const HEIGHT = 640;
-    const canvas = createCanvas(WIDTH, HEIGHT);
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, WIDTH, HEIGHT);
-
-    const imageData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
-    const data = Float32Array.from(imageData.data).filter((_, i) => i % 4 !== 3);
-
-    const chwData = new Float32Array(3 * HEIGHT * WIDTH);
-    for (let i = 0; i < HEIGHT * WIDTH; i++) {
-        chwData[i] = data[i * 3];
-        chwData[i + HEIGHT * WIDTH] = data[i * 3 + 1];
-        chwData[i + 2 * HEIGHT * WIDTH] = data[i * 3 + 2];
-    }
-
-    const tensor = new ort.Tensor('float32', chwData, [1, 3, HEIGHT, WIDTH]);
-    const feeds = { input: tensor };
-    const results = await session.run(feeds);
-
-    const bbox = results['bbox_32'].data; // [x, y, w, h]
-    const obj = results['obj_32'].data;   // score object
-    const cls = results['cls_32'].data;   // score class
-
-    let bestFace = null;
-    let bestScore = 0;
-
-    for (let i = 0; i < obj.length; i++) {
-        const score = obj[i] * cls[i];
-        if (score > bestScore) {
-            bestScore = score;
-            bestFace = {
-                x1: bbox[i * 4],
-                y1: bbox[i * 4 + 1],
-                x2: bbox[i * 4 + 2],
-                y2: bbox[i * 4 + 3],
-                score
-            };
-        }
-    }
-    let faces = [];
-    if (bestScore > threshold) {
-        faces.push(bestFace);
-    }
-    return faces;
+async function bufferToImage(buffer) {
+    return await loadImage(buffer);
 }
 
-module.exports = { detectFace };
+faceApi.env.monkeyPatch({ Canvas, Image, ImageData });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const MODELS_PATH = path.join(__dirname, '../model_AI/face-api-models');
+
+let modelsLoaded = false;
+
+// Load các model face-api
+export async function loadModels() {
+    if (modelsLoaded) return; // nếu đã load rồi thì bỏ qua
+    await Promise.all([
+        faceApi.nets.tinyFaceDetector.loadFromDisk(MODELS_PATH),
+        faceApi.nets.faceLandmark68Net.loadFromDisk(MODELS_PATH),
+        faceApi.nets.faceRecognitionNet.loadFromDisk(MODELS_PATH)
+    ]);
+    modelsLoaded = true; // đánh dấu đã load xong
+}
+
+// Load ảnh từ URL
+async function loadImageUrl(imageUrl) {
+    const res = await fetch(imageUrl);
+    const buffer = Buffer.from(await res.arrayBuffer());
+    return canvas.loadImage(buffer);
+}
+
+export async function createLabeledDescriptors(users) {
+    console.log(123123)
+    return Promise.all(users.map(async (user) => {
+        const img = await loadImage(user.avatar);
+        const detection = await faceApi
+            .detectSingleFace(img, new faceApi.TinyFaceDetectorOptions({ inputSize: 320 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+        return new faceApi.LabeledFaceDescriptors(user.id.toString(), [detection.descriptor]);
+    }));
+}
+
+// Nhận diện user từ ảnh mới
+export async function recognizeFace(imageUrl, labeledDescriptors, threshold = 0.6) {
+    const img = await bufferToImage(imageUrl);
+
+    const detections = await faceApi
+        .detectAllFaces(img, new faceApi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+    if (!detections.length)
+        return null;
+    const faceMatcher = new faceApi.FaceMatcher(labeledDescriptors, threshold);
+    return detections.map(d => {
+        const bestMatch = faceMatcher.findBestMatch(d.descriptor);
+        return {
+            userId: bestMatch.label === 'unknown' ? null : bestMatch.label
+        };
+    });
+}
+
+// Kiểm tra có khuôn mặt không
+export async function hasFace(imageUrl) {
+    const img = await loadImageUrl(imageUrl);
+    const detections = await faceApi
+        .detectAllFaces(img, new faceApi.TinyFaceDetectorOptions({ inputSize: 320 }));
+    return detections.length > 0;
+}

@@ -19,6 +19,12 @@ class AuthError extends AppError {
     static IsAdmin() {
         return new AuthError("Bạn phải là admin.", 403, "NOT_ADMIN")
     }
+    static FaceNotRecognized() {
+        return new AuthError("Nhận diện khuôn mặt thất bại.", 401, "FACE_NOT_RECOGNIZED");
+    }
+    static NoDataRecognizeFace() {
+        return new AuthError("Không có dữ liệu khuôn mặt để nhận diện", 404, "NO_DATA_RECOGNIZE_FACE");
+    }
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
     }
