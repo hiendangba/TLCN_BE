@@ -1,4 +1,6 @@
-const { content } = require("googleapis/build/src/apis/content");
+const {
+    content
+} = require("googleapis/build/src/apis/content");
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
 const {
@@ -8,40 +10,59 @@ const {
 } = require("../models");
 require('dotenv').config();
 const momoUtils = require("../utils/momo.util");
-const { Op, where } = require("sequelize");
+const {
+    Op,
+    where
+} = require("sequelize");
 
 const paymentService = {
 
     getPayment: async (getPaymentRequest, roleId, role) => {
-        try{
-            const { page, limit, keyword, userId, type } = getPaymentRequest;
-            const offset = (page -1) * limit;
+        try {
+            const {
+                page,
+                limit,
+                keyword,
+                userId,
+                type
+            } = getPaymentRequest;
+            const offset = (page - 1) * limit;
 
             let searchCondition = {};
 
-            console.log(userId);
-            console.log("role", role);
-            console.log(roleId);
+            let student = null;
 
-
+            // Nếu là student -> phải kiểm tra hợp lệ
             if (role === "student") {
-                if (!userId || userId === "") {
+                if (!userId) throw PaymentError.InvoiceListNotBelongToYou();
+
+                student = await Student.findOne({
+                    where: {
+                        userId
+                    }
+                });
+                if (!student) throw UserError.InvalidUser();
+
+                if (roleId !== student.id) {
                     throw PaymentError.InvoiceListNotBelongToYou();
                 }
-                if (roleId !== userId) {
-                    throw PaymentError.InvoiceListNotBelongToYou();
-                }
+
+                // Student chỉ được xem của chính mình
+                searchCondition.studentId = student.id;
             }
 
-            if (userId){
-                const student = await Student.findByPk(userId);
-                if (!student) throw UserError.InvalidUser();
-                searchCondition.studentId = userId;
+            // Nếu là admin hoặc role khác -> có userId thì tự động lọc theo studentId
+            else if (userId) {
+                student = await Student.findOne({
+                    where: {
+                        userId
+                    }
+                });
+                if (student) searchCondition.studentId = student.id;
             }
 
             if (keyword) {
-                searchCondition[Op.or] = [
-                    {
+                searchCondition[Op.or] = [{
                         content: {
                             [Op.like]: `%${keyword}%`
                         }
@@ -53,8 +74,7 @@ const paymentService = {
                     },
                     // Tìm theo ngày paidAt
                     sequelize.where(
-                        sequelize.fn("DATE_FORMAT", sequelize.col("paidAt"), "%d/%m/%Y"),
-                        {
+                        sequelize.fn("DATE_FORMAT", sequelize.col("paidAt"), "%d/%m/%Y"), {
                             [Op.like]: `%${keyword}%`
                         }
                     )
@@ -69,11 +89,9 @@ const paymentService = {
 
             const payments = await Payment.findAndCountAll({
                 where: searchCondition,
-                include:[
-                    {
-                        model: Student,
-                    }
-                ],
+                include: [{
+                    model: Student,
+                }],
                 offset,
                 limit,
                 order: [
@@ -85,14 +103,13 @@ const paymentService = {
                 totalItems: payments.count,
                 response: payments.rows,
             };
-        }
-        catch(err){
+        } catch (err) {
             console.log(err);
-            throw(err);
+            throw (err);
         }
     },
 
-    getPaymentUrl: async (userId,  paymentRequest) => {
+    getPaymentUrl: async (userId, paymentRequest) => {
         try {
             const {
                 paymentId
@@ -117,11 +134,14 @@ const paymentService = {
                 throw PaymentError.AlreadyProcessed();
             }
 
-            
-            const { body, rawSignature} = momoUtils.generateMomoRawSignatureGetUrl(payment, student);
+
+            const {
+                body,
+                rawSignature
+            } = momoUtils.generateMomoRawSignatureGetUrl(payment, student);
             const signature = momoUtils.generateMomoSignature(rawSignature);
 
-            const response = await momoUtils.getPaymentUrl(body,signature);
+            const response = await momoUtils.getPaymentUrl(body, signature);
 
             if (response.data.payUrl) {
                 return response.data.payUrl;
@@ -156,7 +176,7 @@ const paymentService = {
                 throw PaymentError.PaymentNotFound();
             }
 
-            if (String(resultCode) !== "0" || Number(amount) !== Number(payment.amount)){
+            if (String(resultCode) !== "0" || Number(amount) !== Number(payment.amount)) {
                 payment.status = "FAILED";
                 await payment.save();
                 // Có thể gọi hàm hoàn tiền ở đây
@@ -169,22 +189,19 @@ const paymentService = {
             await payment.save();
 
             // Nếu như trạng thái ở đây là electricity or water thì phải lọc để cập nhật lại à
-           if (payment.type === "ELECTRICITY" || payment.type === "WATER") {
+            if (payment.type === "ELECTRICITY" || payment.type === "WATER") {
 
-                await Payment.update(
-                    {
-                        paidAt: new Date(Number(responseTime)),
-                        status: "SUCCESS",
-                        transId: momoResponse.transId,
-                    },
-                    {
-                        where: {
-                            content: payment.content,
-                            type: payment.type,
-                            status: "PENDING"
-                        }
+                await Payment.update({
+                    paidAt: new Date(Number(responseTime)),
+                    status: "SUCCESS",
+                    transId: momoResponse.transId,
+                }, {
+                    where: {
+                        content: payment.content,
+                        type: payment.type,
+                        status: "PENDING"
                     }
-                );
+                });
             }
 
             return payment;
@@ -232,14 +249,16 @@ const paymentService = {
 
             const results = await Promise.all(
                 list.map(p => {
-                    return Payment.create({ 
+                    return Payment.create({
                         content: p.content,
                         type: p.type,
                         amount: p.amount,
                         currency: "VND",
                         transactionRef: null,
                         paidAt: null,
-                        ...(p.studentId ? { studentId: p.studentId } : {}),
+                        ...(p.studentId ? {
+                            studentId: p.studentId
+                        } : {}),
                         status: "PENDING",
                     }, {
                         transaction: t
