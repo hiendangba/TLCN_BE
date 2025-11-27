@@ -1,12 +1,10 @@
-const {
-    content
-} = require("googleapis/build/src/apis/content");
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
 const {
     Student,
     Payment,
     sequelize,
+    User
 } = require("../models");
 require('dotenv').config();
 const momoUtils = require("../utils/momo.util");
@@ -91,6 +89,9 @@ const paymentService = {
                 where: searchCondition,
                 include: [{
                     model: Student,
+                    include: {
+                        model: User
+                    }
                 }],
                 offset,
                 limit,
