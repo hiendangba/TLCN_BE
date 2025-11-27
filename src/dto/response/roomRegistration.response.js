@@ -49,7 +49,6 @@ class GetRoomCancelResponse {
     }
 }
 
-
 class GetRoomMoveResponse {
     constructor(data) {
         this.id = data.originalRegistration.id;
@@ -102,6 +101,8 @@ class GetRoomExtendResponse {
         this.slotNumber = data.originalRegistration.RoomSlot.slotNumber;
         this.roomNumber = data.originalRegistration.RoomSlot.Room.roomNumber;
         this.monthlyFee = data.originalRegistration.RoomSlot.Room.monthlyFee;
+        this.newDuration = data.newRegistration.duration;
+        this.newEndDate = data.newRegistration.endDate;
     }
 }
 module.exports = { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse, GetRoomExtendResponse };

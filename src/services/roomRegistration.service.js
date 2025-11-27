@@ -10,21 +10,14 @@ const {
 const RoomError = require("../errors/RoomError");
 const UserError = require("../errors/UserError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError");
-const {
-    StudentStatus
-} = require("../dto/request/auth.request")
+const { StudentStatus } = require("../dto/request/auth.request")
 const sendMail = require("../utils/mailer")
-const {
-    Op,
-} = require("sequelize");
-const {
-    sequelize
-} = require("../config/database");
+const { Op } = require("sequelize");
+const { sequelize } = require("../config/database");
 const paymentService = require("../services/payment.service");
 require('dotenv').config();
 const PaymentError = require("../errors/PaymentError");
 const momoUtils = require("../utils/momo.util");
-
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
         try {
@@ -429,7 +422,7 @@ const roomRegistrationServices = {
                 },
                 include: [{
                     model: Student,
-                    attributes: ["userId"],
+                    attributes: ["id", "userId"],
                     include: [{
                         model: User,
                         attributes: ["name", "identification"]
@@ -449,14 +442,27 @@ const roomRegistrationServices = {
                 const existing = await RoomRegistration.findOne({
                     where: {
                         studentId: cancelRoomRegistrationRequest.roleId,
-                        status: "CANCELED"
+                        status: "CANCELED",
                     },
+                    include: [{
+                        model: CancellationInfo,
+                    }]
                 });
+
                 if (existing) {
-                    throw RoomRegistrationError.RoomRegistrationAlreadyCanceled();
+                    if (existing.CancellationInfo.refundStatus === 'PENDING') {
+                        throw RoomRegistrationError.RoomRegistrationAlreadyCanceled();
+                    }
+                    else if (existing.CancellationInfo.refundStatus === 'APPROVED') {
+                        throw RoomRegistrationError.RoomRegistrationAlreadyApproved();
+                    }
                 }
 
                 throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+
+            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+                throw PaymentError.isPaid();
             }
 
             if (new Date(cancelRoomRegistrationRequest.checkoutDate) > roomRegistration.endDate) {
@@ -466,7 +472,6 @@ const roomRegistrationServices = {
             await roomRegistration.update({
                 status: "CANCELED"
             })
-
 
             const refund = monthDifferences * roomRegistration.RoomSlot.Room.monthlyFee;
 
@@ -574,7 +579,8 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal('CASE WHEN `CancellationInfo`.`refundStatus` = "PENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    // [sequelize.literal('CASE WHEN `CancellationInfo`.`refundStatus` = "PENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    [sequelize.literal(`CASE WHEN CancellationInfo.refundStatus = 'PENDING' THEN 0 ELSE 1 END`), 'ASC'],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
@@ -622,11 +628,12 @@ const roomRegistrationServices = {
                     },],
                 },
                 {
-                    model: CancellationInfo,
+                    model: CancellationInfo
                 }
                 ],
                 transaction,
             });
+
             const approvedList = [];
             const skippedList = [];
             const emailTasks = [];
@@ -707,7 +714,7 @@ const roomRegistrationServices = {
                     } else {
                         payment.status = "SUCCESS";
                         payment.transId = refundResponse.data.transId;
-                        payment.studentId = registration.Student.id;
+                        payment.studentId = registration.studentId;
                         payment.paidAt = new Date();
                         await payment.save();
                         approvedList.push(registration.id);
@@ -897,6 +904,10 @@ const roomRegistrationServices = {
                 }
 
                 throw RoomRegistrationError.RoomRegistrationNotFound();
+            }
+
+            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+                throw PaymentError.isPaid();
             }
 
             if (roomRegistration.status !== "CONFIRMED") {
@@ -1187,12 +1198,8 @@ const roomRegistrationServices = {
                         );
 
                         const monthDifference = getMonthsDifference(dayStr, endDate);
-                        console.log("Giá mới ", newRegistration.RoomSlot.Room.monthlyFee);
-                        console.log("Gia cu ", registration.RoomSlot.Room.monthlyFee)
                         monthlyFeeDifference = (newRegistration.RoomSlot.Room.monthlyFee - registration.RoomSlot.Room.monthlyFee) * monthDifference + Number(newRegistration.duration) * newRegistration.RoomSlot.Room.monthlyFee;
-                        console.log("Gia chenh lech ", monthlyFeeDifference);
                         const dayFormatted = formatDateVN(dayStr);
-                        console.log("Thang chenh lech: ", monthDifference);
                         const user = registration.Student.User;
 
                         if (user) {
@@ -1246,19 +1253,16 @@ const roomRegistrationServices = {
 
                             const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
 
-                            console.log("124");
-
                             if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
                                 throw PaymentError.InvalidAmount();
                             } else {
                                 payment.status = "SUCCESS";
                                 payment.transId = refundResponse.data.transId;
-                                payment.studentId = registration.Student.id;
+                                payment.studentId = registration.studentId;;
                                 payment.paidAt = new Date();
                                 await payment.save();
                             }
                         }
-                        // xong hết rồi thì mới thêm vào approvedList
                         approvedList.push(registration.id);
                     }
                 } catch (innerErr) {
@@ -1440,6 +1444,9 @@ const roomRegistrationServices = {
                 throw RoomRegistrationError.InvalidExtendRequest();
             }
 
+            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+                throw PaymentError.isPaid();
+            }
             await roomRegistration.update({
                 status: "EXTENDING"
             })
@@ -1525,7 +1532,8 @@ const roomRegistrationServices = {
                 offset,
                 limit,
                 order: [
-                    [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = "EXTENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    // [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = "EXTENDING" THEN 0 ELSE 1 END'), 'ASC'],
+                    [sequelize.literal("CASE WHEN `RoomRegistration`.`status` = 'EXTENDING' THEN 0 ELSE 1 END"), 'ASC'],
                     ["createdAt", "DESC"],
                     ["id", "ASC"]
                 ]
@@ -1684,7 +1692,6 @@ const roomRegistrationServices = {
                             );
                         }
 
-                        //tạo payment khi thiếu
                         if (monthlyFeeDifference > 0) {
                             const paymentData = {
                                 content: `Thanh toán chi phí gia hạn phòng từ ${formatDateVN(newRegistration.approvedDate)} đến ${formatDateVN(newRegistration.endDate)}`,

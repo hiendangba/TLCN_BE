@@ -45,4 +45,56 @@ const createBuildingSchema = Joi.object({
 
         }),
 });
-module.exports = { createBuildingSchema };
+
+const updateBuildingSchema = Joi.object({
+    id: Joi.string()
+        .uuid()
+        .required()
+        .messages({
+            "string.guid": "ID tòa nhà phải là một UUID hợp lệ.",
+            "string.empty": "ID tòa nhà không được để trống.",
+        }),
+    name: Joi.string()
+        .min(3)
+        .max(100)
+        .messages({
+            "string.empty": "Tên tòa nhà không được để trống.",
+            "string.min": "Tên tòa nhà phải có ít nhất 3 ký tự.",
+            "string.max": "Tên tòa nhà không được vượt quá 100 ký tự.",
+        })
+        .optional(),
+
+    genderRestriction: Joi.string()
+        .valid("male", "female")
+        .messages({
+            "any.only": "Giới hạn giới tính chỉ có thể là 'male', 'female'.",
+        })
+        .optional(),
+
+    numberFloor: Joi.number()
+        .integer()
+        .positive()
+        .min(1)
+        .max(20)
+        .messages({
+            "number.base": "Số tầng phải là một số.",
+            "number.integer": "Số tầng phải là số nguyên.",
+            "number.positive": "Số tầng phải lớn hơn 0.",
+            "number.min": "Tòa nhà phải có ít nhất 1 tầng.",
+            "number.max": "Tòa nhà không được vượt quá 20 tầng.",
+        })
+        .optional(),
+
+    roomTypeIds: Joi.array()
+        .items(
+            Joi.string().uuid().messages({
+                "string.guid": "Mỗi ID loại phòng phải là một UUID hợp lệ.",
+            })
+        )
+        .messages({
+            "array.base": "Danh sách ID loại phòng phải là một mảng.",
+        })
+        .optional(),
+});
+
+module.exports = { createBuildingSchema, updateBuildingSchema };
