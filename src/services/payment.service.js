@@ -196,6 +196,7 @@ const paymentService = {
                 amount
             } = momoResponse;
             const paymentId = orderId.split("_")[0];
+            const studentId = orderId.split("_")[2];
 
             // Tìm payment có trong DB
             const payment = await Payment.findByPk(paymentId);
@@ -223,6 +224,7 @@ const paymentService = {
                     paidAt: new Date(Number(responseTime)),
                     status: "SUCCESS",
                     transId: momoResponse.transId,
+                    studentId: studentId
                 }, {
                     where: {
                         content: payment.content,
