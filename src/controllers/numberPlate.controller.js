@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const numberPlateServices = require("../services/numberPlate.service")
-const { CreateNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest } = require("../dto/request/numberPlate.request")
+const { CreateNumberPlateRequest, RecognizeNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest } = require("../dto/request/numberPlate.request")
 const ApiResponse = require("../dto/response/api.response");
 const { CreateNumberPlateResponse, GetNumberPlateResponse } = require("../dto/response/numberPlate.response")
 const UserError = require("../errors/UserError")
@@ -38,8 +38,20 @@ const numberPlateController = {
     }),
 
     rejectNumberPlate: asyncHandler(async (req, res) => {
-        const rejectNumberPlateRequest = new RejectNumberPlateRequest(req.body)
+        if (!req.file) {
+            throw UserError.NoImageUpload();
+        }
         const response = await numberPlateServices.rejectNumberPlate(rejectNumberPlateRequest)
+        return res.status(200).json(
+            new ApiResponse(response))
+    }),
+
+    recognizeNumberPlate: asyncHandler(async (req, res) => {
+        if (!req.file) {
+            throw UserError.NoImageUpload();
+        }
+        const recognizeNumberPlateRequest = new RecognizeNumberPlateRequest(req.file.path, req.roleId)
+        const response = await numberPlateServices.recognizeNumberPlate(recognizeNumberPlateRequest, req.file)
         return res.status(200).json(
             new ApiResponse(response))
     }),

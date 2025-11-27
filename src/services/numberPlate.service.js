@@ -5,7 +5,7 @@ const UserError = require("../errors/UserError");
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/database");
 const sendMail = require("../utils/mailer");
-
+const { detectPlate, recognizePlate } = require("./plateAI.service");
 const numberPlateServices = {
     createNumberPlate: async (createNumberPlateRequest, filename) => {
         try {
@@ -15,6 +15,10 @@ const numberPlateServices = {
             if (existsNumber) {
                 await cloudinary.uploader.destroy(filename);
                 throw NumberPlateError.NameExists();
+            }
+            if (await detectPlate(createNumberPlateRequest.number, createNumberPlateRequest.image) === false) {
+                await cloudinary.uploader.destroy(filename);
+                throw NumberPlateError.PlateNotMatch();
             }
             const numberPlate = NumberPlate.create(createNumberPlateRequest);
             return numberPlate;
@@ -173,7 +177,6 @@ const numberPlateServices = {
                             })
                         );
                     }
-
                     approvedList.push(numberPlate.id);
 
                 } catch (innerErr) {
@@ -298,5 +301,37 @@ const numberPlateServices = {
             throw err;
         }
     },
+
+
+    recognizeNumberPlate: async (recognizeNumberPlateRequest, file) => {
+        try {
+            const recognizedNumber = await recognizePlate(file.buffer);
+            const numberPlate = await NumberPlate.findOne({
+                where: { studentId: recognizeNumberPlateRequest.studentId, number: recognizedNumber, status: 'approved' },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "identification", "dob", "gender", "address", "email"],
+                            },
+                        ],
+                    }
+                ],
+            });
+
+            if (!numberPlate) {
+                throw NumberPlateError.RecognizeNotMatch();
+            }
+
+            return numberPlate;
+
+        } catch (err) {
+            throw err;
+        }
+    },
+
 };
 module.exports = numberPlateServices;

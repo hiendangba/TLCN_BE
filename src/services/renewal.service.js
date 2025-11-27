@@ -79,6 +79,7 @@ const renewalServices = {
                     break;
                 case "Inactive":
                     statusCondition = { isActive: false };
+                    break;
                 case "All":
                 default:
                     statusCondition = {};
