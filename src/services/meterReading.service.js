@@ -5,6 +5,7 @@ const {
     Student,
     RoomRegistration,
     RoomSlot,
+    sequelize
 } = require("../models");
 const UserError = require("../errors/UserError");
 const MeterReadingError = require("../errors/MeterReadingError")

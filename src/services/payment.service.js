@@ -224,7 +224,6 @@ const paymentService = {
                     paidAt: new Date(Number(responseTime)),
                     status: "SUCCESS",
                     transId: momoResponse.transId,
-                    studentId: studentId
                 }, {
                     where: {
                         content: payment.content,
