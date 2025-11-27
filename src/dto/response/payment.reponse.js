@@ -14,7 +14,8 @@ class PaymentReponse {
         this.currency = data.currency;
         this.paidAt = data.paidAt;
         this.status = data.status;
-        this.studentName = data.Student.User.name;
+        this.studentName = data.Student?.User?.name;
+        this.roomNumber = data.Student?.RoomRegistrations?.[0]?.RoomSlot?.Room?.roomNumber || null;
     }
 }
 

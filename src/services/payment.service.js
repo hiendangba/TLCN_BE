@@ -4,7 +4,10 @@ const {
     Student,
     Payment,
     sequelize,
-    User
+    User,
+    RoomRegistration,
+    RoomSlot,
+    Room
 } = require("../models");
 require('dotenv').config();
 const momoUtils = require("../utils/momo.util");
@@ -89,9 +92,33 @@ const paymentService = {
                 where: searchCondition,
                 include: [{
                     model: Student,
-                    include: {
-                        model: User
-                    }
+                    include: [
+                        {
+                            model: User
+                        },
+                        {
+                            model: RoomRegistration,
+                            where: {
+                                status: ["CONFIRMED", "MOVE_PENDING", "EXTENDING", "CANCELED"],
+                                endDate: {
+                                    [Op.gt]: new Date()
+                                }
+                            },
+                            required: false,
+                            separate: true,
+                            limit: 1,
+                            order: [["createdAt", "DESC"]],
+                            include: [{
+                                model: RoomSlot,
+                                required: false,
+                                include: [{
+                                    model: Room,
+                                    required: false,
+                                    attributes: ['roomNumber']
+                                }]
+                            }]
+                        }
+                    ]
                 }],
                 offset,
                 limit,
