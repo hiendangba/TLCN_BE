@@ -33,10 +33,12 @@ const uploadRecognizeNumberPlate = multer({ storage: multer.memoryStorage() });
 const uploadCCCD = multer({ storage: cccdStorage });
 const uploadAvatar = multer({ storage: avatarStorage });
 const uploadNumberPlate = multer({ storage: numberPlateStorage });
+const uploadRecognizedFace = multer({ storage: multer.memoryStorage() });
 
 module.exports = {
     uploadCCCD,
     uploadAvatar,
     uploadNumberPlate,
-    uploadRecognizeNumberPlate
+    uploadRecognizeNumberPlate,
+    uploadRecognizedFace
 };

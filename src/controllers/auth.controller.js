@@ -4,7 +4,7 @@ const { RegisterAccountRequest, RegisterAccountAdminRequest, LoginRequest, Forgo
 const { CheckCCCDResponse, CheckAvatarResponse, RegisterAccountResponse, LoginResponse, ForgotPasswordResponse } = require("../dto/response/auth.response");
 const ApiResponse = require("../dto/response/api.response");
 const UserError = require("../errors/UserError");
-const { detectFace } = require('../services/faceDetection.service');
+const { hasFace } = require('../services/faceDetection.service');
 const authController = {
 
   checkCCCD: asyncHandler(async (req, res) => {
@@ -23,8 +23,9 @@ const authController = {
     if (!req.file) {
       throw UserError.NoImageUpload();
     }
-    const face = await detectFace(req.file.path)
-    if (face.length === 0) {
+    const faceDetected = await hasFace(req.file.path);
+
+    if (!faceDetected) {
       throw UserError.NoFaceDetected();
     }
 
@@ -56,6 +57,26 @@ const authController = {
   login: asyncHandler(async (req, res) => {
     const loginRequest = new LoginRequest(req.body);
     const response = await authServices.login(loginRequest);
+    res.cookie('refresh_token', response.refresh_token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
+    });
+    const loginResponse = new LoginResponse(response)
+
+    return res.status(200).json(
+      new ApiResponse(loginResponse)
+    );
+  }),
+
+
+  loginFace: asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw UserError.NoImageUpload();
+    }
+    const response = await authServices.loginFace(req.file);
     res.cookie('refresh_token', response.refresh_token, {
       httpOnly: true,
       secure: false,

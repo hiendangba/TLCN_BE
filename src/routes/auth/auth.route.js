@@ -1,6 +1,6 @@
 const express = require("express");
 const authRouter = express.Router();
-const { uploadCCCD, uploadAvatar } = require("../../middlewares/upload.middleware");
+const { uploadCCCD, uploadAvatar, uploadRecognizedFace } = require("../../middlewares/upload.middleware");
 const authController = require("../../controllers/auth.controller");
 const validateRequest = require("../../middlewares/validateRequest");
 const { userRegisterSchema, adminRegisterSchema, userLoginSchema, userForgotPasswordSchema, userResendOTPSchema, userVerifyOTPSchema, userResetPasswordSchema } = require("../../validations/user.validation")
@@ -17,5 +17,5 @@ authRouter.post("/verify-otp", validateRequest(userVerifyOTPSchema), authControl
 authRouter.patch("/reset-password", resetPasswordMiddleware, validateRequest(userResetPasswordSchema), authController.resetPassword);
 authRouter.post("/refresh-token", authController.refreshToken);
 authRouter.post("/logout", authController.logout);
-
+authRouter.post("/login-face", uploadRecognizedFace.single("face"), authController.loginFace);
 module.exports = authRouter;

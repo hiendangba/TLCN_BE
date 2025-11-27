@@ -30,7 +30,6 @@ async function detectPlate(number, imageUrl) {
     }
 }
 
-
 async function recognizePlate(imageUrl) {
     try {
         const form = new FormData();
