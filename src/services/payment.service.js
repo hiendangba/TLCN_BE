@@ -18,13 +18,13 @@ const {
 
 const paymentService = {
 
-    getPayment: async (getPaymentRequest, roleId, role) => {
+    getPayment: async (getPaymentRequest, roleId, role, userIdFromToken) => {
         try {
             const {
                 page,
                 limit,
                 keyword,
-                userId,
+                userId, // userId from query params (for admin filtering)
                 type
             } = getPaymentRequest;
             const offset = (page - 1) * limit;
@@ -33,13 +33,13 @@ const paymentService = {
 
             let student = null;
 
-            // Nếu là student -> phải kiểm tra hợp lệ
+            // Nếu là student -> tự động lấy userId từ token
             if (role === "student") {
-                if (!userId) throw PaymentError.InvoiceListNotBelongToYou();
+                if (!userIdFromToken) throw PaymentError.InvoiceListNotBelongToYou();
 
                 student = await Student.findOne({
                     where: {
-                        userId
+                        userId: userIdFromToken
                     }
                 });
                 if (!student) throw UserError.InvalidUser();
@@ -52,14 +52,17 @@ const paymentService = {
                 searchCondition.studentId = student.id;
             }
 
-            // Nếu là admin hoặc role khác -> có userId thì tự động lọc theo studentId
-            else if (userId) {
-                student = await Student.findOne({
-                    where: {
-                        userId
-                    }
-                });
-                if (student) searchCondition.studentId = student.id;
+            // Nếu là admin hoặc role khác -> có userId trong query thì lọc theo đó, không có thì lấy từ token
+            else {
+                const targetUserId = userId || userIdFromToken;
+                if (targetUserId) {
+                    student = await Student.findOne({
+                        where: {
+                            userId: targetUserId
+                        }
+                    });
+                    if (student) searchCondition.studentId = student.id;
+                }
             }
 
             if (keyword) {

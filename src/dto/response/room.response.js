@@ -37,9 +37,12 @@ class GetRoomResponse {
         this.roomNumber = data.roomNumber;
         this.capacity = data.capacity;
         this.monthlyFee = data.monthlyFee;
-        this.floor_number = data.Floor.number;
-        this.roomType_type = data.RoomType.type;
-        this.roomType_amenities = data.RoomType.amenities;
+        this.floorId = data.floorId || data.Floor?.id;
+        this.floor_number = data.Floor?.number;
+        this.buildingId = data.Floor?.buildingId;
+        this.roomTypeId = data.roomTypeId || data.RoomType?.id;
+        this.roomType_type = data.RoomType?.type;
+        this.roomType_amenities = data.RoomType?.amenities;
         this.roomSlots = data.RoomSlots;
     }
 }

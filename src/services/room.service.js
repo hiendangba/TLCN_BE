@@ -506,7 +506,7 @@ const roomServices = {
             // Build Floor include condition - only add where clause if we have valid filter conditions
             const floorInclude = {
                 model: Floor,
-                attributes: ["number"]
+                attributes: ["id", "number", "buildingId"]
             };
 
             const hasBuildingFilter = buildingId && buildingId !== "All";
@@ -528,7 +528,7 @@ const roomServices = {
                 },
                 include: [{
                     model: RoomType,
-                    attributes: ['type', 'amenities']
+                    attributes: ['id', 'type', 'amenities']
                 },
                 {
                     model: RoomSlot,

@@ -10,7 +10,8 @@ const paymentController = {
         const getPaymentRequest = new GetPaymentByUserId(req.query);
         const roleId = req.roleId;
         const role = req.role;
-        const { totalItems , response } = await paymentService.getPayment(getPaymentRequest, roleId, role);
+        const userId = req.userId; // Get userId from token (authMiddleware)
+        const { totalItems , response } = await paymentService.getPayment(getPaymentRequest, roleId, role, userId);
         const listPaymentResponse = response.map( item => new PaymentReponse(item) );
         return res.status(200).json(
             new ApiResponse(
