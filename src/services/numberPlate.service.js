@@ -79,6 +79,30 @@ const numberPlateServices = {
         }
     },
 
+    getNumberPlateByUser: async (studentId) => {
+        try {
+            const numberPlate = await NumberPlate.findAll({
+                where: { studentId },
+                include: [
+                    {
+                        model: Student,
+                        attributes: ["id", "mssv", "school", "userId"],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ["id", "name", "identification", "dob", "gender", "address",],
+                            },
+                        ],
+                    }
+                ],
+            });
+            return numberPlate;
+        }
+        catch (err) {
+            throw err;
+        }
+    },
+
     approvedNumberPlate: async (approvedNumberPlateRequest) => {
         const transaction = await sequelize.transaction();
         try {
@@ -298,6 +322,19 @@ const numberPlateServices = {
             };
         } catch (err) {
             if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
+
+    deleteNumberPlate: async (deleteNumberPlateRequest) => {
+        try {
+            const numberPlate = await NumberPlate.findByPk(deleteNumberPlateRequest.id);
+            if (!numberPlate) {
+                throw NumberPlateError.IdNotFound();
+            }
+            await numberPlate.destroy();
+            return { message: "xóa biển số xe thành công thành công" };
+        } catch (err) {
             throw err;
         }
     },

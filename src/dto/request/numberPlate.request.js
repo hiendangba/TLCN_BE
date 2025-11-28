@@ -56,4 +56,10 @@ class RejectNumberPlateRequest {
     }
 }
 
-module.exports = { CreateNumberPlateRequest, RecognizeNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest };
+class DeleteNumberPlateRequest {
+    constructor(data) {
+        this.id = data.id
+    }
+}
+
+module.exports = { CreateNumberPlateRequest, RecognizeNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest, DeleteNumberPlateRequest };
