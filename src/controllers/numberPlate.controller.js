@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const numberPlateServices = require("../services/numberPlate.service")
-const { CreateNumberPlateRequest, RecognizeNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest } = require("../dto/request/numberPlate.request")
+const { CreateNumberPlateRequest, RecognizeNumberPlateRequest, GetNumberPlateRequest, ApprovedNumberPlateRequest, RejectNumberPlateRequest, DeleteNumberPlateRequest } = require("../dto/request/numberPlate.request")
 const ApiResponse = require("../dto/response/api.response");
 const { CreateNumberPlateResponse, GetNumberPlateResponse } = require("../dto/response/numberPlate.response")
 const UserError = require("../errors/UserError")
@@ -23,12 +23,20 @@ const numberPlateController = {
         const getNumberPlateRequest = new GetNumberPlateRequest(req.query)
         const { totalItems, response } = await numberPlateServices.getNumberPlate(getNumberPlateRequest)
         const getNumberPlateResponses = response.map(item => new GetNumberPlateResponse(item));
-
         return res.status(200).json(
             new ApiResponse(getNumberPlateResponses,
                 { page: getNumberPlateRequest.page, limit: getNumberPlateRequest.limit, totalItems })
         );
     }),
+
+    getNumberPlateByUser: asyncHandler(async (req, res) => {
+        const response = await numberPlateServices.getNumberPlateByUser(req.roleId)
+        const getNumberPlateResponses = response.map(item => new GetNumberPlateResponse(item));
+        return res.status(200).json(
+            new ApiResponse(getNumberPlateResponses)
+        );
+    }),
+
 
     approvedNumberPlate: asyncHandler(async (req, res) => {
         const approvedNumberPlateRequest = new ApprovedNumberPlateRequest(req.body, req.roleId)
@@ -38,10 +46,15 @@ const numberPlateController = {
     }),
 
     rejectNumberPlate: asyncHandler(async (req, res) => {
-        if (!req.file) {
-            throw UserError.NoImageUpload();
-        }
+        const rejectNumberPlateRequest = new RejectNumberPlateRequest(req.body)
         const response = await numberPlateServices.rejectNumberPlate(rejectNumberPlateRequest)
+        return res.status(200).json(
+            new ApiResponse(response))
+    }),
+
+    deleteNumberPlate: asyncHandler(async (req, res) => {
+        const deleteNumberPlateRequest = new DeleteNumberPlateRequest(req.params)
+        const response = await numberPlateServices.deleteNumberPlate(deleteNumberPlateRequest)
         return res.status(200).json(
             new ApiResponse(response))
     }),
