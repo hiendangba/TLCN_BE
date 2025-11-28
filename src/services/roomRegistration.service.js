@@ -460,8 +460,10 @@ const roomRegistrationServices = {
 
                 throw RoomRegistrationError.RoomRegistrationNotFound();
             }
+            console.log(roomRegistration.studentId);
+            console.log(await paymentService.isPaid(roomRegistration.studentId));
 
-            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+            if (await paymentService.isPaid(roomRegistration.studentId) === false) {
                 throw PaymentError.isPaid();
             }
 
@@ -906,7 +908,7 @@ const roomRegistrationServices = {
                 throw RoomRegistrationError.RoomRegistrationNotFound();
             }
 
-            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+            if (await paymentService.isPaid(roomRegistration.studentId) === false) {
                 throw PaymentError.isPaid();
             }
 
@@ -1444,7 +1446,7 @@ const roomRegistrationServices = {
                 throw RoomRegistrationError.InvalidExtendRequest();
             }
 
-            if (paymentService.isPaid(roomRegistration.studentId) === false) {
+            if (await paymentService.isPaid(roomRegistration.studentId) === false) {
                 throw PaymentError.isPaid();
             }
             await roomRegistration.update({
