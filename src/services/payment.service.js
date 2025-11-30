@@ -263,13 +263,35 @@ const paymentService = {
             where: {
                 studentId: studentId,
                 type: type,
-                status: "SUCCESS"
+                status: "SUCCESS",
+                transId: {
+                    [Op.ne]: null,
+                    [Op.not]: ""
+                }
             },
             order: [
                 ['paidAt', 'DESC']
             ]
         });
         return payment;
+    },
+
+    hasPendingHealthCheckPayment: async (studentId, type) => {
+        const payment = await Payment.findOne({
+            where: {
+                studentId,
+                type: type
+            },
+            order: [
+                ["createdAt", "DESC"] 
+            ]
+        });
+
+        // Không có payment nào
+        if (!payment) return false;
+
+        // Kiểm tra payment mới nhất có trạng thái PENDING hay không
+        return payment.status === "PENDING";
     },
 
     createPayment: async (paymentList) => {

@@ -711,6 +711,8 @@ const roomRegistrationServices = {
 
                     const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
 
+                    console.log(refundResponse);
+
                     if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
                         throw PaymentError.InvalidAmount();
                     } else {

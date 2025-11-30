@@ -4,15 +4,21 @@ const {
     Building,
     RegisterHealthCheck,
     Student,
-    User
+    User,
 } = require("../models");
 const BuildingError = require("../errors/BuildingError");
 const HealthCheckError = require("../errors/HealthCheckError");
 const UserError = require("../errors/UserError");
-const { Op } = require("sequelize");
-const { sequelize } = require("../config/database");
+const sendMail = require("../utils/mailer")
+const {
+    Op,
+} = require("sequelize");
+const {
+    sequelize
+} = require("../config/database");
 const paymentService = require("../services/payment.service");
-
+const momoUtils = require("../utils/momo.util");
+const PaymentError = require("../errors/PaymentError");
 
 
 const formatDate = (date) => {
@@ -74,21 +80,19 @@ const healthCheckService = {
             } = getRegisterHealthCheckRequest;
             const offset = (page - 1) * limit;
 
-            const searchCondition = keyword ?
-                {
-                    [Op.or]: [{
-                            "$Student.User.name$": {
-                                [Op.like]: `%${keyword}%`
-                            }
-                        },
-                        {
-                            "$Student.User.identification$": {
-                                [Op.like]: `%${keyword}%`
-                            }
-                        },
-                    ],
-                } :
-                {};
+            const searchCondition = keyword ? {
+                [Op.or]: [{
+                        "$Student.User.name$": {
+                            [Op.like]: `%${keyword}%`
+                        }
+                    },
+                    {
+                        "$Student.User.identification$": {
+                            [Op.like]: `%${keyword}%`
+                        }
+                    },
+                ],
+            } : {};
 
             const registerHealthChecks = await RegisterHealthCheck.findAndCountAll({
                 where: {
@@ -125,7 +129,7 @@ const healthCheckService = {
                     ["createdAt", "DESC"]
                 ],
             });
-            
+
             const response = registerHealthChecks.rows.map((item) => {
                 const student = item.Student;
                 const user = student?.User;
@@ -162,67 +166,123 @@ const healthCheckService = {
         const transaction = await sequelize.transaction();
         try {
             const admin = await Admin.findOne({
-                where: {
-                    userId
-                },
+                where: { userId },
                 transaction
             });
             if (!admin) throw UserError.InvalidUser();
 
-            let healthCheck = await HealthCheck.findByPk(id, { transaction });
-            if (!healthCheck) {
-                throw HealthCheckError.NotFound();
-            }
+            const healthCheck = await HealthCheck.findByPk(id, {
+                transaction,
+                lock: transaction.LOCK.UPDATE
+            });
+            if (!healthCheck) throw HealthCheckError.NotFound();
 
-            // Check if there are any registrations by querying directly
-            const registrationCount = await RegisterHealthCheck.count({
-                where: {
-                    healthCheckId: id
-                },
+            const registrations = await RegisterHealthCheck.findAll({
+                where: { healthCheckId: id },
+                include: [{
+                    model: Student,
+                    include: [{ model: User }]
+                }],
                 transaction
             });
 
-            const hasRegistrations = registrationCount > 0;
+            const hasRegistrations = registrations.length > 0;
             const isActive = healthCheck.status === 'active';
 
-            console.log('Delete Health Check Debug:', {
-                id,
-                status: healthCheck.status,
-                isActive,
-                registrationCount,
-                hasRegistrations
-            });
-
             if (isActive && hasRegistrations) {
-                // If active and has registrations, only soft delete (set status to inactive)
+                // chỉ inactive thôi
                 await healthCheck.update({
                     status: "inactive",
                     updatedAt: new Date()
                 }, { transaction });
+
                 await transaction.commit();
                 return "Đợt khám đã được chuyển sang trạng thái tạm dừng";
-            } else {
-                // If inactive (regardless of registrations) or active but no registrations, hard delete
-                // Delete all related registrations first
-                await RegisterHealthCheck.destroy({
-                    where: {
-                        healthCheckId: id
-                    },
-                    transaction
-                });
-
-                // Then delete the health check itself
-                await healthCheck.destroy({ transaction });
-
-                await transaction.commit();
-                return "Xóa đợt khám thành công";
             }
+
+            // =========================================
+            // XÓA HOÀN TOÀN + HOÀN TIỀN + GỬI EMAIL
+            // =========================================
+
+            let emailTasks = [];
+            
+            for (const reg of registrations) {
+                const student = reg.Student;
+
+                const oldPayment = await paymentService.getPaymentByStudentId(student.id, "HEALTHCHECK");
+
+                if (oldPayment) {
+                    console.log(oldPayment.toJSON());
+                    const paymentData = {
+                        amount: Number(Math.abs(healthCheck.price)),
+                        type: "REFUND_HEALTHCHECK",
+                        content: `Hoàn tiền do hủy đợt khám: ${healthCheck.title}`
+                    };
+
+                    const payment = await paymentService.createPayment(paymentData);
+
+                    const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
+                    const signature = momoUtils.generateMomoSignature(rawSignature);
+
+                    const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
+
+                    console.log("Đã call dc vào API");
+                    console.log("Data tu momo", refundResponse);
+
+                    if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
+                        throw PaymentError.InvalidAmount();
+                    }
+
+                    console.log("Đã call dc vào API");
+
+                    payment.status = "SUCCESS";
+                    payment.transId = refundResponse.data.transId;
+                    payment.studentId = student.id;
+                    payment.paidAt = new Date();
+                    await payment.save();
+                }
+
+                // Tạo mail
+                emailTasks.push(
+                    sendMail({
+                        to: student.User.email,
+                        subject: `Thông báo: Đợt khám "${healthCheck.title}" đã bị hủy`,
+                        html: `
+                            <h3>Xin chào ${student.User.name},</h3>
+                            <p>Đợt khám <strong>"${healthCheck.title}"</strong> đã bị <strong>hủy</strong>.</p>
+                            <ul>
+                                <li><strong>Tiêu đề:</strong> ${healthCheck.title}</li>
+                                <li><strong>Ngày bắt đầu:</strong> ${new Date(healthCheck.startDate).toLocaleDateString()}</li>
+                                <li><strong>Ngày kết thúc:</strong> ${new Date(healthCheck.endDate).toLocaleDateString()}</li>
+                            </ul>
+                            <p>Nếu bạn đã thanh toán, vui lòng kiểm tra giao dịch hoàn tiền.</p>
+                        `,
+                    })
+                );
+            }
+
+            // Xóa đăng ký
+            await RegisterHealthCheck.destroy({
+                where: { healthCheckId: id },
+                transaction
+            });
+
+            // Xóa đợt khám
+            await healthCheck.destroy({ transaction });
+
+            await transaction.commit();
+
+            // gửi mail ngoài transaction
+            await Promise.allSettled(emailTasks);
+
+            return "Xóa đợt khám thành công";
+
         } catch (err) {
             await transaction.rollback();
             throw err;
         }
-
     },
+
 
     registerHealthCheck: async (registerHealthCheckRequest, userId) => {
         try {
@@ -238,7 +298,7 @@ const healthCheckService = {
                 },
                 include: [{
                     model: User, // bảng liên quan
-                    attributes: ['id', 'name', 'identification'], // chỉ lấy field name
+                    attributes: ['id', 'name', 'identification', "email"], // chỉ lấy field name
                 }]
             });
 
@@ -280,21 +340,55 @@ const healthCheckService = {
                 throw HealthCheckError.AlreadyRegistered();
             }
 
+            // kiểm tra user này đã thanh toán chưa, nếu chưa thì không cho đăng ký đợt khám
+            
+            const hasPendingHealthCheckPayment = await paymentService.hasPendingHealthCheckPayment(student.id, "HEALTHCHECK");
+            if (hasPendingHealthCheckPayment){
+                throw HealthCheckError.NotPaid();
+            }
+
             // them no vao db thoi
             const registered = await RegisterHealthCheck.create({
                 ...registerHealthCheckRequest,
                 studentId: student.id
             });
 
-            // tao ra payment cho registerHealCheck
-            if (registered){
+            if (registered) {
+                // tao ra payment cho registerHealCheck
                 const payment = {
-                    content: `${existingHealthCheck.title}` ,
+                    content: `${existingHealthCheck.title}`,
                     type: "HEALTHCHECK",
                     amount: Number(existingHealthCheck.price),
-                    studentId: student.id 
+                    studentId: student.id
                 };
                 await paymentService.createPayment(payment);
+
+                // gửi mail thông báo về cho sinh viên
+                sendMail({
+                    to: student.User.email,
+                    subject: `Xác nhận đăng ký đợt khám "${existingHealthCheck.title}" thành công`,
+                    html: `
+                        <h3>Xin chào ${student.User.name},</h3>
+
+                        <p>Bạn đã đăng ký thành công đợt khám <strong>"${existingHealthCheck.title}"</strong>.</p>
+
+                        <p>Vui lòng có mặt lúc ${new Date(registerDate).toLocaleDateString()} tại ${existingHealthCheck.Building.name} để đảm bảo quá trình khám diễn ra thuận lợi.</p>
+
+                        <p>Thông tin đợt khám:</p>
+                        <ul>
+                            <li><strong>Tiêu đề:</strong> ${existingHealthCheck.title}</li>
+                            <li><strong>Ngày bắt đầu:</strong> ${new Date(existingHealthCheck.startDate).toLocaleDateString()}</li>
+                            <li><strong  >Ngày kết thúc:</strong> ${new Date(existingHealthCheck.endDate).toLocaleDateString()}</li>
+                        </ul> 
+
+                        <p> Lưu ý: Hãy vào mục thanh toán của hệ thống để thanh toán chi phí khám sức khỏe </p>
+
+                        <p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với ban quản lý để được hỗ trợ.</p>
+
+                        <p>Trân trọng,</p>
+                        <p>Đội ngũ quản lý hệ thống</p>
+                    `,
+                })
             }
 
             // chuyen no thanh DTO
@@ -389,7 +483,7 @@ const healthCheckService = {
         }
 
         console.log('WHERE CLAUSE:', JSON.stringify(whereClause, null, 2));
-        
+
         // Determine order: prioritize active status when no status filter
         let orderClause;
         if (!status) {
@@ -405,7 +499,10 @@ const healthCheckService = {
             ];
         }
 
-        const { count, rows: existingHealthChecks } = await HealthCheck.findAndCountAll({
+        const {
+            count,
+            rows: existingHealthChecks
+        } = await HealthCheck.findAndCountAll({
             where: whereClause,
             include: [{
                     model: Building,
@@ -433,12 +530,12 @@ const healthCheckService = {
                 const registeredCount = (hc.RegisterHealthChecks || []).length;
                 const registrationStartDate = new Date(hc.registrationStartDate);
                 const registrationEndDate = new Date(hc.registrationEndDate);
-                
+
                 // Check if registration is open: status is active, within registration period, and not full
                 return hc.status === 'active' &&
-                       registrationStartDate <= now &&
-                       now <= registrationEndDate &&
-                       registeredCount < hc.capacity;
+                    registrationStartDate <= now &&
+                    now <= registrationEndDate &&
+                    registeredCount < hc.capacity;
             });
             // Update totalCount for availableForRegistration filter
             totalCount = filteredHealthChecks.length;
@@ -462,21 +559,25 @@ const healthCheckService = {
                 status: hc.status
             }
         });
-        return { data: result, totalItems: totalCount };
+        return {
+            data: result,
+            totalItems: totalCount
+        };
     },
 
     getHealthCheckById: async (id) => {
         const healthCheck = await HealthCheck.findByPk(id, {
             include: [{
-                model: Building,
-                as: "Building",
-                attributes: ["id", "name"],
-            },
-            {
-                model: RegisterHealthCheck,
-                as: "RegisterHealthChecks",
-                attributes: ["id", "studentId"],
-            }]
+                    model: Building,
+                    as: "Building",
+                    attributes: ["id", "name"],
+                },
+                {
+                    model: RegisterHealthCheck,
+                    as: "RegisterHealthChecks",
+                    attributes: ["id", "studentId"],
+                }
+            ]
         });
 
         if (!healthCheck) {
