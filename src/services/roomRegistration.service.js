@@ -712,8 +712,9 @@ const roomRegistrationServices = {
                     const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
 
                     console.log(refundResponse);
+                    const isSuccessOrUnknown = refundResponse.data.resultCode === 0 || refundResponse.data.resultCode === 99;
 
-                    if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
+                    if  (!isSuccessOrUnknown || refundResponse.data.amount !== bodyMoMo.amount) {
                         throw PaymentError.InvalidAmount();
                     } else {
                         payment.status = "SUCCESS";
@@ -1256,8 +1257,9 @@ const roomRegistrationServices = {
                             const signature = momoUtils.generateMomoSignature(rawSignature);
 
                             const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
+                            const isSuccessOrUnknown = refundResponse.data.resultCode === 0 || refundResponse.data.resultCode === 99;
 
-                            if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
+                            if (!isSuccessOrUnknown || refundResponse.data.amount !== bodyMoMo.amount) {
                                 throw PaymentError.InvalidAmount();
                             } else {
                                 payment.status = "SUCCESS";

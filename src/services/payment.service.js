@@ -208,7 +208,9 @@ const paymentService = {
                 throw PaymentError.PaymentNotFound();
             }
 
-            if (String(resultCode) !== "0" || Number(amount) !== Number(payment.amount)) {
+            const isSuccessOrUnknown = String(resultCode) === "0" || String(resultCode) === "99";
+
+            if (!isSuccessOrUnknown || Number(amount) !== Number(payment.amount)) {
                 payment.status = "FAILED";
                 await payment.save();
                 // Có thể gọi hàm hoàn tiền ở đây
@@ -292,6 +294,20 @@ const paymentService = {
 
         // Kiểm tra payment mới nhất có trạng thái PENDING hay không
         return payment.status === "PENDING";
+    },
+
+    getLastestPayment: async (studentId, type) => {
+        const payment = await Payment.findOne({
+            where: {
+                studentId,
+                type: type
+            },
+            order: [
+                ["createdAt", "DESC"] 
+            ]
+        });
+
+        return payment;
     },
 
     createPayment: async (paymentList) => {

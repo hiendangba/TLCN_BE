@@ -209,9 +209,11 @@ const healthCheckService = {
             for (const reg of registrations) {
                 const student = reg.Student;
 
-                const oldPayment = await paymentService.getPaymentByStudentId(student.id, "HEALTHCHECK");
+                const oldPayment = await paymentService.getLastestPayment(student.id, "HEALTHCHECK");
 
-                if (oldPayment) {
+                // const oldPayment = await paymentService.getPaymentByStudentId(student.id, "HEALTHCHECK");
+
+                if (String(oldPayment.status).toUpperCase() === "SUCCESS" && oldPayment.transId != null) {
                     console.log(oldPayment.toJSON());
                     const paymentData = {
                         amount: Number(Math.abs(healthCheck.price)),
@@ -228,8 +230,9 @@ const healthCheckService = {
 
                     console.log("Đã call dc vào API");
                     console.log("Data tu momo", refundResponse);
+                    const isSuccessOrUnknown = refundResponse.data.resultCode === 0 || refundResponse.data.resultCode === 99;
 
-                    if (refundResponse.data.resultCode !== 0 || refundResponse.data.amount !== bodyMoMo.amount) {
+                    if (!isSuccessOrUnknown || refundResponse.data.amount !== bodyMoMo.amount) {
                         throw PaymentError.InvalidAmount();
                     }
 
@@ -241,6 +244,8 @@ const healthCheckService = {
                     payment.paidAt = new Date();
                     await payment.save();
                 }
+
+                await oldPayment.destroy({ transaction });
 
                 // Tạo mail
                 emailTasks.push(
@@ -265,7 +270,7 @@ const healthCheckService = {
             await RegisterHealthCheck.destroy({
                 where: { healthCheckId: id },
                 transaction
-            });
+            }); 
 
             // Xóa đợt khám
             await healthCheck.destroy({ transaction });
