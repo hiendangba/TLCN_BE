@@ -52,6 +52,7 @@ const momoUtils = {
     },
 
     generateMomoRawSignatureRefund: (payment, oldPayment) => {
+        console.log("TRansID khi vào hàm rf", oldPayment.transId);
         const timestamp = Date.now();
         const bodyMoMo = {
             description: payment.content,

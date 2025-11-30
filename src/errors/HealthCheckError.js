@@ -58,6 +58,22 @@ class HealthCheckError extends AppError {
         );
     }
 
+    static AlreadyStopped() {
+        return new HealthCheckError(
+            "Đợt khám đã trong trạng thái dừng",
+            400, // 400 Bad Request — dữ liệu không hợp lệ
+            "AlreadyStopped"
+        );
+    }
+
+    static NotPaid() {
+        return new HealthCheckError(
+            "Bạn chưa thanh toán cho đợt khám cũ",
+            400, // 400 Bad Request — dữ liệu không hợp lệ
+            "NotPaid"
+        );
+    }
+
 
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);
