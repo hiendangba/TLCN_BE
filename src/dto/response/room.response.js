@@ -44,15 +44,26 @@ class GetRoomResponse {
         this.roomType_type = data.RoomType?.type;
         this.roomType_amenities = data.RoomType?.amenities;
         this.roomSlots = data.RoomSlots
-            .map(slot =>
-                slot.RoomRegistrations.map(reg => ({
-                    slotNumber: slot.slotNumber,
-                    mssv: reg.Student.mssv,
-                    name: reg.Student.User.name,
-                    identification: reg.Student.User.identification,
-                    dob: reg.Student.User.dob
-                }))
-            )
+            .map(slot => {
+                if (slot.RoomRegistrations && slot.RoomRegistrations.length > 0) {
+                    // Nếu có RoomRegistrations, trả về thông tin từng registration
+                    return slot.RoomRegistrations.map(reg => ({
+                        slotNumber: slot.slotNumber,
+                        isOccupied: slot.isOccupied,
+                        mssv: reg.Student.mssv,
+                        name: reg.Student.User.name,
+                        identification: reg.Student.User.identification,
+                        dob: reg.Student.User.dob
+                    }));
+                } else {
+                    // Nếu không có registration, vẫn trả về slotNumber
+                    return [{
+                        slotNumber: slot.slotNumber,
+                        isOccupied: slot.isOccupied,
+                        // Những trường khác bỏ trống hoặc undefined
+                    }];
+                }
+            })
             .flat();
     }
 }
