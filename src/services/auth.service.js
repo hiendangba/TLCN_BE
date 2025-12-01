@@ -1,4 +1,4 @@
-const { User, Student, Admin } = require("../models");
+const { User, Student, Admin, Face } = require("../models");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const redisClient = require("../utils/redisClient");
@@ -12,7 +12,7 @@ const generateOTP = require("../utils/generateOTP")
 const { nanoid } = require('nanoid');
 const sendMail = require('../utils/mailer')
 const { Op } = require("sequelize");
-const { recognizeFace, createLabeledDescriptors } = require('./faceDetection.service');
+const { getDescriptorFromUrl, recognizeFace, createLabeled } = require('./faceDetection.service');
 let transaction;
 const authServices = {
 
@@ -55,15 +55,18 @@ const authServices = {
             registerAccountRequest.password = await bcrypt.hash("123456", 10);
 
             const user = await User.create(registerAccountRequest, { transaction });
+
+            const descriptor = await getDescriptorFromUrl(registerAccountRequest.avatar);
+            const face = await Face.create({ descriptor: JSON.stringify(descriptor) });
             const student = await Student.create({
                 userId: user.id,
                 mssv: registerAccountRequest.mssv,
-                school: registerAccountRequest.school
+                school: registerAccountRequest.school,
+                faceId: face.id
             }, { transaction });
 
             const createRoomRegistrationRequest = new CreateRoomRegistrationRequest(registerAccountRequest, student.id);
             await roomRegistrationServices.createRoomRegistration(createRoomRegistrationRequest, transaction);
-
             await transaction.commit();
 
             return user;
@@ -183,17 +186,19 @@ const authServices = {
                     avatar: { [Op.ne]: null },
                     status: { [Op.in]: [StudentStatus.APPROVED_CHANGED, StudentStatus.APPROVED_NOT_CHANGED] },
                 },
-                attributes: ['id', 'avatar']
+                attributes: ['id', 'avatar'],
+                include: {
+                    model: Student,
+                    include: {
+                        model: Face
+                    }
+                }
             });
-            
-            const labeledDescriptors = await createLabeledDescriptors(users);
-            console.log(4567)
+            const labeledDescriptors = await createLabeled(users)
             if (!labeledDescriptors.length) {
                 throw AuthError.NoDataRecognizeFace();
             }
-            console.log(789)
             const faceMatches = await recognizeFace(file.buffer, labeledDescriptors);
-            console.log(101112)
             const firstFace = faceMatches?.[0];
             if (!firstFace || !firstFace.userId) {
                 throw AuthError.FaceNotRecognized();

@@ -714,7 +714,7 @@ const roomRegistrationServices = {
                     console.log(refundResponse);
                     const isSuccessOrUnknown = refundResponse.data.resultCode === 0 || refundResponse.data.resultCode === 99;
 
-                    if  (!isSuccessOrUnknown || refundResponse.data.amount !== bodyMoMo.amount) {
+                    if (!isSuccessOrUnknown || refundResponse.data.amount !== bodyMoMo.amount) {
                         throw PaymentError.InvalidAmount();
                     } else {
                         payment.status = "SUCCESS";

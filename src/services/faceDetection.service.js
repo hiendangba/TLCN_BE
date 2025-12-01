@@ -34,16 +34,26 @@ async function loadImageUrl(imageUrl) {
     return canvas.loadImage(buffer);
 }
 
-export async function createLabeledDescriptors(users) {
-    console.log(123123)
-    return Promise.all(users.map(async (user) => {
-        const img = await loadImage(user.avatar);
-        const detection = await faceApi
-            .detectSingleFace(img, new faceApi.TinyFaceDetectorOptions({ inputSize: 320 }))
-            .withFaceLandmarks()
-            .withFaceDescriptor();
-        return new faceApi.LabeledFaceDescriptors(user.id.toString(), [detection.descriptor]);
-    }));
+export async function getDescriptorFromUrl(imageUrl) {
+    const img = await loadImageUrl(imageUrl);
+
+    const detection = await faceApi
+        .detectSingleFace(img, new faceApi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+    if (!detection) return null;
+
+    return Array.from(detection.descriptor);
+}
+
+export async function createLabeled(users) {
+    const labeledDescriptors = users.map(u =>
+        new faceApi.LabeledFaceDescriptors(
+            u.id.toString(),
+            [Float32Array.from(JSON.parse(u.Student.Face.descriptor))]
+        )
+    );
+    return labeledDescriptors
 }
 
 export async function recognizeFace(imageUrl, labeledDescriptors, threshold = 0.6) {
