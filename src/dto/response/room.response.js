@@ -6,7 +6,7 @@ class CreateRoomTypeResponse {
 }
 
 class DeleteRoomTypeResponse {
-    constructor(data){
+    constructor(data) {
         this.id = data.id;
         this.type = data.type;
         this.amenities = data.amenities;
@@ -43,7 +43,17 @@ class GetRoomResponse {
         this.roomTypeId = data.roomTypeId || data.RoomType?.id;
         this.roomType_type = data.RoomType?.type;
         this.roomType_amenities = data.RoomType?.amenities;
-        this.roomSlots = data.RoomSlots;
+        this.roomSlots = data.RoomSlots
+            .map(slot =>
+                slot.RoomRegistrations.map(reg => ({
+                    slotNumber: slot.slotNumber,
+                    mssv: reg.Student.mssv,
+                    name: reg.Student.User.name,
+                    identification: reg.Student.User.identification,
+                    dob: reg.Student.User.dob
+                }))
+            )
+            .flat();
     }
 }
 
