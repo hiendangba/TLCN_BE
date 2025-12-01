@@ -28,7 +28,6 @@ const authController = {
     if (!faceDetected) {
       throw UserError.NoFaceDetected();
     }
-
     const response = new CheckAvatarResponse(req.file);
 
     return res.status(201).json(

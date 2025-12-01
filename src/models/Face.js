@@ -14,9 +14,9 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: DataTypes.UUIDV4,
             primaryKey: true
         },
-        faceImage: {
+        descriptor: {
             type: DataTypes.JSON,
-            allowNull: true,
+            allowNull: false,
         }
     }, {
         sequelize,
