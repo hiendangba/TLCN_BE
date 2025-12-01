@@ -532,10 +532,18 @@ const roomServices = {
                 },
                 {
                     model: RoomSlot,
-                    attributes: ["id", "slotNumber", "isOccupied"]
+                    attributes: ["id", "slotNumber", "isOccupied"],
+                    include: {
+                        model: RoomRegistration,
+                        include: {
+                            model: Student,
+                            include: { model: User }
+                        }
+                    }
                 },
                     floorInclude
                 ],
+
                 order: [
                     ['roomNumber', 'ASC'],
                     [RoomSlot, 'slotNumber', 'ASC']

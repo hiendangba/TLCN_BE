@@ -70,7 +70,6 @@ const authController = {
     );
   }),
 
-
   loginFace: asyncHandler(async (req, res) => {
     if (!req.file) {
       throw UserError.NoImageUpload();
@@ -141,8 +140,8 @@ const authController = {
     const response = await authServices.logout(req.cookies.refresh_token);
     res.clearCookie("refresh_token", {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true,
+      sameSite: 'none',
       path: "/"
     });
     return res.status(202).json(
