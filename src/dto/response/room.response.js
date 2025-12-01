@@ -48,6 +48,7 @@ class GetRoomResponse {
                 if (slot.RoomRegistrations && slot.RoomRegistrations.length > 0) {
                     // Nếu có RoomRegistrations, trả về thông tin từng registration
                     return slot.RoomRegistrations.map(reg => ({
+                        id: slot.id,
                         slotNumber: slot.slotNumber,
                         isOccupied: slot.isOccupied,
                         mssv: reg.Student.mssv,
@@ -58,6 +59,7 @@ class GetRoomResponse {
                 } else {
                     // Nếu không có registration, vẫn trả về slotNumber
                     return [{
+                        id: slot.id,
                         slotNumber: slot.slotNumber,
                         isOccupied: slot.isOccupied,
                         // Những trường khác bỏ trống hoặc undefined
