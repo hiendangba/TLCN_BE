@@ -535,10 +535,20 @@ const roomServices = {
                     attributes: ["id", "slotNumber", "isOccupied"],
                     include: {
                         model: RoomRegistration,
-                        include: {
+                        required: false,
+                        where: {
+                            status: ["MOVE_PENDING", "CONFIRMED", "EXTENDING", "CANCELED"]
+                        },
+                        include: [{
                             model: Student,
                             include: { model: User }
+                        },
+                        {
+                            model: CancellationInfo,
+                            required: false,
+                            where: { refundStatus: "pending" }
                         }
+                        ]
                     }
                 },
                     floorInclude
