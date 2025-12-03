@@ -2,17 +2,46 @@ const Joi = require("joi");
 
 const PaymentRequestSchema = Joi.object({
     paymentId: Joi.string()
-        .uuid({ version: 'uuidv4'})
+        .uuid({
+            version: 'uuidv4'
+        })
         .required()
         .messages({
             "string.guid": "ID của hóa đơn phải là UUID hợp lệ",
-            "any.required" : "Không được bỏ trống ID của hóa đơn"
+            "any.required": "Không được bỏ trống ID của hóa đơn"
+        })
+});
+
+const GetRevenueSchema = Joi.object({
+    userId: Joi.string()
+        .uuid({
+            version: 'uuidv4'
+        })
+        .messages({
+            'string.guid': 'ID người dùng phải là UUID hợp lệ'
+        }),
+    type: Joi.string()
+        .valid('WATER', 'ROOM', 'ELECTRICITY', 'HEALTHCHECK')
+        .messages({
+            'any.only': 'Loại dịch vụ không hợp lệ'
+        }),
+    startDate: Joi.date()
+        .iso()
+        .messages({
+            'date.format': 'Ngày bắt đầu phải có định dạng ISO hợp lệ'
+        }),
+    endDate: Joi.date()
+        .iso()
+        .messages({
+            'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ'
         })
 });
 
 const GetPaymentSchema = Joi.object({
     userId: Joi.string()
-        .uuid({ version: ['uuidv4'] })
+        .uuid({
+            version: ['uuidv4']
+        })
         .messages({
             "string.guid": "userId phải là UUID hợp lệ.",
         }),
@@ -55,5 +84,6 @@ const GetPaymentSchema = Joi.object({
 
 module.exports = {
     PaymentRequestSchema,
-    GetPaymentSchema
+    GetPaymentSchema,
+    GetRevenueSchema
 }

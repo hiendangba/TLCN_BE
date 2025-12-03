@@ -30,7 +30,7 @@ class UserError extends AppError {
     }
 
     static UserNotFound() {
-        return new UserError("Không tìm thấy người dùng với email hoặc số căn cước đã cung cấp.", 404, "USER_NOT_FOUND");
+        return new UserError("Không tìm thấy người dùng với thông tin đã cung cấp.", 404, "USER_NOT_FOUND");
     }
 
     static InvalidFlowId() {

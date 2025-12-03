@@ -700,7 +700,7 @@ const roomRegistrationServices = {
 
                     const paymentData = {
                         content: `Hoàn tiền hủy phòng ${registration.RoomSlot.Room.roomNumber} ngày ${registration.CancellationInfo.checkoutDate}`,
-                        type: "REFUND_CANCEL",
+                        type: "REFUND_ROOM",
                         amount: Number(registration.CancellationInfo.amount),
                     };
                     const payment = await paymentService.createPayment(paymentData);
@@ -1248,7 +1248,7 @@ const roomRegistrationServices = {
                             // Tạo payment hoàn tiền nếu như dư
                             const paymentData = {
                                 amount: Number(Math.abs(monthlyFeeDifference)),
-                                type: "REFUND_MOVE",
+                                type: "REFUND_ROOM",
                                 content: `Hoàn tiền do chuyển đến phòng ${newRegistration.RoomSlot.Room.roomNumber}`
                             }
                             const payment = await paymentService.createPayment(paymentData);
