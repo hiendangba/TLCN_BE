@@ -49,7 +49,9 @@ const roomRegistrationServices = {
                 page,
                 limit,
                 keyword,
-                status
+                status,
+                startDate,
+                endDate
             } = getRoomRegistrationRequest;
             const offset = (page - 1) * limit;
             const searchCondition = keyword
@@ -77,10 +79,21 @@ const roomRegistrationServices = {
                     break;
             }
 
+            const dateCondition = (startDate && endDate)
+                ? {
+                    approvedDate: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate
+                    }
+                }
+                : {};
+
+
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
                     ...statusCondition,
                     ...searchCondition,
+                    ...dateCondition
                 },
                 include: [{
                     model: Student,
@@ -497,9 +510,21 @@ const roomRegistrationServices = {
                 page,
                 limit,
                 keyword,
-                status
+                status,
+                startDate,
+                endDate
             } = getCancelRoomRequest;
             const offset = (page - 1) * limit;
+
+
+            const dateCondition = (startDate && endDate)
+                ? {
+                    endDate: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate
+                    }
+                }
+                : {};
 
             const searchCondition = keyword ? {
                 [Op.or]: [{
@@ -556,6 +581,7 @@ const roomRegistrationServices = {
                 where: {
                     ...statusCondition,
                     ...searchCondition,
+                    ...dateCondition,
                 },
                 include: [{
                     model: Student,
@@ -667,6 +693,7 @@ const roomRegistrationServices = {
                     });
 
                     await registration.update({
+                        endDate: new Date(),
                         adminId: admin.id,
                     }, {
                         transaction
@@ -710,8 +737,6 @@ const roomRegistrationServices = {
                     const signature = momoUtils.generateMomoSignature(rawSignature);
 
                     const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
-
-                    console.log(refundResponse);
                     const isSuccessOrUnknown = refundResponse.data.resultCode === 0 || refundResponse.data.resultCode === 99;
 
                     if (!isSuccessOrUnknown || refundResponse.data.amount !== bodyMoMo.amount) {
@@ -941,8 +966,18 @@ const roomRegistrationServices = {
 
     getRoomMove: async (getRoomMoveRequest) => {
         try {
-            const { page = 1, limit = 10, keyword, status } = getRoomMoveRequest;
+            const { page = 1, limit = 10, keyword, status, startDate, endDate } = getRoomMoveRequest;
             const offset = (page - 1) * limit;
+
+            const dateCondition = (startDate && endDate)
+                ? {
+                    endDate: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate
+                    },
+                    status: "MOVED",
+                }
+                : {};
 
             // ---------- SEARCH CONDITION ----------
             const searchCondition = keyword
@@ -972,8 +1007,9 @@ const roomRegistrationServices = {
 
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
-                    ...statusCondition,
+                    ...(startDate && endDate ? {} : statusCondition),
                     ...searchCondition,
+                    ...dateCondition
                 },
                 include: [
                     {
@@ -1479,8 +1515,17 @@ const roomRegistrationServices = {
 
     getExtendRoom: async (getRoomExtendRequest) => {
         try {
-            const { page, limit, keyword, status } = getRoomExtendRequest;
+            const { page, limit, keyword, status, startDate, endDate } = getRoomExtendRequest;
             const offset = (page - 1) * limit;
+            const dateCondition = (startDate && endDate)
+                ? {
+                    endDate: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate
+                    },
+                    status: "EXTENDED"
+                }
+                : {};
 
             const searchCondition = keyword
                 ? {
@@ -1510,7 +1555,8 @@ const roomRegistrationServices = {
 
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
-                    ...statusCondition,
+                    ...dateCondition,
+                    ...(startDate && endDate ? {} : statusCondition),
                     ...searchCondition,
                 },
                 include: [
@@ -1667,6 +1713,7 @@ const roomRegistrationServices = {
                             {
                                 status: "EXTENDED",
                                 adminId: admin.id,
+                                endDate: new Date(),
                             },
                             { transaction }
                         );
