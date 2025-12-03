@@ -26,9 +26,18 @@ class PaymentError extends AppError {
     static isPaid() {
         return new PaymentError("Vui lòng thanh toán hóa đơn tiền phòng trước.", 402, "UNPAID_ROOM_REGISTRATION");
     }
+
     static PaymentFailed() {
         return new PaymentError(
             "Thanh toán thất bại",
+            402,
+            "PaymentFailed"
+        );
+    }
+
+   static invalidServiceType() {
+        return new PaymentError(
+            "Hiện tại chưa có loại dịch vụ này",
             402,
             "PaymentFailed"
         );

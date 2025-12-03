@@ -1,3 +1,4 @@
+const { PAGLOCK } = require("sequelize/lib/table-hints");
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
 const {
@@ -7,16 +8,96 @@ const {
     User,
     RoomRegistration,
     RoomSlot,
-    Room
+    Room,
+    Admin,
 } = require("../models");
 require('dotenv').config();
 const momoUtils = require("../utils/momo.util");
 const {
     Op,
-    where
 } = require("sequelize");
 
 const paymentService = {
+
+    getRevenue: async (getRevenueRequest, adminId) => {
+        const { userId, type, startDate, endDate } = getRevenueRequest;
+        const admin = await Admin.findByPk(adminId);
+        if (!admin) throw UserError.AdminNotFound();
+
+        let whereCondition = {};
+
+        if (userId) {
+            const student = await Student.findOne({
+                where: { 
+                    userId: userId
+                },
+                attributes: ["id"]
+            })
+            if (!student){ 
+                throw UserError.UserNotFound();
+            }
+            whereCondition.studentId = student.id;
+        }
+
+        if (type) { 
+            const typeList = ["WATER", "ROOM", "ELECTRICITY", "HEALTHCHECK"];
+            if (!typeList.includes(type)) {
+                throw PaymentError.invalidServiceType();
+            }
+            whereCondition.type = {
+                [Op.or]: [
+                    type,
+                    `REFUND_${type}`
+                ]
+            };
+        }
+
+        if (startDate || endDate) {
+            whereCondition.createdAt = {};
+            if (startDate) {
+                whereCondition.createdAt[Op.gte] = new Date(startDate);
+            }
+            if (endDate) {
+                whereCondition.createdAt[Op.lte] = new Date(endDate);
+            }
+        }
+
+        console.log(whereCondition);
+
+        const payments = await Payment.findAll({
+            where: whereCondition,
+            attributes: ["status", "type", "amount"],
+            raw: true
+        })
+
+        console.log(payments);
+
+       const result = payments.reduce((acc, item) => {
+            const status = String(item.status).toUpperCase();
+            const itemType = String(item.type).toUpperCase();
+
+            if (status === "SUCCESS" &&  (itemType === type || (!type && !itemType.includes("REFUND")))) {
+                acc.paidTotal += Number(item.amount);
+            } else if (status === "PENDING" && (itemType === type || (!type && !itemType.includes("REFUND")))) {
+                acc.unpaidTotal += Number(item.amount);
+            } else if (status === "SUCCESS" && (itemType === `REFUND_${type}` || itemType.includes("REFUND"))) {
+                acc.refundedTotal += Number(item.amount);
+            } else if (status === "PENDING" && (itemType === `REFUND_${type}` || itemType.includes("REFUND"))) {
+                acc.unrefundedTotal += Number(item.amount);
+            }
+
+            return acc;
+
+        }, {
+            paidTotal: 0,
+            unpaidTotal: 0,
+            refundedTotal: 0,
+            unrefundedTotal: 0 // phần nay là phần truyền vào á
+        });
+        
+        return result;
+        
+    },
 
     getPayment: async (getPaymentRequest, roleId, role, userIdFromToken) => {
         try {

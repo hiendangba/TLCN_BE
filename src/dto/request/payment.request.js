@@ -14,4 +14,13 @@ class GetPaymentByUserId {
     }
 }
 
-module.exports = { PaymentRequest, GetPaymentByUserId };
+class GetRevenue {
+    constructor(data) { 
+        this.userId = data.userId || null;
+        this.type = data.type || null;
+        this.startDate = data.startDate || null;
+        this.endDate = data.endDate || null;
+    }
+}
+
+module.exports = { PaymentRequest, GetPaymentByUserId, GetRevenue };
