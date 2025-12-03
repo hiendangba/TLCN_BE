@@ -62,22 +62,28 @@ const paymentService = {
             }
         }
 
+        console.log(whereCondition);
+
         const payments = await Payment.findAll({
             where: whereCondition,
             attributes: ["status", "type", "amount"],
             raw: true
         })
 
+        console.log(payments);
+
        const result = payments.reduce((acc, item) => {
             const status = String(item.status).toUpperCase();
             const itemType = String(item.type).toUpperCase();
 
-            if (status === "SUCCESS" && itemType === type) {
+            if (status === "SUCCESS" &&  (itemType === type || (!type && !itemType.includes("REFUND")))) {
                 acc.paidTotal += Number(item.amount);
-            } else if (status === "PENDING" && itemType === type) {
+            } else if (status === "PENDING" && (itemType === type || (!type && !itemType.includes("REFUND")))) {
                 acc.unpaidTotal += Number(item.amount);
-            } else if (status === "SUCCESS" && itemType === `REFUND_${type}`) {
+            } else if (status === "SUCCESS" && (itemType === `REFUND_${type}` || itemType.includes("REFUND"))) {
                 acc.refundedTotal += Number(item.amount);
+            } else if (status === "PENDING" && (itemType === `REFUND_${type}` || itemType.includes("REFUND"))) {
+                acc.unrefundedTotal += Number(item.amount);
             }
 
             return acc;
@@ -85,7 +91,8 @@ const paymentService = {
         }, {
             paidTotal: 0,
             unpaidTotal: 0,
-            refundedTotal: 0 // phần nay là phần truyền vào á
+            refundedTotal: 0,
+            unrefundedTotal: 0 // phần nay là phần truyền vào á
         });
         
         return result;

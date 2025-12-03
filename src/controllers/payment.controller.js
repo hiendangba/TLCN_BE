@@ -9,7 +9,7 @@ const paymentController = {
 
     getRevenue: asyncHandler(async (req,res) => {
         const getRevenueRequest = new GetRevenue(req.query);
-        const adminId = req.userId;
+        const adminId = req.roleId;
         const reponse = await paymentService.getRevenue(getRevenueRequest, adminId);
         return res.status(200).json(
             new ApiResponse(
