@@ -6,6 +6,8 @@ class GetRoomRegistrationRequest {
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.keyword = data.keyword ? data.keyword.trim() : "";
         this.status = data.status || "All";
+        this.startDate = data.startDate ? data.startDate.trim() : null;
+        this.endDate = data.endDate ? data.endDate.trim() : null;
     }
 }
 
@@ -17,13 +19,13 @@ class CreateRoomRegistrationRequest {
         this.registerDate = new Date().toISOString().split('T')[0];
     }
 }
+
 class ApprovedRoomRegistrationRequest {
     constructor(data, adminId) {
         this.ids = data.ids
         this.adminId = adminId
     }
 }
-
 
 class RejectRoomRegistrationRequest {
     constructor(data) {
@@ -64,6 +66,8 @@ class GetCancelRoomRequest {
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.keyword = data.keyword ? data.keyword.trim() : "";
         this.status = data.status || "All";
+        this.startDate = data.startDate ? data.startDate.trim() : null;
+        this.endDate = data.endDate ? data.endDate.trim() : null;
     }
 }
 
@@ -114,6 +118,8 @@ class GetRoomMoveRequest {
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.keyword = data.keyword ? data.keyword.trim() : "";
         this.status = data.status || "All";
+        this.startDate = data.startDate ? data.startDate.trim() : null;
+        this.endDate = data.endDate ? data.endDate.trim() : null;
     }
 }
 
@@ -125,7 +131,7 @@ class ApprovedMoveRoomRequest {
 }
 
 class RejectRoomMoveRequest {
-    constructor (adminId, data) {
+    constructor(adminId, data) {
         this.ids = data.ids;
         this.adminId = adminId;
         // reasons có thể là:
@@ -160,6 +166,8 @@ class GetRoomExtendRequest {
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.keyword = data.keyword ? data.keyword.trim() : "";
         this.status = data.status || "All";
+        this.startDate = data.startDate ? data.startDate.trim() : null;
+        this.endDate = data.endDate ? data.endDate.trim() : null;
     }
 }
 
@@ -202,5 +210,5 @@ module.exports = {
     ApprovedCancelRoomRequest, RoomMoveRequest,
     GetRoomMoveRequest, ApprovedMoveRoomRequest,
     RoomExtendRequest, GetRoomExtendRequest,
-    ApprovedExtendRoomRequest, RejectCancelRoomRequest, RejectRoomMoveRequest, RejectExtendRoomRequest  
+    ApprovedExtendRoomRequest, RejectCancelRoomRequest, RejectRoomMoveRequest, RejectExtendRoomRequest
 };

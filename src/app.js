@@ -20,7 +20,7 @@ const cookieParser = require("cookie-parser");
 })();
 
 app.use(cors({
-  origin: ["http://localhost:5173", "https://roomlink-delta.vercel.app"],
+  origin: ["http://localhost:5173", "https://room-link-sigma.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
