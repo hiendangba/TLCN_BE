@@ -73,6 +73,112 @@ const checkTimeConstraint = (registerDate, existingHealthCheck) => {
 
 
 const healthCheckService = {
+
+    cancelRegisterHealthCheck: async (healthCheckId, userId) => {
+        const transaction = await sequelize.transaction();
+        try {
+            const student = await Student.findOne({
+                where: {
+                    userId: userId
+                },
+                include: [{
+                    model: User
+                }],
+                transaction
+            });
+
+            if (!student) throw UserError.UserNotFound();
+
+            const healthCheck = await HealthCheck.findByPk(healthCheckId, {
+                include: [{
+                    model: RegisterHealthCheck,
+                }],
+                transaction
+            });
+
+            if (!healthCheck) throw HealthCheckError.NotFound();
+
+            const registeredItem = healthCheck.RegisterHealthChecks.find(
+                item => item.studentId === student.id
+            );
+
+            if (!registeredItem) throw HealthCheckError.NotRegistered();
+
+            const oldPayment = await paymentService.getLastestPayment(student.id, "HEALTHCHECK");
+
+            // Nếu đã thanh toán đợt cũ -> hoàn tiền
+            if (oldPayment && String(oldPayment.status).toUpperCase() === "SUCCESS" && oldPayment.transId) {
+                const paymentData = {
+                    amount: Number(Math.abs(healthCheck.price)),
+                    type: "REFUND_HEALTHCHECK",
+                    content: `Hoàn tiền do hủy đợt khám: ${healthCheck.title}`
+                };
+
+                const payment = await paymentService.createPayment(paymentData);
+
+                const {
+                    bodyMoMo,
+                    rawSignature
+                } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
+                const signature = momoUtils.generateMomoSignature(rawSignature);
+
+                const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
+
+                const isSuccessOrUnknown =
+                    refundResponse.data.resultCode === 0 ||
+                    refundResponse.data.resultCode === 99;
+
+                if (!isSuccessOrUnknown || refundResponse.data.amount !== bodyMoMo.amount) {
+                    throw PaymentError.InvalidAmount();
+                }
+
+                payment.status = "SUCCESS";
+                payment.transId = refundResponse.data.transId;
+                payment.studentId = student.id;
+                payment.paidAt = new Date();
+                await payment.save({
+                    transaction
+                });
+            }
+
+            // Xóa payment cũ
+            if (oldPayment) {
+                await oldPayment.destroy({
+                    transaction
+                });
+            }
+
+            // Hủy đăng ký
+            await registeredItem.destroy({
+                transaction
+            });
+
+            // Gửi email
+            sendMail({
+                to: student.User.email,
+                subject: `Thông báo: Đợt khám "${healthCheck.title}" đã bị hủy`,
+                html: `
+                <h3>Xin chào ${student.User.name},</h3>
+                <p>Đợt khám <strong>"${healthCheck.title}"</strong> đã bị <strong>hủy</strong>.</p>
+                <ul>
+                    <li><strong>Tiêu đề:</strong> ${healthCheck.title}</li>
+                    <li><strong>Ngày bắt đầu:</strong> ${new Date(healthCheck.startDate).toLocaleDateString()}</li>
+                    <li><strong>Ngày kết thúc:</strong> ${new Date(healthCheck.endDate).toLocaleDateString()}</li>
+                </ul>
+                <p>Nếu bạn đã thanh toán, vui lòng kiểm tra giao dịch hoàn tiền.</p>
+            `
+            });
+
+            await transaction.commit();
+            return "Hủy đợt khám thành công";
+        } catch (err) {
+            console.log(err);
+            if (!transaction.finished) await transaction.rollback();
+            throw err;
+        }
+    },
+
+
     getRegisterHealthCheck: async (getRegisterHealthCheckRequest) => {
         try {
             const {
@@ -166,7 +272,9 @@ const healthCheckService = {
         const transaction = await sequelize.transaction();
         try {
             const admin = await Admin.findOne({
-                where: { userId },
+                where: {
+                    userId
+                },
                 transaction
             });
             if (!admin) throw UserError.InvalidUser();
@@ -178,10 +286,14 @@ const healthCheckService = {
             if (!healthCheck) throw HealthCheckError.NotFound();
 
             const registrations = await RegisterHealthCheck.findAll({
-                where: { healthCheckId: id },
+                where: {
+                    healthCheckId: id
+                },
                 include: [{
                     model: Student,
-                    include: [{ model: User }]
+                    include: [{
+                        model: User
+                    }]
                 }],
                 transaction
             });
@@ -194,7 +306,9 @@ const healthCheckService = {
                 await healthCheck.update({
                     status: "inactive",
                     updatedAt: new Date()
-                }, { transaction });
+                }, {
+                    transaction
+                });
 
                 await transaction.commit();
                 return "Đợt khám đã được chuyển sang trạng thái tạm dừng";
@@ -205,7 +319,7 @@ const healthCheckService = {
             // =========================================
 
             let emailTasks = [];
-            
+
             for (const reg of registrations) {
                 const student = reg.Student;
 
@@ -223,7 +337,10 @@ const healthCheckService = {
 
                     const payment = await paymentService.createPayment(paymentData);
 
-                    const { bodyMoMo, rawSignature } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
+                    const {
+                        bodyMoMo,
+                        rawSignature
+                    } = momoUtils.generateMomoRawSignatureRefund(payment, oldPayment);
                     const signature = momoUtils.generateMomoSignature(rawSignature);
 
                     const refundResponse = await momoUtils.getRefund(bodyMoMo, signature);
@@ -245,7 +362,9 @@ const healthCheckService = {
                     await payment.save();
                 }
 
-                await oldPayment.destroy({ transaction });
+                await oldPayment.destroy({
+                    transaction
+                });
 
                 // Tạo mail
                 emailTasks.push(
@@ -268,12 +387,16 @@ const healthCheckService = {
 
             // Xóa đăng ký
             await RegisterHealthCheck.destroy({
-                where: { healthCheckId: id },
+                where: {
+                    healthCheckId: id
+                },
                 transaction
-            }); 
+            });
 
             // Xóa đợt khám
-            await healthCheck.destroy({ transaction });
+            await healthCheck.destroy({
+                transaction
+            });
 
             await transaction.commit();
 
@@ -346,9 +469,9 @@ const healthCheckService = {
             }
 
             // kiểm tra user này đã thanh toán chưa, nếu chưa thì không cho đăng ký đợt khám
-            
+
             const hasPendingHealthCheckPayment = await paymentService.hasPendingHealthCheckPayment(student.id, "HEALTHCHECK");
-            if (hasPendingHealthCheckPayment){
+            if (hasPendingHealthCheckPayment) {
                 throw HealthCheckError.NotPaid();
             }
 
