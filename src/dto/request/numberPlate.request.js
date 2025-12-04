@@ -23,6 +23,8 @@ class GetNumberPlateRequest {
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.keyword = data.keyword ? data.keyword.trim() : "";
         this.status = data.status;
+        this.startDate = data.startDate ? data.startDate.trim() : null;
+        this.endDate = data.endDate ? data.endDate.trim() : null;
     }
 }
 

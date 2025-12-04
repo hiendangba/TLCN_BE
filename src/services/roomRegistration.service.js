@@ -121,7 +121,11 @@ const roomRegistrationServices = {
                 ],
             });
 
+            const totalUnapproved = roomRegistration.rows.filter(r => r.status === "BOOKED").length;
+
             return {
+                totalApproved: roomRegistration.count - totalUnapproved,
+                totalUnapproved,
                 totalItems: roomRegistration.count,
                 response: roomRegistration.rows,
             };
@@ -473,8 +477,6 @@ const roomRegistrationServices = {
 
                 throw RoomRegistrationError.RoomRegistrationNotFound();
             }
-            console.log(roomRegistration.studentId);
-            console.log(await paymentService.isPaid(roomRegistration.studentId));
 
             if (await paymentService.isPaid(roomRegistration.studentId) === false) {
                 throw PaymentError.isPaid();
@@ -519,10 +521,10 @@ const roomRegistrationServices = {
 
             const dateCondition = (startDate && endDate)
                 ? {
-                    endDate: {
+                    "$CancellationInfo.checkoutDate$": {
                         [Op.gte]: startDate,
                         [Op.lte]: endDate
-                    }
+                    },
                 }
                 : {};
 
@@ -613,8 +615,11 @@ const roomRegistrationServices = {
                     ["id", "ASC"]
                 ]
             });
-
+            const totalUnapproved = roomRegistration.rows.filter(r => r.CancellationInfo.refundStatus === "PENDING").length;
+            console.log(totalUnapproved)
             return {
+                totalApproved: roomRegistration.count - totalUnapproved,
+                totalUnapproved,
                 totalItems: roomRegistration.count,
                 response: roomRegistration.rows,
             };
@@ -971,11 +976,10 @@ const roomRegistrationServices = {
 
             const dateCondition = (startDate && endDate)
                 ? {
-                    endDate: {
+                    registerDate: {
                         [Op.gte]: startDate,
                         [Op.lte]: endDate
                     },
-                    status: "MOVED",
                 }
                 : {};
 
@@ -1007,9 +1011,8 @@ const roomRegistrationServices = {
 
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
-                    ...(startDate && endDate ? {} : statusCondition),
+                    ...statusCondition,
                     ...searchCondition,
-                    ...dateCondition
                 },
                 include: [
                     {
@@ -1043,6 +1046,8 @@ const roomRegistrationServices = {
             if (!roomRegistration || !roomRegistration.rows || roomRegistration.rows.length === 0) {
                 return {
                     totalItems: 0,
+                    totalApproved: 0,
+                    totalUnapproved: 0,
                     response: []
                 };
             }
@@ -1052,6 +1057,7 @@ const roomRegistrationServices = {
                 where: {
                     previousRegistrationId: { [Op.in]: originalIds },
                     status: { [Op.in]: ["PENDING", "CONFIRMED", "MOVED", "MOVE_PENDING", "EXTENDED", "PENDING_EXTENDED", "CANCELED"] },
+                    ...dateCondition,
                 },
                 include: [
                     {
@@ -1087,6 +1093,7 @@ const roomRegistrationServices = {
                 }
             });
 
+
             // ---------- BUILD RESPONSE ----------
             const combinedRegistrations = Object.values(registrationMap)
                 .filter(item => item.new) // chỉ lấy những bản có newRegistration
@@ -1095,8 +1102,12 @@ const roomRegistrationServices = {
                     newRegistration: item.new,
                 }));
 
+            const totalUnapproved = combinedRegistrations.filter(r => r.originalRegistration.status === "MOVE_PENDING").length;
+
             return {
-                totalItems: roomRegistration.count,
+                totalApproved: combinedRegistrations.length - totalUnapproved,
+                totalUnapproved,
+                totalItems: combinedRegistrations.length,
                 response: combinedRegistrations,
             };
         } catch (err) {
@@ -1519,11 +1530,10 @@ const roomRegistrationServices = {
             const offset = (page - 1) * limit;
             const dateCondition = (startDate && endDate)
                 ? {
-                    endDate: {
+                    registerDate: {
                         [Op.gte]: startDate,
                         [Op.lte]: endDate
                     },
-                    status: "EXTENDED"
                 }
                 : {};
 
@@ -1555,8 +1565,7 @@ const roomRegistrationServices = {
 
             const roomRegistration = await RoomRegistration.findAndCountAll({
                 where: {
-                    ...dateCondition,
-                    ...(startDate && endDate ? {} : statusCondition),
+                    ...statusCondition,
                     ...searchCondition,
                 },
                 include: [
@@ -1593,7 +1602,8 @@ const roomRegistrationServices = {
             const newRoomRegistration = await RoomRegistration.findAll({
                 where: {
                     status: { [Op.in]: ["PENDING_EXTENDED", "CONFIRMED"] },
-                    studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) }
+                    studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) },
+                    ...dateCondition,
                 }
             });
             const registrationMap = {};
@@ -1609,13 +1619,19 @@ const roomRegistrationServices = {
                     registrationMap[reg.studentId].new = reg;
                 }
             });
-            const combinedRegistrations = Object.values(registrationMap).map(item => ({
-                originalRegistration: item.original,
-                newRegistration: item.new,
-            }));
+            const combinedRegistrations = Object.values(registrationMap)
+                .filter(item => item.new)
+                .map(item => ({
+                    originalRegistration: item.original,
+                    newRegistration: item.new,
+                }));
 
+            const totalUnapproved = combinedRegistrations.filter(r => r.originalRegistration.status === "EXTENDING").length;
+           
             return {
-                totalItems: roomRegistration.count,
+                totalApproved: combinedRegistrations.length - totalUnapproved,
+                totalUnapproved,
+                totalItems: combinedRegistrations.length,
                 response: combinedRegistrations,
             };
         } catch (err) {

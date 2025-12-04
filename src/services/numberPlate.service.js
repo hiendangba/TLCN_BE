@@ -6,6 +6,7 @@ const { Op } = require("sequelize");
 const { sequelize } = require("../config/database");
 const sendMail = require("../utils/mailer");
 const { detectPlate, recognizePlate } = require("./plateAI.service");
+const { register } = require("./auth.service");
 const numberPlateServices = {
     createNumberPlate: async (createNumberPlateRequest, filename) => {
         try {
@@ -29,8 +30,18 @@ const numberPlateServices = {
 
     getNumberPlate: async (getNumberPlateRequest) => {
         try {
-            const { page, limit, keyword, status } = getNumberPlateRequest;
+            const { page, limit, keyword, status, startDate, endDate } = getNumberPlateRequest;
             const offset = (page - 1) * limit;
+
+            const dateCondition = (startDate && endDate)
+                ? {
+                    registerDate: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate
+                    },
+                }
+                : {};
+
             const searchCondition = keyword
                 ? {
                     [Op.or]: [
@@ -51,6 +62,7 @@ const numberPlateServices = {
                 where: {
                     ...searchCondition,
                     ...statusCondition,
+                    ...dateCondition,
                 },
                 include: [
                     {
@@ -72,8 +84,15 @@ const numberPlateServices = {
                     ["createdAt", "DESC"]
                 ],
             });
-
-            return { totalItems: numberPlate.count, response: numberPlate.rows };
+            totalApproved = numberPlate.rows.filter(r => r.status === "approved").length;
+            totalUnApproved = numberPlate.rows.filter(r => r.status === "pending").length;
+            return {
+                totalApproved,
+                totalUnApproved,
+                totalReject: numberPlate.count - (totalApproved + totalUnApproved),
+                totalItems: numberPlate.count,
+                response: numberPlate.rows
+            };
         } catch (err) {
             throw err;
         }
@@ -179,6 +198,7 @@ const numberPlateServices = {
                     await reloadedNumberPlate.update(
                         {
                             status: "approved",
+                            registerDate: new Date(),
                             adminId: admin.id,
                         },
                         { transaction }
@@ -276,7 +296,10 @@ const numberPlateServices = {
 
                     // Cập nhật trạng thái thành rejected (không xóa như room registration)
                     await numberPlate.update(
-                        { status: "rejected" },
+                        {
+                            status: "rejected",
+                            registerDate: new Date(),
+                        },
                         { transaction }
                     );
 

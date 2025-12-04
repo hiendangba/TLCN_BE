@@ -10,16 +10,19 @@ const {
 const ApiResponse = require("../dto/response/api.response");
 const { GetRoomRegistrationResponse, GetRoomCancelResponse, GetRoomMoveResponse, GetRoomExtendResponse } = require("../dto/response/roomRegistration.response")
 const roomRegistrationService = require("../services/roomRegistration.service");
-const { response } = require('express');
+
 const roomRegistrationController = {
 
     getRoomRegistration: asyncHandler(async (req, res) => {
         const getRoomRegistrationRequest = new GetRoomRegistrationRequest(req.query)
-        const { totalItems, response } = await roomRegistrationService.getRoomRegistration(getRoomRegistrationRequest);
+        const { totalApproved, totalUnapproved, totalItems, response } = await roomRegistrationService.getRoomRegistration(getRoomRegistrationRequest);
         const getRoomRegistrationResponses = response.map(item => new GetRoomRegistrationResponse(item));
         return res.status(200).json(
             new ApiResponse(getRoomRegistrationResponses,
-                { page: getRoomRegistrationRequest.page, limit: getRoomRegistrationRequest.limit, totalItems })
+                {
+                    page: getRoomRegistrationRequest.page, limit: getRoomRegistrationRequest.limit, totalItems,
+                    totalApproved, totalUnapproved
+                })
         );
     }),
 
@@ -49,11 +52,14 @@ const roomRegistrationController = {
 
     getCancelRoom: asyncHandler(async (req, res) => {
         const getCancelRoomRequest = new GetCancelRoomRequest(req.query);
-        const { totalItems, response } = await roomRegistrationService.getCancelRoom(getCancelRoomRequest);
+        const { totalApproved, totalUnapproved, totalItems, response } = await roomRegistrationService.getCancelRoom(getCancelRoomRequest);
         const getRoomCancelResponses = response.map(item => new GetRoomCancelResponse(item));
         return res.status(200).json(
             new ApiResponse(getRoomCancelResponses,
-                { page: getCancelRoomRequest.page, limit: getCancelRoomRequest.limit, totalItems })
+                {
+                    page: getCancelRoomRequest.page, limit: getCancelRoomRequest.limit, totalItems,
+                    totalApproved, totalUnapproved,
+                })
         );
     }),
 
@@ -75,11 +81,14 @@ const roomRegistrationController = {
 
     getRoomMove: asyncHandler(async (req, res) => {
         const getRoomMoveRequest = new GetRoomMoveRequest(req.query);
-        const { totalItems, response } = await roomRegistrationService.getRoomMove(getRoomMoveRequest);
+        const { totalApproved, totalUnapproved, totalItems, response } = await roomRegistrationService.getRoomMove(getRoomMoveRequest);
         const getRoomMoveResponses = response.map(item => new GetRoomMoveResponse(item));
         return res.status(200).json(
             new ApiResponse(getRoomMoveResponses,
-                { page: getRoomMoveRequest.page, limit: getRoomMoveRequest.limit, totalItems })
+                {
+                    page: getRoomMoveRequest.page, limit: getRoomMoveRequest.limit, totalItems,
+                    totalApproved, totalUnapproved
+                })
         );
     }),
 
@@ -103,11 +112,14 @@ const roomRegistrationController = {
 
     getExtendRoom: asyncHandler(async (req, res) => {
         const getRoomExtendRequest = new GetRoomExtendRequest(req.query);
-        const { totalItems, response } = await roomRegistrationService.getExtendRoom(getRoomExtendRequest);
+        const { totalApproved, totalUnapproved, totalItems, response } = await roomRegistrationService.getExtendRoom(getRoomExtendRequest);
         const getRoomExtendResponses = response.map(item => new GetRoomExtendResponse(item));
         return res.status(200).json(
             new ApiResponse(getRoomExtendResponses,
-                { page: getRoomExtendRequest.page, limit: getRoomExtendRequest.limit, totalItems })
+                {
+                    page: getRoomExtendRequest.page, limit: getRoomExtendRequest.limit, totalItems,
+                    totalApproved, totalUnapproved
+                })
         );
     }),
 
