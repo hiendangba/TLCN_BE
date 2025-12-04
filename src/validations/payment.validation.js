@@ -32,9 +32,11 @@ const GetRevenueSchema = Joi.object({
         }),
     endDate: Joi.date()
         .iso()
+        .greater(Joi.ref('startDate'))
         .messages({
-            'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ'
-        })
+            'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ',
+            'date.greater': 'Ngày kết thúc phải lớn hơn ngày bắt đầu'
+        })      
 });
 
 const GetPaymentSchema = Joi.object({
@@ -72,7 +74,6 @@ const GetPaymentSchema = Joi.object({
             "number.min": "limit phải lớn hơn hoặc bằng 1.",
             "any.required": "Không được bỏ trống limit.",
         }),
-
     keyword: Joi.string()
         .allow(null, "")
         .max(50)
@@ -80,6 +81,18 @@ const GetPaymentSchema = Joi.object({
             "string.base": "keyword phải là chuỗi.",
             "string.max": "keyword không được vượt quá 50 ký tự."
         }),
+    startDate: Joi.date()
+        .iso()
+        .messages({
+            'date.format': 'Ngày bắt đầu phải có định dạng ISO hợp lệ'
+        }),
+    endDate: Joi.date()
+        .iso()
+        .greater(Joi.ref('startDate'))
+        .messages({
+            'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ',
+            'date.greater': 'Ngày kết thúc phải lớn hơn ngày bắt đầu'
+        })        
 });
 
 module.exports = {
