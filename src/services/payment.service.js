@@ -1,4 +1,3 @@
-const { PAGLOCK } = require("sequelize/lib/table-hints");
 const PaymentError = require("../errors/PaymentError");
 const UserError = require("../errors/UserError");
 const {

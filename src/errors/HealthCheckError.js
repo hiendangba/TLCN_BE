@@ -74,6 +74,13 @@ class HealthCheckError extends AppError {
         );
     }
 
+    static NotRegistered() {
+        return new HealthCheckError(
+            "Bạn chưa đăng ký đợt khám",
+            400, // 400 Bad Request — yêu cầu không hợp lệ
+            "NotRegistered"
+        );
+    }
 
     constructor(message, statusCode, errorCode) {
         super(message, statusCode, errorCode);

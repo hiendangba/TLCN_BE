@@ -57,6 +57,17 @@ const healthCheckController = {
         );
     }),
 
+    cancelRegisterHealthCheck: asyncHandler(async (req, res) => {
+        const userId = req.userId;
+        const { id } = req.params;
+        
+        const result = await healthCheckService.cancelRegisterHealthCheck(id, userId);
+
+        return res.status(200).json(
+            new ApiResponse(result)
+        );
+    }),
+
     deleteHealthCheck: asyncHandler(async (req, res) => {
         const { id } = req.params;
         const userId = req.userId;

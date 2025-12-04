@@ -10,6 +10,7 @@ healthCheckRoute.get("/getHealthCheck", authMiddleware, validateRequestget(getHe
 healthCheckRoute.get("/getHealthCheck/:id", authMiddleware, healthCheckController.getHealthCheckById);
 healthCheckRoute.post("/registerHealthCheck", authMiddleware, validateRequest(registerHealthCheck), healthCheckController.registerHealthCheck);
 healthCheckRoute.delete("/deleteHealthCheck/:id", authMiddleware, healthCheckController.deleteHealthCheck);
+healthCheckRoute.delete("/cancelHealthCheck/:id", authMiddleware, healthCheckController.cancelRegisterHealthCheck);
 healthCheckRoute.get("/getRegisterHealthCheck", authMiddleware, validateRequestget(getRegisterHealthCheck), healthCheckController.getRegisterHealthCheck);
 
 module.exports = healthCheckRoute;  
