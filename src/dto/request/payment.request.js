@@ -11,6 +11,8 @@ class GetPaymentByUserId {
         this.page = data.page ? Number(data.page) : 1;
         this.limit = data.limit ? Number(data.limit) : 10 ;
         this.keyword = data.keyword ? data.keyword.trim() : "";
+        this.startDate = data.startDate || null;
+        this.endDate = data.endDate || null;
     }
 }
 

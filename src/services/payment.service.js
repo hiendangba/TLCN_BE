@@ -105,7 +105,9 @@ const paymentService = {
                 limit,
                 keyword,
                 userId, // userId from query params (for admin filtering)
-                type
+                type,
+                startDate,
+                endDate,
             } = getPaymentRequest;
             const offset = (page - 1) * limit;
 
@@ -134,14 +136,15 @@ const paymentService = {
 
             // Nếu là admin hoặc role khác -> có userId trong query thì lọc theo đó, không có thì lấy từ token
             else {
-                const targetUserId = userId || userIdFromToken;
+                const targetUserId = userId;
                 if (targetUserId) {
                     student = await Student.findOne({
                         where: {
                             userId: targetUserId
                         }
                     });
-                    if (student) searchCondition.studentId = student.id;
+                    if (!student) throw UserError.UserNotFound();
+                    searchCondition.studentId = student.id;
                 }
             }
 
@@ -169,6 +172,17 @@ const paymentService = {
                 searchCondition.type = {
                     [Op.like]: `%${type}%`
                 };
+            }
+
+            
+            if (startDate || endDate) {
+                searchCondition.createdAt = {};
+                if (startDate) {
+                    searchCondition.createdAt[Op.gte] = new Date(startDate);
+                }
+                if (endDate) {
+                    searchCondition.createdAt[Op.lte] = new Date(endDate);
+                }
             }
 
             const payments = await Payment.findAndCountAll({
