@@ -29,10 +29,10 @@ const formatDate = (date) => {
     const hours = String(d.getHours()).padStart(2, "0");
     const minutes = String(d.getMinutes()).padStart(2, "0");
     const seconds = String(d.getSeconds()).padStart(2, "0");
-
     return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
 const formatDateRange = (start, end) => `${formatDate(start)} - ${formatDate(end)}`;
+
 const checkTimeConstraint = (registerDate, existingHealthCheck) => {
     // Kiem tra gio co hop le hay hong
     const today = new Date();
@@ -411,7 +411,6 @@ const healthCheckService = {
         }
     },
 
-
     registerHealthCheck: async (registerHealthCheckRequest, userId) => {
         try {
             const {
@@ -609,8 +608,6 @@ const healthCheckService = {
                 },
             };
         }
-
-        console.log('WHERE CLAUSE:', JSON.stringify(whereClause, null, 2));
 
         // Determine order: prioritize active status when no status filter
         let orderClause;
