@@ -122,6 +122,7 @@ const roomRegistrationServices = {
             });
 
             const totalUnapproved = roomRegistration.rows.filter(r => r.status === "BOOKED").length;
+            console.log(totalUnapproved);
 
             return {
                 totalApproved: roomRegistration.count - totalUnapproved,
