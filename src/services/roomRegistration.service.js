@@ -121,15 +121,18 @@ const roomRegistrationServices = {
                 ],
             });
 
-            const totalUnapproved = await RoomRegistration.count({
-                where: {
-                    status: "BOOKED",
-                    approvedDate: null,
-                    ...searchCondition,
-                    ...statusCondition,
-                    ...dateCondition
-                }
-            });
+            let totalUnapproved = 0;
+
+            if (status !== "Approved") {
+                totalUnapproved = await RoomRegistration.count({
+                    where: {
+                        status: "BOOKED",
+                        approvedDate: null,
+                        ...searchCondition,
+                        ...dateCondition
+                    }
+                });
+            }
 
             return {
                 totalApproved: roomRegistration.count - totalUnapproved,
