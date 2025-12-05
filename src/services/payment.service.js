@@ -224,9 +224,53 @@ const paymentService = {
                 ]
             })
 
+            // Calculate statistics: get all payments (without pagination) for statistics
+            const allPayments = await Payment.findAll({
+                where: searchCondition,
+                attributes: ['amount', 'status', 'type'],
+                raw: true
+            });
+
+            console.log('All payments for statistics:', allPayments.length);
+            console.log('Sample payment:', allPayments[0]);
+
+            // Calculate statistics with refund subtraction
+            const statistics = allPayments.reduce((acc, payment) => {
+                const status = String(payment.status || '').toUpperCase().trim();
+                const type = String(payment.type || '').toUpperCase().trim();
+                const amount = Number(payment.amount) || 0;
+
+                // Check if it's a refund
+                const isRefund = type.includes('REFUND');
+
+                if (status === 'SUCCESS') {
+                    if (isRefund) {
+                        // Refund: subtract from paid amount
+                        acc.paidAmount -= amount;
+                    } else {
+                        // Normal payment: add to paid amount
+                        acc.paidAmount += amount;
+                    }
+                } else if (status === 'PENDING') {
+                    if (!isRefund) {
+                        // Only count pending non-refund payments as unpaid
+                        acc.unpaidAmount += amount;
+                    }
+                }
+
+                return acc;
+            }, {
+                totalItems: payments.count,
+                paidAmount: 0,
+                unpaidAmount: 0
+            });
+
+            console.log('Calculated statistics:', statistics);
+
             return {
                 totalItems: payments.count,
                 response: payments.rows,
+                ...statistics
             };
         } catch (err) {
             console.log(err);

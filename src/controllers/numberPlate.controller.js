@@ -21,11 +21,18 @@ const numberPlateController = {
 
     getNumberPlate: asyncHandler(async (req, res) => {
         const getNumberPlateRequest = new GetNumberPlateRequest(req.query)
-        const { totalItems, response } = await numberPlateServices.getNumberPlate(getNumberPlateRequest)
+        const { totalItems, totalApproved, totalUnApproved, totalReject, response } = await numberPlateServices.getNumberPlate(getNumberPlateRequest)
         const getNumberPlateResponses = response.map(item => new GetNumberPlateResponse(item));
         return res.status(200).json(
             new ApiResponse(getNumberPlateResponses,
-                { page: getNumberPlateRequest.page, limit: getNumberPlateRequest.limit, totalItems })
+                { 
+                    page: getNumberPlateRequest.page, 
+                    limit: getNumberPlateRequest.limit, 
+                    totalItems,
+                    totalApproved,
+                    totalUnapproved: totalUnApproved,
+                    totalReject
+                })
         );
     }),
 

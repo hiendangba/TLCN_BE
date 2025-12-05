@@ -23,7 +23,7 @@ const paymentController = {
         const roleId = req.roleId;
         const role = req.role;
         const userId = req.userId; // Get userId from token (authMiddleware)
-        const { totalItems , response } = await paymentService.getPayment(getPaymentRequest, roleId, role, userId);
+        const { totalItems, paidAmount, unpaidAmount, response } = await paymentService.getPayment(getPaymentRequest, roleId, role, userId);
         const listPaymentResponse = response.map( item => new PaymentReponse(item) );
         return res.status(200).json(
             new ApiResponse(
@@ -31,7 +31,9 @@ const paymentController = {
                 {
                     page: getPaymentRequest.page,
                     limit: getPaymentRequest.limit,
-                    totalItems
+                    totalItems,
+                    paidAmount,
+                    unpaidAmount
                 }
             )
         )
