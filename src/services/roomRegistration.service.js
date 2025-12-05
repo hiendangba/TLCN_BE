@@ -12,7 +12,7 @@ const UserError = require("../errors/UserError");
 const RoomRegistrationError = require("../errors/RoomRegistrationError");
 const { StudentStatus } = require("../dto/request/auth.request")
 const sendMail = require("../utils/mailer")
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 const { sequelize } = require("../config/database");
 const paymentService = require("../services/payment.service");
 require('dotenv').config();
@@ -121,18 +121,40 @@ const roomRegistrationServices = {
                 ],
             });
 
-            const totalUnapproved = await RoomRegistration.count({
-                where: {
-                    status: "BOOKED",
-                }
-            });
+            let totalUnapproved = 0;
 
-            const total = await RoomRegistration.count();
+            if (status !== "Approved") {
+                totalUnapproved = await RoomRegistration.count({
+                    where: {
+                        status: "BOOKED",
+                        approvedDate: null,
+                        ...searchCondition,
+                        ...dateCondition
+                    },
+                    include: [{
+                            model: Student,
+                            attributes: ["id", "mssv", "school", "userId"],
+                            include: [{
+                                model: User,
+                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                            },],
+                        },
+                        {
+                            model: RoomSlot,
+                            attributes: ["id", "slotNumber", "isOccupied"],
+                            include: [{
+                                model: Room,
+                                attributes: ["roomNumber"],
+                            },],
+                        },
+                    ],
+                });
+            }
 
             return {
-                totalApproved: total - totalUnapproved,
+                totalApproved: roomRegistration.count - totalUnapproved,
                 totalUnapproved,
-                totalItems: total,
+                totalItems: roomRegistration.count,
                 response: roomRegistration.rows,
             };
         } catch (err) {
@@ -621,8 +643,43 @@ const roomRegistrationServices = {
                     ["id", "ASC"]
                 ]
             });
-            const totalUnapproved = roomRegistration.rows.filter(r => r.CancellationInfo.refundStatus === "PENDING").length;
-            console.log(totalUnapproved)
+            // const totalUnapproved = roomRegistration.rows.filter(r => r.CancellationInfo.refundStatus === "PENDING").length;
+            let totalUnapproved = 0;
+
+            if (status !== "Approved") {
+                totalUnapproved = await RoomRegistration.count({
+                    where: {
+                        status: "CANCELED",
+                        ...searchCondition,
+                        ...dateCondition
+                    },
+                    include: [{
+                        model: Student,
+                        attributes: ["id", "mssv", "school", "userId"],
+                        include: [{
+                            model: User,
+                            attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                        },],
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"],
+                        include: [{
+                            model: Room,
+                            attributes: ["roomNumber"],
+                        },],
+                    },
+                    {
+                        model: CancellationInfo,
+                        where: {
+                            refundStatus: "PENDING"
+                        },
+                        attributes: ["reason", "checkoutDate", "refundStatus", "amount"],
+                    }
+                    ],
+                });
+            }
+
             return {
                 totalApproved: roomRegistration.count - totalUnapproved,
                 totalUnapproved,
