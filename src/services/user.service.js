@@ -1,4 +1,4 @@
-const { User, Student } = require("../models");
+const { User, Student, RoomRegistration, CancellationInfo, RoomSlot, Room } = require("../models");
 const bcrypt = require("bcryptjs");
 const { StudentStatus } = require("../dto/request/auth.request");
 const UserError = require("../errors/UserError");
@@ -74,6 +74,95 @@ const userServices = {
                 }
             }
             return { message: "Cập nhật thông tin thành công" };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    getAllUser: async (getAllUserRequest) => {
+        try {
+            const {
+                page,
+                limit,
+                keyword,
+                status,
+            } = getAllUserRequest;
+
+            const offset = (page - 1) * limit;
+
+            let statusCondition = {};
+            switch (status) {
+                case "Locked":
+                    statusCondition = { "$User.status$": StudentStatus.LOCKED };
+                    break;
+                case "UnLocked":
+                    statusCondition = { "$User.status$": { [Op.in]: [StudentStatus.APPROVED_CHANGED, StudentStatus.APPROVED_NOT_CHANGED] } };
+                    break;
+                case "All":
+                default:
+                    statusCondition = { "$User.status$": { [Op.in]: [StudentStatus.LOCKED, StudentStatus.APPROVED_CHANGED, StudentStatus.APPROVED_NOT_CHANGED] } };
+                    break;
+            }
+
+
+            const students = await Student.findAndCountAll({
+                where: {
+                    ...statusCondition
+                },
+                include: [
+                    {
+                        model: User,
+                    },
+                    {
+                        model: RoomRegistration,
+                        where: {
+                            status: {
+                                [Op.in]: ["CONFIRMED", "MOVE_PENDING", "CANCELED", "EXTENDING"]
+                            }
+                        },
+                        include: [
+                            {
+                                model: CancellationInfo,
+                                required: false,
+                                attributes: ['refundStatus'],
+                                where: {
+                                    refundStatus: 'PENDING'
+                                },
+                            },
+                            {
+                                model: RoomSlot,
+                                include: [
+                                    {
+                                        model: Room,
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            const filteredStudents = keyword
+                ? students.rows.filter(s =>
+                    s.User.name.includes(keyword) ||
+                    s.User.identification.includes(keyword) ||
+                    s.mssv.includes(keyword) ||
+                    s.RoomRegistrations.some(
+                        r =>
+                            r.RoomSlot?.Room?.roomNumber &&
+                            r.RoomSlot.Room.roomNumber.includes(keyword)
+                    )
+                )
+                : students.rows;
+
+            const totalApproved = filteredStudents.filter(s => s.User.status === StudentStatus.LOCKED).length;
+            const pagingStudent = filteredStudents.slice(offset, offset + limit);
+            return {
+                totalApproved,
+                totalUnapproved: filteredStudents.length - totalApproved,
+                totalItems: filteredStudents.length,
+                response: pagingStudent,
+            };
         } catch (err) {
             throw err;
         }

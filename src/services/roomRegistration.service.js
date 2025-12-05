@@ -68,14 +68,14 @@ const roomRegistrationServices = {
             let statusCondition = {};
             switch (status) {
                 case "Approved":
-                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } };
+                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } };
                     break;
                 case "Unapproved":
                     statusCondition = { approvedDate: null, status: "BOOKED" };
                     break;
                 case "All":
                 default:
-                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } }
+                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } }
                     break;
             }
 
@@ -132,21 +132,29 @@ const roomRegistrationServices = {
                         ...dateCondition
                     },
                     include: [{
-                            model: Student,
-                            attributes: ["id", "mssv", "school", "userId"],
-                            include: [{
-                                model: User,
-                                attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
-                            },],
-                        },
-                        {
-                            model: RoomSlot,
-                            attributes: ["id", "slotNumber", "isOccupied"],
-                            include: [{
-                                model: Room,
-                                attributes: ["roomNumber"],
-                            },],
-                        },
+                        model: Student,
+                        attributes: ["id", "mssv", "school", "userId"],
+                        include: [{
+                            model: User,
+                            attributes: ["id", "name", "identification", "dob", "gender", "address", "avatar", "frontIdentificationImage"],
+                        },],
+                    },
+                    {
+                        model: RoomSlot,
+                        attributes: ["id", "slotNumber", "isOccupied"],
+                        include: [{
+                            model: Room,
+                            attributes: ["roomNumber"],
+                        },],
+                    },
+                    {
+                        model: CancellationInfo,
+                        required: false,
+                        attributes: ["refundStatus"],
+                        where: {
+                            refundStatus: "PENDING"
+                        }
+                    }
                     ],
                 });
             }
@@ -1076,6 +1084,7 @@ const roomRegistrationServices = {
                 where: {
                     ...statusCondition,
                     ...searchCondition,
+                    ...dateCondition
                 },
                 include: [
                     {
@@ -1097,8 +1106,6 @@ const roomRegistrationServices = {
                         include: [{ model: Room, attributes: ["roomNumber", "monthlyFee"] }],
                     }
                 ],
-                offset,
-                limit,
                 order: [
                     [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = \'MOVE_PENDING\' THEN 0 ELSE 1 END'), "ASC"],
                     ["createdAt", "DESC"],
@@ -1116,11 +1123,11 @@ const roomRegistrationServices = {
             }
 
             const originalIds = roomRegistration.rows.map(r => r.id);
+
             const newRoomRegistration = await RoomRegistration.findAll({
                 where: {
                     previousRegistrationId: { [Op.in]: originalIds },
                     status: { [Op.in]: ["PENDING", "CONFIRMED", "MOVED", "MOVE_PENDING", "EXTENDED", "PENDING_EXTENDED", "CANCELED"] },
-                    ...dateCondition,
                 },
                 include: [
                     {
@@ -1131,6 +1138,7 @@ const roomRegistrationServices = {
                 ],
                 order: [["createdAt", "DESC"], ["id", "ASC"]],
             });
+
             // ---------- BUILD MAP BY ORIGINAL ID ----------
             const registrationMap = {};
             roomRegistration.rows.forEach(reg => {
@@ -1164,14 +1172,13 @@ const roomRegistrationServices = {
                     originalRegistration: item.original,
                     newRegistration: item.new,
                 }));
-
             const totalUnapproved = combinedRegistrations.filter(r => r.originalRegistration.status === "MOVE_PENDING").length;
-
+            const paged = combinedRegistrations.slice(offset, offset + limit);
             return {
                 totalApproved: combinedRegistrations.length - totalUnapproved,
                 totalUnapproved,
                 totalItems: combinedRegistrations.length,
-                response: combinedRegistrations,
+                response: paged,
             };
         } catch (err) {
             throw err;
@@ -1630,6 +1637,7 @@ const roomRegistrationServices = {
                 where: {
                     ...statusCondition,
                     ...searchCondition,
+                    ...dateCondition
                 },
                 include: [
                     {
@@ -1653,8 +1661,6 @@ const roomRegistrationServices = {
                         ],
                     }
                 ],
-                offset,
-                limit,
                 order: [
                     // [sequelize.literal('CASE WHEN `RoomRegistration`.`status` = "EXTENDING" THEN 0 ELSE 1 END'), 'ASC'],
                     [sequelize.literal("CASE WHEN `RoomRegistration`.`status` = 'EXTENDING' THEN 0 ELSE 1 END"), 'ASC'],
@@ -1666,7 +1672,6 @@ const roomRegistrationServices = {
                 where: {
                     status: { [Op.in]: ["PENDING_EXTENDED", "CONFIRMED"] },
                     studentId: { [Op.in]: roomRegistration.rows.map(r => r.studentId) },
-                    ...dateCondition,
                 }
             });
             const registrationMap = {};
@@ -1690,12 +1695,12 @@ const roomRegistrationServices = {
                 }));
 
             const totalUnapproved = combinedRegistrations.filter(r => r.originalRegistration.status === "EXTENDING").length;
-
+            const paged = combinedRegistrations.slice(offset, offset + limit);
             return {
                 totalApproved: combinedRegistrations.length - totalUnapproved,
                 totalUnapproved,
                 totalItems: combinedRegistrations.length,
-                response: combinedRegistrations,
+                response: paged,
             };
         } catch (err) {
             throw err;
