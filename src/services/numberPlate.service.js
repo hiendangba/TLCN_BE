@@ -84,12 +84,50 @@ const numberPlateServices = {
                     ["createdAt", "DESC"]
                 ],
             });
-            totalApproved = numberPlate.rows.filter(r => r.status === "approved").length;
-            totalUnApproved = numberPlate.rows.filter(r => r.status === "pending").length;
+
+            let totalApproved = 0;
+            let totalUnapproved = 0;
+
+            const statusMap = {
+                approved: "approved",
+                pending: "pending"
+            };
+
+            if (status === "rejected") {
+                totalApproved = 0;
+                totalUnapproved = 0;
+            } else {
+                for (const [key, value] of Object.entries(statusMap)) {
+                    if (!status || status !== key) {
+                        const count = await NumberPlate.count({
+                            where: {
+                                status: value,
+                                ...statusCondition,
+                                ...dateCondition,
+                            },
+                            include: [
+                                {
+                                    model: Student,
+                                    attributes: ["id", "mssv", "school", "userId"],
+                                    include: [
+                                        {
+                                            model: User,
+                                            attributes: ["id", "name", "identification", "dob", "gender", "address"],
+                                        },
+                                    ],
+                                }
+                            ],
+                        });
+
+                        if (key === "approved") totalApproved = count;
+                        else totalUnapproved = count;
+                    }
+                }
+            }
             return {
                 totalApproved,
-                totalUnApproved,
-                totalReject: numberPlate.count - (totalApproved + totalUnApproved),
+                totalUnapproved,
+                totalReject: numberPlate.count - (totalApproved + totalUnapproved),
                 totalItems: numberPlate.count,
                 response: numberPlate.rows
             };
