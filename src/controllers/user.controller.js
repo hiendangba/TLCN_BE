@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const ApiResponse = require("../dto/response/api.response");
-const { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest } = require("../dto/request/user.request")
-const { GetUserResponse } = require("../dto/response/user.response")
+const { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest, GetAllUserRequest } = require("../dto/request/user.request")
+const { GetUserResponse, GetAllUserResponse } = require("../dto/response/user.response")
 const userServices = require("../services/user.service")
 const userController = {
     getUser: asyncHandler(async (req, res) => {
@@ -26,6 +26,18 @@ const userController = {
         const response = await userServices.updateProfile(updateProfileRequest)
         return res.status(200).json(
             new ApiResponse(response)
+        );
+    }),
+
+    getAllUser: asyncHandler(async (req, res) => {
+        const getAllUserRequest = new GetAllUserRequest(req.query)
+        const { totalApproved, totalUnapproved, totalItems, response } = await userServices.getAllUser(getAllUserRequest)
+        const getAllUserResponses = response.map(item => new GetAllUserResponse(item));
+        return res.status(200).json(
+            new ApiResponse(getAllUserResponses, {
+                page: getAllUserRequest.page, limit: getAllUserRequest.limit, totalItems,
+                totalApproved, totalUnapproved
+            })
         );
     }),
 }

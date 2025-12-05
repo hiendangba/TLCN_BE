@@ -68,14 +68,14 @@ const roomRegistrationServices = {
             let statusCondition = {};
             switch (status) {
                 case "Approved":
-                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } };
+                    statusCondition = { approvedDate: { [Op.ne]: null }, status: { [Op.in]: ["CONFIRMED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } };
                     break;
                 case "Unapproved":
                     statusCondition = { approvedDate: null, status: "BOOKED" };
                     break;
                 case "All":
                 default:
-                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } }
+                    statusCondition = { status: { [Op.in]: ["BOOKED", "CONFIRMED", "MOVE_PENDING", "CANCELED", "EXTENDING"] } }
                     break;
             }
 
@@ -147,6 +147,14 @@ const roomRegistrationServices = {
                             attributes: ["roomNumber"],
                         },],
                     },
+                    {
+                        model: CancellationInfo,
+                        required: false,
+                        attributes: ["refundStatus"],
+                        where: {
+                            refundStatus: "PENDING"
+                        }
+                    }
                     ],
                 });
             }

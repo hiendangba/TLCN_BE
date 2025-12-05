@@ -1,6 +1,5 @@
 const AppError = require("../errors/AppError");
 
-// Middleware xử lý lỗi trung tâm
 const errorMiddleware = (err, req, res, next) => {
     // Nếu là lỗi AppError do ta tự định nghĩa
     if (err instanceof AppError) {
@@ -29,12 +28,11 @@ const errorMiddleware = (err, req, res, next) => {
         });
     }
     // Trường hợp lỗi không xác định
-    return res.status(500).json(
-        console.log(err),
-        {
-            success: false,
-            message: err.message || "Lỗi máy chủ nội bộ",
-        });
+    console.error(err); // log lỗi ra console
+    return res.status(500).json({
+        success: false,
+        message: err.message || "Lỗi máy chủ nội bộ",
+    });
 };
 
 module.exports = errorMiddleware;
