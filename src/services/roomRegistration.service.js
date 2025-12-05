@@ -124,10 +124,13 @@ const roomRegistrationServices = {
             const totalUnapproved = await RoomRegistration.count({
                 where: {
                     status: "BOOKED",
+                    approvedDate: null,
                     ...searchCondition,
+                    ...statusCondition,
                     ...dateCondition
                 }
             });
+
             return {
                 totalApproved: roomRegistration.count - totalUnapproved,
                 totalUnapproved,
