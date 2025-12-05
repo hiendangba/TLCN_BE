@@ -121,11 +121,23 @@ const roomRegistrationServices = {
                 ],
             });
 
-            const totalUnapproved = roomRegistration.rows.filter(r => r.status === "BOOKED").length;
-            console.log(totalUnapproved);
+            const totalUnapproved = await RoomRegistration.count({
+                where: {
+                    status: "BOOKED",
+                    ...searchCondition,
+                    ...dateCondition
+                }
+            });
+
+            const total = await RoomRegistration.count({
+                where: {
+                    ...searchCondition,
+                    ...dateCondition
+                }
+            });
 
             return {
-                totalApproved: roomRegistration.count - totalUnapproved,
+                totalApproved: total - totalUnapproved,
                 totalUnapproved,
                 totalItems: roomRegistration.count,
                 response: roomRegistration.rows,
@@ -1628,7 +1640,7 @@ const roomRegistrationServices = {
                 }));
 
             const totalUnapproved = combinedRegistrations.filter(r => r.originalRegistration.status === "EXTENDING").length;
-           
+
             return {
                 totalApproved: combinedRegistrations.length - totalUnapproved,
                 totalUnapproved,
