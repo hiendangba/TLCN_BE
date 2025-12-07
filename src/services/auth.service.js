@@ -52,7 +52,7 @@ const authServices = {
             }
 
             registerAccountRequest.email = registerAccountRequest.email.toLowerCase().trim();
-            registerAccountRequest.password = await bcrypt.hash("123456", 10);
+            registerAccountRequest.password = await bcrypt.hash("123456", process.env.OTP_SALT);
 
             const user = await User.create(registerAccountRequest, { transaction });
 

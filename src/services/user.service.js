@@ -30,7 +30,7 @@ const userServices = {
             const user = await User.findOne({
                 where: { id: changePasswordRequest.userId }
             })
-            const hashedPassword = await bcrypt.hash(changePasswordRequest.password, 10);
+            const hashedPassword = await bcrypt.hash(changePasswordRequest.password, process.env.OTP_SALT);
             await user.update({ password: hashedPassword });
             if (user.status === StudentStatus.APPROVED_NOT_CHANGED) {
                 await user.update({ status: StudentStatus.APPROVED_CHANGED })
@@ -86,9 +86,20 @@ const userServices = {
                 limit,
                 keyword,
                 status,
+                startDate,
+                endDate
             } = getAllUserRequest;
 
             const offset = (page - 1) * limit;
+
+            const dateCondition = (startDate && endDate)
+                ? {
+                    "$RoomRegistrations.approvedDate$": {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate
+                    }
+                }
+                : {};
 
             let statusCondition = {};
             switch (status) {
@@ -107,7 +118,8 @@ const userServices = {
 
             const students = await Student.findAndCountAll({
                 where: {
-                    ...statusCondition
+                    ...statusCondition,
+                    ...dateCondition
                 },
                 include: [
                     {
@@ -163,6 +175,122 @@ const userServices = {
                 totalItems: filteredStudents.length,
                 response: pagingStudent,
             };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    lockUser: async (lockUserRequest) => {
+        const { ids, reasons } = lockUserRequest;
+        try {
+            const users = await User.findAll({
+                where: {
+                    id: ids,
+                    status: {
+                        [Op.in]: [
+                            StudentStatus.APPROVED_CHANGED,
+                            StudentStatus.APPROVED_NOT_CHANGED
+                        ]
+                    }
+                }
+            })
+
+            if (users.length === 0) {
+                throw UserError.UserNotFound();
+            }
+
+            const approvedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const user of users) {
+                try {
+                    await user.update({
+                        status: StudentStatus.LOCKED
+                    });
+
+
+                    const reasonText = reasons[user.id] || "Hành vi không phù hợp với quy định.";
+
+                    emailTasks.push(
+                        sendMail({
+                            to: user.email,
+                            subject: "Tài khoản Ký túc xá của bạn đã bị khóa",
+                            html: `
+                            <h3>Xin chào ${user.name},</h3>
+                            <p>Tài khoản của bạn tại hệ thống Ký túc xá đã bị <strong>khóa</strong>.</p>
+                            <p><strong>Lý do:</strong> ${reasonText}</p>
+                            <p>Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ ban quản lý để được hỗ trợ.</p>
+                            <p>Trân trọng,<br/>Ban Quản Lý Ký Túc Xá</p>
+                        `,
+                        })
+                    );
+                    approvedList.push(user.id);
+                }
+                catch (innerErr) {
+                    skippedList.push({
+                        id: user.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+            await Promise.allSettled(emailTasks);
+            return { approvedList, skippedList };
+        } catch (err) {
+            throw err;
+        }
+    },
+
+    unLockUser: async (unLockUserRequest) => {
+        try {
+            const users = await User.findAll({
+                where: {
+                    id: unLockUserRequest.ids,
+                    status: StudentStatus.LOCKED
+                }
+            })
+
+            if (users.length === 0) {
+                throw UserError.UserNotFound();
+            }
+
+            const approvedList = [];
+            const skippedList = [];
+            const emailTasks = [];
+
+            for (const user of users) {
+                try {
+                    const password = await bcrypt.hash("123456", process.env.OTP_SALT);
+                    await user.update({
+                        password,
+                        status: StudentStatus.APPROVED_NOT_CHANGED
+                    });
+
+                    emailTasks.push(
+                        sendMail({
+                            to: user.email,
+                            subject: "Tài khoản của bạn đã được mở khóa",
+                            html: `
+                            <h3>Xin chào ${user.name},</h3>
+                            <p>Tài khoản của bạn tại hệ thống Ký túc xá đã được <strong>mở khóa</strong>.</p>
+                            <p>Bạn có thể đăng nhập và tiếp tục sử dụng dịch vụ như bình thường.</p>
+                            <p><strong>Mật khẩu mới:</strong> 123456</p>
+                            <p>Vui lòng đổi mật khẩu sau khi đăng nhập.</p>
+                            <p>Trân trọng,<br/>Ban Quản Lý Ký Túc Xá</p>
+                        `,
+                        })
+                    );
+                    approvedList.push(user.id);
+                }
+                catch (innerErr) {
+                    skippedList.push({
+                        id: user.id,
+                        reason: innerErr.message || "Lỗi không xác định",
+                    });
+                }
+            }
+            await Promise.allSettled(emailTasks);
+            return { approvedList, skippedList };
         } catch (err) {
             throw err;
         }
