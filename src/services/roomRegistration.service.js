@@ -18,6 +18,53 @@ const paymentService = require("../services/payment.service");
 require('dotenv').config();
 const PaymentError = require("../errors/PaymentError");
 const momoUtils = require("../utils/momo.util");
+const cron = require("node-cron");
+
+cron.schedule("0 0 * * *", async () => {
+    try {
+        const registrations = await RoomRegistration.findAll({
+            where: {
+                endDate: { [Op.lte]: new Date() },
+                status: {
+                    [Op.in]: ["CONFIRMED", "MOVE_PENDING", "CANCELED", "EXTENDING"]
+                }
+            },
+            include: [
+                {
+                    model: RoomSlot
+                },
+                {
+                    model: CancellationInfo,
+                    required: false,
+                }
+            ]
+        });
+        for (const reg of registrations) {
+            console.log(reg.toJSON())
+            const refundStatus = reg.CancellationInfo?.refundStatus;
+            const checkoutDate = new Date(reg.endDate);
+            const today = new Date();
+            const isCheckoutToday =
+                today.toISOString().split("T")[0] === checkoutDate.toISOString().split("T")[0];
+            if (refundStatus === "PENDING") {
+                await RoomSlot.update(
+                    { isOccupied: false },
+                    { where: { id: reg.roomSlotId } }
+                );
+            }
+
+            else if (refundStatus === "APPROVED" && isCheckoutToday) {
+                await RoomSlot.update(
+                    { isOccupied: false },
+                    { where: { id: reg.roomSlotId } }
+                );
+            }
+        }
+    } catch (err) {
+        throw err;
+    }
+});
+
 const roomRegistrationServices = {
     createRoomRegistration: async (createRoomRegistrationRequest, transaction) => {
         try {
@@ -109,8 +156,11 @@ const roomRegistrationServices = {
                     include: [{
                         model: Room,
                         attributes: ["roomNumber"],
-                    },],
+                    },
+                    ],
+
                 },
+
                 ],
                 offset,
                 limit,
@@ -146,14 +196,6 @@ const roomRegistrationServices = {
                             model: Room,
                             attributes: ["roomNumber"],
                         },],
-                    },
-                    {
-                        model: CancellationInfo,
-                        required: false,
-                        attributes: ["refundStatus"],
-                        where: {
-                            refundStatus: "PENDING"
-                        }
                     }
                     ],
                 });
@@ -357,7 +399,6 @@ const roomRegistrationServices = {
 
     rejectRoomRegistration: async (rejectRoomRegistrationRequest) => {
         const transaction = await sequelize.transaction();
-        console.log("IDs trước khi query:", rejectRoomRegistrationRequest.ids);
         try {
             const roomRegistrations = await RoomRegistration.findAll({
                 where: {
@@ -761,12 +802,6 @@ const roomRegistrationServices = {
                         });
                         continue;
                     }
-
-                    await roomSlot.update({
-                        isOccupied: false
-                    }, {
-                        transaction
-                    });
 
                     await registration.update({
                         endDate: new Date(),

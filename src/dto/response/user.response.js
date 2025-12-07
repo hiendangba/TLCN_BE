@@ -21,6 +21,7 @@ class GetUserResponse {
 
 class GetAllUserResponse {
     constructor(data) {
+        this.id = data.User.id;
         this.name = data.User.name;
         this.identification = data.User.identification;
         this.dob = data.User.dob;
@@ -34,8 +35,10 @@ class GetAllUserResponse {
         this.slotNumber = data.RoomRegistrations[0].RoomSlot.slotNumber;
         this.roomNumber = data.RoomRegistrations[0].RoomSlot.Room.roomNumber;
         this.registerDate = data.RoomRegistrations[0].registerDate;
+        this.approvedDate = data.RoomRegistrations[0].approvedDate;
         this.duration = data.RoomRegistrations[0].duration;
         this.endDate = data.RoomRegistrations[0].endDate;
     }
 }
+
 module.exports = { GetUserResponse, GetAllUserResponse };

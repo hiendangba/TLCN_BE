@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const ApiResponse = require("../dto/response/api.response");
-const { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest, GetAllUserRequest } = require("../dto/request/user.request")
+const { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest, GetAllUserRequest, LockUserRequest, UnLockUserRequest } = require("../dto/request/user.request")
 const { GetUserResponse, GetAllUserResponse } = require("../dto/response/user.response")
 const userServices = require("../services/user.service")
 const userController = {
@@ -39,6 +39,18 @@ const userController = {
                 totalApproved, totalUnapproved
             })
         );
+    }),
+
+    lockUser: asyncHandler(async (req, res) => {
+        const lockUserRequest = new LockUserRequest(req.body);
+        const response = await roomRegistrationService.lockUser(lockUserRequest);
+        return res.status(200).json(new ApiResponse(response));
+    }),
+
+    unLockUser: asyncHandler(async (req, res) => {
+        const unLockUserRequest = new UnLockUserRequest(req.roleId);
+        const response = await roomRegistrationService.unLockUser(unLockUserRequest);
+        return res.status(200).json(new ApiResponse(response));
     }),
 }
 

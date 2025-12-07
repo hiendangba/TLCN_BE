@@ -33,6 +33,32 @@ class GetAllUserRequest {
         this.limit = !isNaN(limitNum) && limitNum > 0 ? limitNum : 10;
         this.keyword = data.keyword ? data.keyword.trim() : "";
         this.status = data.status || "All";
+        this.startDate = data.startDate ? data.startDate.trim() : null;
+        this.endDate = data.endDate ? data.endDate.trim() : null;
     }
 }
-module.exports = { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest, GetAllUserRequest };
+
+class LockUserRequest {
+    constructor(data) {
+        this.ids = data.ids
+        if (typeof data.reasons === 'object' && !Array.isArray(data.reasons) && data.reasons !== null) {
+            this.reasons = data.reasons;
+        } else if (data.reason) {
+            const commonReason = data.reason.trim();
+            this.reasons = {};
+            data.ids.forEach(id => {
+                this.reasons[id] = commonReason;
+            });
+        } else {
+            this.reasons = {};
+        }
+    }
+}
+
+class UnLockUserRequest {
+    constructor(data) {
+        this.ids = data.ids
+    }
+}
+
+module.exports = { GetUserRequest, ChangePasswordRequest, UpdateProfileRequest, GetAllUserRequest, LockUserRequest, UnLockUserRequest };
