@@ -205,18 +205,20 @@ module.exports = {
       const [slots] = await queryInterface.sequelize.query('SELECT id FROM `RoomSlots` ORDER BY "createdAt" ASC');
       const [studentsList] = await queryInterface.sequelize.query('SELECT id FROM `Students` ORDER BY "createdAt" ASC');
 
-      const roomRegistrations = studentsList.map((student, index) => ({
-        id: uuidv4(),
-        studentId: student.id,
-        roomSlotId: slots[index % slots.length].id,
-        registerDate: new Date(),
-        approvedDate: null,
-        endDate: null,
-        duration: '8',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
-
+      const roomRegistrations = studentsList.map(student => {
+        const randomSlot = slots[Math.floor(Math.random() * slots.length)]; // chọn 1 slot ngẫu nhiên
+        return {
+          id: uuidv4(),
+          studentId: student.id,
+          roomSlotId: randomSlot.id,
+          registerDate: new Date(),
+          approvedDate: null,
+          endDate: null,
+          duration: '8',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      });
       await queryInterface.bulkInsert('RoomRegistrations', roomRegistrations);
       console.log('✅ RoomRegistrations inserted successfully');
     } catch (error) {

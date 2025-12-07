@@ -52,7 +52,7 @@ const authServices = {
             }
 
             registerAccountRequest.email = registerAccountRequest.email.toLowerCase().trim();
-            registerAccountRequest.password = await bcrypt.hash("123456", process.env.OTP_SALT);
+            registerAccountRequest.password = await bcrypt.hash("123456", parseInt(process.env.OTP_SALT));
 
             const user = await User.create(registerAccountRequest, { transaction });
 
@@ -427,9 +427,7 @@ const authServices = {
         try {
             if (resetPasswordRequest.payload.purpose != "reset_password")
                 throw UserError.InvalidResetTokenPurpose();
-            console.log(resetPasswordRequest.payload)
             const passHashed = await bcrypt.hash(resetPasswordRequest.newPassword, parseInt(process.env.OTP_SALT));
-
             await User.update(
                 { password: passHashed },
                 { where: { id: resetPasswordRequest.payload.id } }
