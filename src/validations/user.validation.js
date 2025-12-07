@@ -327,7 +327,7 @@ const lockUserSchema = Joi.object({
             "array.min": "Phải có ít nhất một ID để duyệt.",
             "any.required": "Thiếu trường 'ids' trong yêu cầu.",
         }),
-        
+
     reason: Joi.string()
         .allow("")
         .optional()
@@ -377,4 +377,5 @@ module.exports = {
     userResetPasswordSchema,
     userUpdateProfileSchema,
     lockUserSchema,
+    unLockUserSchema
 };

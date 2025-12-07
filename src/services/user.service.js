@@ -2,6 +2,7 @@ const { User, Student, RoomRegistration, CancellationInfo, RoomSlot, Room } = re
 const bcrypt = require("bcryptjs");
 const { StudentStatus } = require("../dto/request/auth.request");
 const UserError = require("../errors/UserError");
+const sendMail = require('../utils/mailer')
 const { Op } = require("sequelize");
 
 const userServices = {
@@ -245,7 +246,7 @@ const userServices = {
         try {
             const users = await User.findAll({
                 where: {
-                    id: unLockUserRequest.ids,
+                    id: { [Op.in]: unLockUserRequest.ids },
                     status: StudentStatus.LOCKED
                 }
             })
@@ -260,12 +261,12 @@ const userServices = {
 
             for (const user of users) {
                 try {
-                    const password = await bcrypt.hash("123456", process.env.OTP_SALT);
+                    const password = await bcrypt.hash("123456", parseInt(process.env.OTP_SALT));
                     await user.update({
                         password,
                         status: StudentStatus.APPROVED_NOT_CHANGED
                     });
-
+                    console.log(user);
                     emailTasks.push(
                         sendMail({
                             to: user.email,

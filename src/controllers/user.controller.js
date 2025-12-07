@@ -43,13 +43,13 @@ const userController = {
 
     lockUser: asyncHandler(async (req, res) => {
         const lockUserRequest = new LockUserRequest(req.body);
-        const response = await roomRegistrationService.lockUser(lockUserRequest);
+        const response = await userServices.lockUser(lockUserRequest);
         return res.status(200).json(new ApiResponse(response));
     }),
 
     unLockUser: asyncHandler(async (req, res) => {
-        const unLockUserRequest = new UnLockUserRequest(req.roleId);
-        const response = await roomRegistrationService.unLockUser(unLockUserRequest);
+        const unLockUserRequest = new UnLockUserRequest(req.body);
+        const response = await userServices.unLockUser(unLockUserRequest);
         return res.status(200).json(new ApiResponse(response));
     }),
 }

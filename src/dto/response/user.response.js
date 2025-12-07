@@ -18,7 +18,6 @@ class GetUserResponse {
     }
 }
 
-
 class GetAllUserResponse {
     constructor(data) {
         this.id = data.User.id;
