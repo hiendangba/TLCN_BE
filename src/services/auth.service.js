@@ -52,7 +52,7 @@ const authServices = {
             }
 
             registerAccountRequest.email = registerAccountRequest.email.toLowerCase().trim();
-            registerAccountRequest.password = await bcrypt.hash("123456", process.env.OTP_SALT);
+            registerAccountRequest.password = await bcrypt.hash("123456", parseInt(process.env.OTP_SALT));
 
             const user = await User.create(registerAccountRequest, { transaction });
 
@@ -120,6 +120,10 @@ const authServices = {
             }
             const passwordMatch = await bcrypt.compare(loginRequest.password, user.password);
             if (!passwordMatch) {
+                throw AuthError.AuthenticationFailed();
+            }
+
+            if (user.status === StudentStatus.LOCKED) {
                 throw AuthError.AuthenticationFailed();
             }
 
