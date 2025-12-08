@@ -31,7 +31,7 @@ const userServices = {
             const user = await User.findOne({
                 where: { id: changePasswordRequest.userId }
             })
-            const hashedPassword = await bcrypt.hash(changePasswordRequest.password, process.env.OTP_SALT);
+            const hashedPassword = await bcrypt.hash(changePasswordRequest.password, parseInt(process.env.OTP_SALT));
             await user.update({ password: hashedPassword });
             if (user.status === StudentStatus.APPROVED_NOT_CHANGED) {
                 await user.update({ status: StudentStatus.APPROVED_CHANGED })
