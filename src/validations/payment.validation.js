@@ -30,13 +30,16 @@ const GetRevenueSchema = Joi.object({
         .messages({
             'date.format': 'Ngày bắt đầu phải có định dạng ISO hợp lệ'
         }),
-    endDate: Joi.date()
-        .iso()
-        .greater(Joi.ref('startDate'))
-        .messages({
+    endDate: Joi.alternatives().conditional('startDate', {
+        is: Joi.exist(),
+        then: Joi.date().iso().greater(Joi.ref('startDate')).messages({
             'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ',
             'date.greater': 'Ngày kết thúc phải lớn hơn ngày bắt đầu'
-        })      
+        }),
+        otherwise: Joi.date().iso().messages({
+            'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ'
+        })
+    })
 });
 
 const GetPaymentSchema = Joi.object({
@@ -86,13 +89,16 @@ const GetPaymentSchema = Joi.object({
         .messages({
             'date.format': 'Ngày bắt đầu phải có định dạng ISO hợp lệ'
         }),
-    endDate: Joi.date()
-        .iso()
-        .greater(Joi.ref('startDate'))
-        .messages({
+    endDate: Joi.alternatives().conditional('startDate', {
+        is: Joi.exist(),
+        then: Joi.date().iso().greater(Joi.ref('startDate')).messages({
             'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ',
             'date.greater': 'Ngày kết thúc phải lớn hơn ngày bắt đầu'
-        })        
+        }),
+        otherwise: Joi.date().iso().messages({
+            'date.format': 'Ngày kết thúc phải có định dạng ISO hợp lệ'
+        })
+    })
 });
 
 module.exports = {

@@ -13,6 +13,7 @@ class PaymentReponse {
         this.amount = data.amount;
         this.currency = data.currency;
         this.paidAt = data.paidAt;
+        this.createdAt = data.createdAt;
         this.status = data.status;
         this.studentName = data.Student?.User?.name;
         this.roomNumber = data.Student?.RoomRegistrations?.[0]?.RoomSlot?.Room?.roomNumber || null;
