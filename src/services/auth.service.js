@@ -431,9 +431,7 @@ const authServices = {
         try {
             if (resetPasswordRequest.payload.purpose != "reset_password")
                 throw UserError.InvalidResetTokenPurpose();
-            console.log(resetPasswordRequest.payload)
             const passHashed = await bcrypt.hash(resetPasswordRequest.newPassword, parseInt(process.env.OTP_SALT));
-
             await User.update(
                 { password: passHashed },
                 { where: { id: resetPasswordRequest.payload.id } }

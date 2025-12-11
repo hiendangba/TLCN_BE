@@ -58,8 +58,8 @@ const authController = {
     const response = await authServices.login(loginRequest);
     res.cookie('refresh_token', response.refresh_token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
     });
@@ -111,8 +111,8 @@ const authController = {
     const response = await authServices.verifyOTP(verifyOTPRequest);
     res.cookie('resetPassword_token', response.resetToken, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 10 * 60 * 1000
     })
     return res.status(202).json(

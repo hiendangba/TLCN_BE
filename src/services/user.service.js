@@ -266,7 +266,6 @@ const userServices = {
                         password,
                         status: StudentStatus.APPROVED_NOT_CHANGED
                     });
-                    console.log(user);
                     emailTasks.push(
                         sendMail({
                             to: user.email,
