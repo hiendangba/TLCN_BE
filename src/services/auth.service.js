@@ -123,6 +123,10 @@ const authServices = {
                 throw AuthError.AuthenticationFailed();
             }
 
+            if (user.status === StudentStatus.LOCKED) {
+                throw AuthError.AuthenticationFailed();
+            }
+
             if (user.status === StudentStatus.REGISTERED) {
                 throw AuthError.NotApproved();
             }

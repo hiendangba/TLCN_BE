@@ -804,7 +804,7 @@ const roomRegistrationServices = {
                     }
 
                     await registration.update({
-                        endDate: new Date(),
+                        // endDate: new Date(),
                         adminId: admin.id,
                     }, {
                         transaction

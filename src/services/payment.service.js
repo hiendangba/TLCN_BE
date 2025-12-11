@@ -51,14 +51,12 @@ const paymentService = {
             };
         }
 
-        if (startDate || endDate) {
-            whereCondition.createdAt = {};
-            if (startDate) {
-                whereCondition.createdAt[Op.gte] = new Date(startDate);
-            }
-            if (endDate) {
-                whereCondition.createdAt[Op.lte] = new Date(endDate);
-            }
+        // Chỉ áp dụng lọc ngày khi có đủ cả startDate và endDate
+        if (startDate && endDate) {
+            whereCondition.createdAt = {
+                [Op.gte]: startDate,
+                [Op.lte]: endDate,
+            };
         }
 
         console.log(whereCondition);
@@ -175,18 +173,20 @@ const paymentService = {
             }
 
             
-            if (startDate || endDate) {
-                searchCondition.createdAt = {};
-                if (startDate) {
-                    searchCondition.createdAt[Op.gte] = new Date(startDate);
+            const dateCondition = (startDate && endDate)
+                ? {
+                    createdAt: {
+                        [Op.gte]: startDate,
+                        [Op.lte]: endDate,
+                    },
                 }
-                if (endDate) {
-                    searchCondition.createdAt[Op.lte] = new Date(endDate);
-                }
-            }
+                : {};
 
             const payments = await Payment.findAndCountAll({
-                where: searchCondition,
+                where: {
+                    ...searchCondition,
+                    ...dateCondition,
+                },
                 include: [{
                     model: Student,
                     include: [
@@ -226,7 +226,10 @@ const paymentService = {
 
             // Calculate statistics: get all payments (without pagination) for statistics
             const allPayments = await Payment.findAll({
-                where: searchCondition,
+                where: {
+                    ...searchCondition,
+                    ...dateCondition,
+                },
                 attributes: ['amount', 'status', 'type'],
                 raw: true
             });
